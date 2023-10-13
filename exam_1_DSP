@@ -1,0 +1,142 @@
+% Problem 2 --------------------------------------------------------------
+
+f1 = 10;
+f2 = 11;
+
+F_s_1 = 100;
+F_s_2 = 2*F_s_1;
+
+n_datapoints_1 = 25;
+n_datapoints_2 = 50;
+n_datapoints_3 = 150;
+
+N1 = 64;
+N2 = 256;
+N3 = 512;
+
+n1 = 0:1/F_s_1:(n_datapoints_1 - 1)/F_s_1;
+s1 = sin(2*pi*f1*n1) + sin(2*pi*f2*n1);
+mag_64_1 = abs(fft(s1,N1));
+mag_256_1 = abs(fft(s1,N2));
+
+n2 = 0:1/F_s_2:(n_datapoints_2 - 1)/F_s_2;
+s2 = sin(2*pi*f1*n2) + sin(2*pi*f2*n2);
+mag_64_2 = abs(fft(s2,N1));
+mag_256_2 = abs(fft(s2,N2));
+
+n3 = 0:1/F_s_1:(n_datapoints_3 - 1)/F_s_1;
+s3 = sin(2*pi*f1*n3) + sin(2*pi*f2*n3);
+mag_256_3 = abs(fft(s3,N2));
+mag_512_3 = abs(fft(s3,N3));
+
+figure;
+
+subplot(3,2,1)
+plot(mag_64_1)
+title('F_s = 100 Hz, data points = 25, N = 64')
+subplot(3,2,2)
+plot(mag_256_1)
+title('F_s = 100 Hz, data points = 25, N = 256')
+
+subplot(3,2,3)
+plot(mag_64_2)
+title('F_s = 200 Hz, data points = 50, N = 64')
+subplot(3,2,4)
+plot(mag_256_2)
+title('F_s = 200 Hz, data points = 50, N = 256')
+
+subplot(3,2,5)
+plot(mag_256_3)
+title('F_s = 100 Hz, data points = 150, N = 256')
+subplot(3,2,6)
+plot(mag_512_3)
+title('F_s = 100 Hz, data points = 150, N = 512')
+
+% Repeat with hamming window
+
+n1 = 0:1/F_s_1:(n_datapoints_1 - 1)/F_s_1;
+s1 = sin(2*pi*f1*n1) + sin(2*pi*f2*n1);
+s1 = s1 .* hamming(length(s1))'
+mag_64_1 = abs(fft(s1,N1));
+mag_256_1 = abs(fft(s1,N2));
+
+n2 = 0:1/F_s_2:(n_datapoints_2 - 1)/F_s_2;
+s2 = sin(2*pi*f1*n2) + sin(2*pi*f2*n2);
+s2 = s2 .* hamming(length(s2))'
+mag_64_2 = abs(fft(s2,N1));
+mag_256_2 = abs(fft(s2,N2));
+
+n3 = 0:1/F_s_1:(n_datapoints_3 - 1)/F_s_1;
+s3 = sin(2*pi*f1*n3) + sin(2*pi*f2*n3);
+s3 = s3 .* hamming(length(s3))'
+mag_256_3 = abs(fft(s3,N2));
+mag_512_3 = abs(fft(s3,N3));
+
+figure;
+
+subplot(3,2,1)
+plot(mag_64_1)
+title('F_s = 100 Hz, data points = 25, N = 64')
+subplot(3,2,2)
+plot(mag_256_1)
+title('F_s = 100 Hz, data points = 25, N = 256')
+
+subplot(3,2,3)
+plot(mag_64_2)
+title('F_s = 200 Hz, data points = 50, N = 64')
+subplot(3,2,4)
+plot(mag_256_2)
+title('F_s = 200 Hz, data points = 50, N = 256')
+
+subplot(3,2,5)
+plot(mag_256_3)
+title('F_s = 100 Hz, data points = 150, N = 256')
+subplot(3,2,6)
+plot(mag_512_3)
+title('F_s = 100 Hz, data points = 150, N = 512')
+
+%%
+% Problem 3 --------------------------------------------------------------
+
+f1_normalized = 0.1;
+f2_normalized = 0.12;
+
+f1 = 10;
+f2 = 12;
+F_s = f1/f1_normalized;
+
+A1 = 1;
+A2 = 0.01;
+
+n_datapoints = 256;
+N = 512;
+n = 0:1/F_s:(n_datapoints - 1)/F_s;
+
+% No window
+s = A1*sin(2*pi*f1*n) + A2*sin(2*pi*f2*n);
+mag = abs(fft(s,N));
+plot(mag)
+
+% Rectangular window
+rect_signal = s .* rectwin(length(s))';
+mag_signal = abs(fft(rect_signal,n_datapoints));
+plot(mag_signal)
+
+% Hamming window
+hamming_signal = s .* hamming(length(s))';
+mag_hamming = abs(fft(hamming_signal,n_datapoints));
+plot(mag_hamming)
+
+
+%%
+% Problem 4 --------------------------------------------------------------
+
+y = load('C:\Users\olgud\AppData\Local\Temp\temp3548731014510113201tmp\prob_4_data.mat');
+y = y.y;
+
+N4 = 2^7;
+fft4 = fft(y, N4);
+abs4 = abs(fft4);
+
+plot(abs4)
+
