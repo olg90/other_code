@@ -131,12 +131,32 @@ plot(mag_hamming)
 %%
 % Problem 4 --------------------------------------------------------------
 
-y = load('C:\Users\olgud\AppData\Local\Temp\temp3548731014510113201tmp\prob_4_data.mat');
-y = y.y;
+y4 = load('C:\Users\olgud\AppData\Local\Temp\temp3548731014510113201tmp\prob_4_data.mat');
+y4 = y4.y;
 
-N4 = 2^7;
-fft4 = fft(y, N4);
-abs4 = abs(fft4);
+N4 = 2^20;
+fft4 = fft(y4, N4);
+abs4 = 20*log10(abs(fft4));
 
-plot(abs4)
+plot(abs4) % Looks like mainlobe at 61 height and medium one at 40 height
 
+%%
+% Problem 5 --------------------------------------------------------------
+
+y5 = load('C:\Users\olgud\AppData\Local\Temp\temp2774102012541163408tmp\prob_5_data.mat');
+y5 = y5.y; % length 3000
+
+% Block averaging
+
+number = 11;
+divisor = 3;
+
+quotient = floor(number / divisor);
+remainder = rem(number, divisor);
+
+
+N4 = 2^20;
+fft4 = fft(y5, N4);
+abs4 = 20*log10(abs(fft4));
+
+plot(abs4) % Looks like mainlobe at 61 height and medium one at 40 height
