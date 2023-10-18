@@ -2,39 +2,53 @@
 normalized_frequency_1 = 0.1;
 normalized_frequency_2 = 1/12.8;
 
+% Part 1
+
 sample_duration_256 = 256;
 time_duration_256 = 0:256;
-sinusoidal_256 = sin(2*pi*normalized_frequency_1*time_duration_256);
-sinusoidal_FFT_256 = fft(sinusoidal_256, sample_duration_256);
-sin_mag_256 = abs(sinusoidal_FFT_256);
+sinusoidal_256_1 = sin(2*pi*normalized_frequency_1*time_duration_256);
+sinusoidal_FFT_256_1 = fft(sinusoidal_256_1, sample_duration_256);
+sin_mag_256_1 = abs(sinusoidal_FFT_256_1);
 
 sample_duration_1024 = 1024;
 time_duration_1024 = 0:1024;
-sinusoidal_1024 = sin(2*pi*normalized_frequency_1*time_duration_1024);
-sinusoidal_FFT_1024 = fft(sinusoidal_1024, sample_duration_1024);
-sin_mag_1024 = abs(sinusoidal_FFT_1024);
+sinusoidal_1024_1 = sin(2*pi*normalized_frequency_1*time_duration_1024);
+sinusoidal_FFT_1024_1 = fft(sinusoidal_1024_1, sample_duration_1024);
+sin_mag_1024_1 = abs(sinusoidal_FFT_1024_1);
 
-subplot(1,4,1)
-plot(linspace(0, 0.5, length(sin_mag_256)), sin_mag_256)
-title("Magnitude of the frequency response, 256 point")
+% Part 2
+
+sinusoidal_256_2 = sin(2*pi*normalized_frequency_2*time_duration_256);
+sinusoidal_FFT_256_2 = fft(sinusoidal_256_2, sample_duration_256);
+sin_mag_256_2 = abs(sinusoidal_FFT_256_2);
+
+sinusoidal_1024_2 = sin(2*pi*normalized_frequency_2*time_duration_1024);
+sinusoidal_FFT_1024_2 = fft(sinusoidal_1024_2, sample_duration_1024);
+sin_mag_1024_2 = abs(sinusoidal_FFT_1024_2);
+
+% Plotting
+
+subplot(2,2,1)
+plot(linspace(0, 0.5, length(sin_mag_256_1)), sin_mag_256_1)
+title("N = 256, f_n = 0.1")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
-subplot(1,4,2)
-plot(linspace(0, 0.5, length(sin_mag_1024)), sin_mag_1024)
-title("Magnitude of the frequency response, 256 point")
+subplot(2,2,2)
+plot(linspace(0, 0.5, length(sin_mag_1024_1)), sin_mag_1024_1)
+title("N = 1024, f_n = 0.1")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
-subplot(1,4,3)
-plot(linspace(0, 0.5, length(sin_mag_256)), sin_mag_256)
-title("Magnitude of the frequency response, 256 point")
+subplot(2,2,3)
+plot(linspace(0, 0.5, length(sin_mag_256_2)), sin_mag_256_2)
+title("N = 256, f_n = 1/12.8")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
-subplot(1,4,2)
-plot(linspace(0, 0.5, length(sin_mag_1024)), sin_mag_1024)
-title("Magnitude of the frequency response, 256 point")
+subplot(2,2,4)
+plot(linspace(0, 0.5, length(sin_mag_1024_2)), sin_mag_1024_2)
+title("N = 1024, f_n = 1/12.8")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
