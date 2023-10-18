@@ -1,3 +1,42 @@
+% Problem 1 --------------------------------------------------------------
+normalized_frequency_1 = 0.1;
+sample_duration_256 = 256;
+time_duration_256 = 0:256;
+sinusoidal_256 = sin(2*pi*normalized_frequency_1*time_duration_256);
+sinusoidal_FFT_256 = fft(sinusoidal_256, sample_duration_256);
+sin_mag_256 = abs(sinusoidal_FFT_256);
+
+sample_duration_1024 = 1024;
+time_duration_1024 = 0:1024;
+sinusoidal_1024 = sin(2*pi*normalized_frequency_1*time_duration_1024);
+sinusoidal_FFT_1024 = fft(sinusoidal_1024, sample_duration_1024);
+sin_mag_1024 = abs(sinusoidal_FFT_1024);
+
+subplot(1,4,1)
+plot(linspace(0, 0.5, length(sin_mag_256)), sin_mag_256)
+title("Magnitude of the frequency response, 256 point")
+xlabel('frequency, f')
+ylabel('|X(f)|')
+
+subplot(1,4,2)
+plot(linspace(0, 0.5, length(sin_mag_1024)), sin_mag_1024)
+title("Magnitude of the frequency response, 256 point")
+xlabel('frequency, f')
+ylabel('|X(f)|')
+
+subplot(1,4,3)
+plot(linspace(0, 0.5, length(sin_mag_256)), sin_mag_256)
+title("Magnitude of the frequency response, 256 point")
+xlabel('frequency, f')
+ylabel('|X(f)|')
+
+subplot(1,4,2)
+plot(linspace(0, 0.5, length(sin_mag_1024)), sin_mag_1024)
+title("Magnitude of the frequency response, 256 point")
+xlabel('frequency, f')
+ylabel('|X(f)|')
+
+%%
 % Problem 2 --------------------------------------------------------------
 
 f1 = 10;
@@ -127,7 +166,6 @@ hamming_signal = s .* hamming(length(s))';
 mag_hamming = abs(fft(hamming_signal,n_datapoints));
 plot(mag_hamming)
 
-
 %%
 % Problem 4 --------------------------------------------------------------
 
@@ -153,7 +191,6 @@ divisor = 3;
 
 quotient = floor(number / divisor);
 remainder = rem(number, divisor);
-
 
 N4 = 2^20;
 fft4 = fft(y5, N4);
