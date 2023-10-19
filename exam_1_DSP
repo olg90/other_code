@@ -159,13 +159,14 @@ A1 = 1;
 A2 = 0.01;
 
 n_datapoints = 256;
-N = 1024; % 512
+N = 512;
+
 n = 0:n_datapoints - 1;
 s = A1*sin(2*pi*f1*n) + A2*sin(2*pi*f2*n);
 
 % Rectangular window
 rect_signal = s .* rectwin(length(s))';
-mag_signal = abs(fft(rect_signal,n_datapoints));
+mag_signal = abs(fft(rect_signal,N));
 subplot(1,2,1)
 plot(mag_signal)
 title('Rectangular')
@@ -176,38 +177,94 @@ mag_hamming = abs(fft(hamming_signal,n_datapoints));
 subplot(1,2,2)
 plot(mag_hamming)
 title('Hamming')
+
 %%
 % Problem 4 --------------------------------------------------------------
 
 'C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat'
 
-% y4 = load('C:\Users\olgud\AppData\Local\Temp\temp3548731014510113201tmp\prob_4_data.mat');
-y4 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
+
+
+y4 = load('C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\DSP\prob_4_data.mat');
+% y4 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
 y4 = y4.y;
+
+subplot(1,2,1)
+plot(y4)
+title('prob 4 data.mat')
 
 N4 = 2^10;
 fft4 = fft(y4, N4);
 abs4 = 20*log10(abs(fft4));
+% abs4 = abs(fft4);
 
+subplot(1,2,2)
 plot(abs4) % Looks like mainlobe at 61 height at 0
 % and medium one at 40 height at 103
+title(['FFT at N = ', num2str(N4)])
 
 %%
 % Problem 5 --------------------------------------------------------------
 
 % y5 = load('C:\Users\olgud\AppData\Local\Temp\temp2774102012541163408tmp\prob_5_data.mat');
-y5 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_5_data.mat');
+y5 = load('C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\DSP\prob_5_data.mat');
 y5 = y5.y; % length 3000 = 2^3*3*5^3
+
+y_len = length(y5) % 3000
 
 % Block averaging
 
-n_blocks = 100
+N = 512;
+n_blocks = 100;
+block_size = y_len / n_blocks; % 30
+
+y_array = zeros(length(block_size));
+for i=1:n_blocks
+    block_i = y5((i-1)*block_size + 1:(i)*block_size);
+    FFT_i = 20*log10(abs(fft(block_i, N)));
+    y_array = FFT_i + y_array;
+end
+
+subplot(1,2,1)
+plot(y5)
+title('Data')
+
+subplot(1,2,2)
+plot(y_array)
+title('Block averaging')
 
 
 
 
-N4 = 2^20;
-fft4 = fft(y5, N4);
-abs4 = 20*log10(abs(fft4));
 
-plot(abs4) % Looks like mainlobe at 61 height and medium one at 40 height
+
+
+
+
+
+% %load the data
+% y=load('prob_5_data.mat');
+% y=y.y;
+% 
+% n_blocks = 10
+% 
+% block_size = 100
+% 
+% N1 = 512;
+% N2 = 256;
+% Yavg = zeros(256,1);
+% for i=1:n_blocks
+%     y1=y(block_size*(i-1)+1:block_size*i);
+%     Y1=fft(y1,N1);
+%     if i==1
+%        Yavg=20*log10(abs(Y1(1:N2)));
+%     else
+%        Yavg=Yavg*(i-1)/i+20*log10(abs(Y1(1:N2)))/i;
+% 
+%     end
+%     figure(i)
+%     plot(Yavg);
+%     title(['Average of ', num2str(i)])
+%     pause(0.001)
+% end
+    
