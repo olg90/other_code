@@ -1,53 +1,49 @@
 % Problem 1 --------------------------------------------------------------
-normalized_frequency_1 = 0.1;
-normalized_frequency_2 = 1/12.8;
 
-% Part 1
+f1 = 0.1;
+f2 = 0.0781;
 
-sample_duration_256 = 256;
-time_duration_256 = 0:256;
-sinusoidal_256_1 = sin(2*pi*normalized_frequency_1*time_duration_256);
-sinusoidal_FFT_256_1 = fft(sinusoidal_256_1, sample_duration_256);
-sin_mag_256_1 = abs(sinusoidal_FFT_256_1);
+N1 = 256;
+N2 = 1024;
 
-sample_duration_1024 = 1024;
-time_duration_1024 = 0:1024;
-sinusoidal_1024_1 = sin(2*pi*normalized_frequency_1*time_duration_1024);
-sinusoidal_FFT_1024_1 = fft(sinusoidal_1024_1, sample_duration_1024);
-sin_mag_1024_1 = abs(sinusoidal_FFT_1024_1);
+n1 = 0:N1;
+n2 = 0:N2;
 
-% Part 2
+s1 = sin(2*pi*f1*n1);
+mag1 = (abs(fft(s1, N1)));
 
-sinusoidal_256_2 = sin(2*pi*normalized_frequency_2*time_duration_256);
-sinusoidal_FFT_256_2 = fft(sinusoidal_256_2, sample_duration_256);
-sin_mag_256_2 = abs(sinusoidal_FFT_256_2);
+s2 = sin(2*pi*f1*n2);
+mag2 = (abs(fft(s2, N2)));
 
-sinusoidal_1024_2 = sin(2*pi*normalized_frequency_2*time_duration_1024);
-sinusoidal_FFT_1024_2 = fft(sinusoidal_1024_2, sample_duration_1024);
-sin_mag_1024_2 = abs(sinusoidal_FFT_1024_2);
+s3 = sin(2*pi*f2*n1);
+mag3 = (abs(fft(s3, N1)));
 
-% Plotting
+s4 = sin(2*pi*f2*n2);
+mag4 = (abs(fft(s4, N2)));
+
+frequency1 = 0:1/N1:0.5-1/N1;
+frequency2 = 0:1/N2:0.5-1/N2;
 
 subplot(2,2,1)
-plot(linspace(0, 0.5, length(sin_mag_256_1)), sin_mag_256_1)
+plot(frequency1, mag1(1:N1/2))
 title("N = 256, f_n = 0.1")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
 subplot(2,2,2)
-plot(linspace(0, 0.5, length(sin_mag_1024_1)), sin_mag_1024_1)
+plot(frequency2, mag2(1:N2/2))
 title("N = 1024, f_n = 0.1")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
 subplot(2,2,3)
-plot(linspace(0, 0.5, length(sin_mag_256_2)), sin_mag_256_2)
+plot(frequency1, mag3(1:N1/2))
 title("N = 256, f_n = 1/12.8")
 xlabel('frequency, f')
 ylabel('|X(f)|')
 
 subplot(2,2,4)
-plot(linspace(0, 0.5, length(sin_mag_1024_2)), sin_mag_1024_2)
+plot(frequency2, mag4(1:N2/2))
 title("N = 1024, f_n = 1/12.8")
 xlabel('frequency, f')
 ylabel('|X(f)|')
@@ -185,21 +181,22 @@ title('Hamming')
 
 
 
-y4 = load('C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\DSP\prob_4_data.mat');
-% y4 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
+% y4 = load('C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\DSP\prob_4_data.mat');
+y4 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
 y4 = y4.y;
 
 subplot(1,2,1)
 plot(y4)
 title('prob 4 data.mat')
-
 N4 = 2^10;
+frequencies = 0:1/N4:0.5-1/N4;
+
 fft4 = fft(y4, N4);
 abs4 = 20*log10(abs(fft4));
 % abs4 = abs(fft4);
 
 subplot(1,2,2)
-plot(abs4) % Looks like mainlobe at 61 height at 0
+plot(frequencies, abs4(1:N4/2)) % Looks like mainlobe at 61 height at 0
 % and medium one at 40 height at 103
 title(['FFT at N = ', num2str(N4)])
 
