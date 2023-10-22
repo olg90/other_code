@@ -82,38 +82,46 @@ mag_512_3 = abs(fft(s3,N3));
 
 figure;
 
+freq1 = 0:1/N1:0.5-1/N1;
+freq2 = 0:1/N2:0.5-1/N2;
+freq3 = 0:1/N3:0.5-1/N3;
+
 subplot(3,2,1)
-plot(mag_64_1)
+plot(freq1, mag_64_1(1:N1/2))
 title('F_s = 100 Hz, data points = 25, N = 64')
 subplot(3,2,2)
-plot(mag_256_1)
+plot(freq2, mag_256_1(1:N2/2))
 title('F_s = 100 Hz, data points = 25, N = 256')
 
 subplot(3,2,3)
-plot(mag_64_2)
+plot(freq1, mag_64_2(1:N1/2))
 title('F_s = 200 Hz, data points = 50, N = 64')
+ylabel("|X(f)|")
 subplot(3,2,4)
-plot(mag_256_2)
+plot(freq2, mag_256_2(1:N2/2))
 title('F_s = 200 Hz, data points = 50, N = 256')
 
 subplot(3,2,5)
-plot(mag_256_3)
+plot(freq2, mag_256_3(1:N2/2))
 title('F_s = 100 Hz, data points = 150, N = 256')
+xlabel("Frequency, f")
+
 subplot(3,2,6)
-plot(mag_512_3)
+plot(freq3, mag_512_3(1:N3/2))
 title('F_s = 100 Hz, data points = 150, N = 512')
+xlabel("Frequency, f")
 
 % Repeat with hamming window
 
 n1 = 0:(n_datapoints_1 - 1);
 s1 = sin(2*pi*f1/Fs1*n1) + sin(2*pi*f2/Fs1*n1);
-s1 = s1 .* hamming(length(s1))'
+s1 = s1 .* hamming(length(s1))';
 mag_64_1 = abs(fft(s1,N1));
 mag_256_1 = abs(fft(s1,N2));
 
 n2 = 0:(n_datapoints_2 - 1);
 s2 = sin(2*pi*f1/Fs2*n2) + sin(2*pi*f2/Fs2*n2);
-s2 = s2 .* hamming(length(s2))'
+s2 = s2 .* hamming(length(s2))';
 mag_64_2 = abs(fft(s2,N1));
 mag_256_2 = abs(fft(s2,N2));
 
@@ -126,25 +134,29 @@ mag_512_3 = abs(fft(s3,N3));
 figure;
 
 subplot(3,2,1)
-plot(mag_64_1)
+plot(freq1, mag_64_1(1:N1/2))
 title('F_s = 100 Hz, data points = 25, N = 64')
 subplot(3,2,2)
-plot(mag_256_1)
+plot(freq2, mag_256_1(1:N2/2))
 title('F_s = 100 Hz, data points = 25, N = 256')
 
 subplot(3,2,3)
-plot(mag_64_2)
+plot(freq1, mag_64_2(1:N1/2))
 title('F_s = 200 Hz, data points = 50, N = 64')
+ylabel("|X(f)|")
 subplot(3,2,4)
-plot(mag_256_2)
+plot(freq2, mag_256_2(1:N2/2))
 title('F_s = 200 Hz, data points = 50, N = 256')
 
 subplot(3,2,5)
-plot(mag_256_3)
+plot(freq2, mag_256_3(1:N2/2))
 title('F_s = 100 Hz, data points = 150, N = 256')
+xlabel("Frequency, f")
+
 subplot(3,2,6)
-plot(mag_512_3)
+plot(freq3, mag_512_3(1:N3/2))
 title('F_s = 100 Hz, data points = 150, N = 512')
+xlabel("Frequency, f")
 
 %%
 % Problem 3 --------------------------------------------------------------
@@ -156,6 +168,7 @@ A2 = 0.01;
 
 n_datapoints = 256;
 N = 512;
+frequency = 0:1/N:0.5-1/N;
 
 n = 0:n_datapoints - 1;
 s = A1*sin(2*pi*f1*n) + A2*sin(2*pi*f2*n);
@@ -164,25 +177,21 @@ s = A1*sin(2*pi*f1*n) + A2*sin(2*pi*f2*n);
 rect_signal = s .* rectwin(length(s))';
 mag_signal = abs(fft(rect_signal,N));
 subplot(1,2,1)
-plot(mag_signal(1:N/2))
+plot(frequency, mag_signal(1:N/2))
 title('Rectangular')
 xlabel('Frequency, f')
 ylabel('X(f)')
 
 % Hamming window
 hamming_signal = s .* hamming(length(s))';
-mag_hamming = abs(fft(hamming_signal,n_datapoints));
+mag_hamming = abs(fft(hamming_signal,N));
 subplot(1,2,2)
-plot(mag_hamming(1:n_datapoints/2))
+plot(frequency, mag_hamming(1:N/2))
 title('Hamming')
 xlabel('Frequency, f')
 
 %%
 % Problem 4 --------------------------------------------------------------
-
-'C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat'
-
-
 
 % y4 = load('C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\DSP\prob_4_data.mat');
 y4 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
@@ -227,6 +236,7 @@ for i=2:length(locations)
     
 end
 
+zero_amp = peaks(1)/N;
 real_frequency = freqs(2)/N;
 
 % Repeat the peak calculations to find the location of the peak in the
@@ -250,6 +260,10 @@ end
 %
 
 title('Problem 4')
+
+plot(0, abs4log(1), 'ro')
+text(0, abs4log(1) + 3, sprintf('(frequency = %.3f, amplitude = %.2f)', 0, zero_amp));
+
 plot(freqs(1), freqs(2), 'ro')
 text(freqs(1), freqs(2)+3, sprintf('(freq. = %.3f, ampl. = %.2f)', freqs(1), real_frequency))
 xlabel("Frequency, f")
@@ -296,6 +310,7 @@ for i=2:length(locations)
     prev_peak = peaks(i);
 end
 
+zero_amp = peaks(1)/N;
 real_frequency = freqs(2)/N;
 
 % Repeat the peak calculations to find the location of the peak in the
@@ -314,6 +329,8 @@ end
 %
 
 title('Problem 5')
+plot(0, Yavg_dB(1), 'ro')
+text(0, Yavg_dB(1) + 3, sprintf('(frequency = %.3f, amplitude = %.2f)', 0, zero_amp));
 plot(freqs(1), freqs(2), 'ro')
 text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f)', freqs(1), real_frequency))
 ylabel('|X(f)|')
