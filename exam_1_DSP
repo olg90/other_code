@@ -166,6 +166,8 @@ mag_signal = abs(fft(rect_signal,N));
 subplot(1,2,1)
 plot(mag_signal(1:N/2))
 title('Rectangular')
+xlabel('Frequency, f')
+ylabel('X(f)')
 
 % Hamming window
 hamming_signal = s .* hamming(length(s))';
@@ -173,6 +175,7 @@ mag_hamming = abs(fft(hamming_signal,n_datapoints));
 subplot(1,2,2)
 plot(mag_hamming(1:n_datapoints/2))
 title('Hamming')
+xlabel('Frequency, f')
 
 %%
 % Problem 4 --------------------------------------------------------------
@@ -188,17 +191,69 @@ y4 = y4.y;
 subplot(1,2,1)
 plot(y4)
 title('prob 4 data.mat')
-N4 = 2^10;
-frequencies = 0:1/N4:0.5-1/N4;
+N = length(y4);
+frequencies = 0:1/N:0.5-1/N;
 
-fft4 = fft(y4, N4);
-abs4 = 20*log10(abs(fft4));
-% abs4 = abs(fft4);
+fft4 = fft(y4, N);
+abs4 = abs(fft4);
+abs4 = abs4(1:N/2)
+abs4log = 20*log10(abs4);
+
+%%%%%%%%%%%%%
+
+[peaks, locations] = findpeaks(abs4);
+freqs = [];
+prev_peak = peaks(1);
+for i=2:length(locations)
+    if peaks(i) > prev_peak
+        disp(i)
+        freqs = [freqs; [frequencies(locations(i)), peaks(i)]];
+        disp(i)
+    end
+    prev_peak = peaks(i);
+    
+    if length(freqs) == 0
+        freqs = [frequencies(locations(1)), peaks(1)]
+    end
+    
+end
+
+real_frequency = freqs(2)/N;
+
+% Repeat the peak calculations to find the location of the peak in the
+% 20log10 dB scale for plotting
+[peaks, locations] = findpeaks(abs4log);
+freqs = [];
+prev_peak = peaks(1);
+for i=2:length(locations)
+    if peaks(i) > prev_peak
+        disp(peaks(i))
+        disp(prev_peak)
+        freqs = [freqs; [frequencies(locations(i)), peaks(i)]];
+    end
+    prev_peak = peaks(i);
+    
+    if length(freqs) == 0
+        freqs = [frequencies(locations(1)), peaks(1)]
+    end
+    
+end
+%
+
+title('Problem 4')
+plot(freqs(1), freqs(2), 'ro')
+text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f dB)', freqs(1), real_frequency))
+ylabel('|X(f)|')
+xlabel("Frequency, f")
+
+%%%%%%%%%%%%%
 
 subplot(1,2,2)
-plot(frequencies, abs4(1:N4/2)) % Looks like mainlobe at 61 height at 0
+plot(frequencies, abs4(1:N/2)) % Looks like mainlobe at 61 height at 0
+title(['FFT at N = ', num2str(N)])
+hold on
 % and medium one at 40 height at 103
-title(['FFT at N = ', num2str(N4)])
+plot(frequencies(locations), peaks, 'bo')
 
 %%
 % Problem 5 --------------------------------------------------------------
