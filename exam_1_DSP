@@ -191,13 +191,22 @@ y4 = y4.y;
 subplot(1,2,1)
 plot(y4)
 title('prob 4 data.mat')
+xlabel('n')
+ylabel('x(n)')
 N = length(y4);
 frequencies = 0:1/N:0.5-1/N;
 
 fft4 = fft(y4, N);
 abs4 = abs(fft4);
-abs4 = abs4(1:N/2)
+abs4 = abs4(1:N/2);
 abs4log = 20*log10(abs4);
+
+subplot(1,2,2)
+plot(frequencies, abs4log(1:N/2)) % Looks like mainlobe at 61 height at 0
+ylabel('|X(f)|')
+xlabel("Frequency, f")
+title(['FFT at N = ', num2str(N)])
+hold on
 
 %%%%%%%%%%%%%
 
@@ -242,18 +251,9 @@ end
 
 title('Problem 4')
 plot(freqs(1), freqs(2), 'ro')
-text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f dB)', freqs(1), real_frequency))
-ylabel('|X(f)|')
+text(freqs(1), freqs(2)+3, sprintf('(freq. = %.3f, ampl. = %.2f)', freqs(1), real_frequency))
 xlabel("Frequency, f")
 
-%%%%%%%%%%%%%
-
-subplot(1,2,2)
-plot(frequencies, abs4(1:N/2)) % Looks like mainlobe at 61 height at 0
-title(['FFT at N = ', num2str(N)])
-hold on
-% and medium one at 40 height at 103
-plot(frequencies(locations), peaks, 'bo')
 
 %%
 % Problem 5 --------------------------------------------------------------
@@ -315,6 +315,6 @@ end
 
 title('Problem 5')
 plot(freqs(1), freqs(2), 'ro')
-text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f dB)', freqs(1), real_frequency))
+text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f)', freqs(1), real_frequency))
 ylabel('|X(f)|')
 xlabel("Frequency, f")
