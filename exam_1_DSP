@@ -206,8 +206,9 @@ y5 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
 y5 = y5.y; % length 200, 2^3*3*5^2
 len_y = length(y5);
 
-N = 2^12;
-Yavg = zeros(N, 1);
+N = len_y;
+Yavg = zeros(N,1);
+Yavg_dB = zeros(N,1);
 f = 0:1/N:0.5-1/N; % 0 to 1/2 show you the positive frequencies, above to 1 shows you the negative frequencies
 
 block_size = 100;
@@ -217,17 +218,18 @@ for i=1:n_blocks
     Y1 = fft(y1, N); % Adding 412 zeros to signal
     % Computing the average recursively
     if i == 1
-        Yavg=20*log10(abs(Y1(1:N/2)));
+        Yavg=(abs(Y1(1:N/2)));
+        Yavg_dB=20*log10(Yavg);
     else
-        Yavg=Yavg*(i-1)/i+20*log10(abs(Y1(1:N/2)))/i;
+        Yavg=Yavg*(i-1)/i+(abs(Y1(1:N/2)))/i;
+        Yavg_dB=20*log10(abs(Yavg_dB))*(i-1)/i+20*log10(abs(Y1(1:N/2)))/i;
     end
 end
-plot(f, Yavg)
+
+plot(f, Yavg_dB)
 hold on
 
-freq = 0;
 [peaks, locations] = findpeaks(Yavg);
-
 freqs = [];
 prev_peak = peaks(1);
 for i=2:length(locations)
@@ -239,8 +241,25 @@ for i=2:length(locations)
     prev_peak = peaks(i);
 end
 
+real_frequency = freqs(2)/N;
 
+% Repeat the peak calculations to find the location of the peak in the
+% 20log10 dB scale for plotting
+[peaks, locations] = findpeaks(Yavg_dB);
+freqs = [];
+prev_peak = peaks(1);
+for i=2:length(locations)
+    if peaks(i) > prev_peak
+        disp(peaks(i))
+        disp(prev_peak)
+        freqs = [freqs; [f(locations(i)), peaks(i)]];
+    end
+    prev_peak = peaks(i);
+end
+%
+
+title('Problem 5')
 plot(freqs(1), freqs(2), 'ro')
-text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f dB)', freqs(1), freqs(2)))
+text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f dB)', freqs(1), real_frequency))
 ylabel('|X(f)|')
 xlabel("Frequency, f")
