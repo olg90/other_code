@@ -275,6 +275,8 @@ y5 = load('C:\Users\olive\OneDrive\Desktop\PhD\2-Classes\DSP\prob_4_data.mat');
 y5 = y5.y; % length 200, 2^3*3*5^2
 len_y = length(y5);
 
+y5 = detrend(y5);
+
 N = len_y;
 Yavg = zeros(N,1);
 Yavg_dB = zeros(N,1);
