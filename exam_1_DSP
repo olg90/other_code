@@ -362,9 +362,9 @@ end
 
 title('Problem 5')
 plot(0, Yavg_dB(1), 'ro')
-text(0, Yavg_dB(1) + 3, sprintf('(frequency = %.3f, amplitude = %.2f)', 0, zero_amp));
-plot(freqs(1), freqs(2), 'ro')
-text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f)', freqs(1), real_frequency))
+% text(0, Yavg_dB(1) + 3, sprintf('(frequency = %.3f, amplitude = %.2f)', 0, zero_amp));
+% plot(freqs(1), freqs(2), 'ro')
+% text(freqs(1), freqs(2)+3, sprintf('(frequency = %.3f, amplitude = %.2f)', freqs(1), real_frequency))
 ylabel('|X(f)|')
 xlabel("Frequency, f")
 hold off
