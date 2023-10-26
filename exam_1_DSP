@@ -260,13 +260,14 @@ y = load('C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\DSP\prob_5_data.mat');
 y = y.y; % length 200, 2^3*3*5^2
 len_y = length(y);
 y = detrend(y);
-plot(y)
 
 beta = 6;
 window_length = len_y;
 window = kaiser(window_length, beta);
 % window = hamming(window_length);
 y = y.* window';
+
+plot(y)
 
 N = 2^25;
 Yavg = zeros(N,1);
