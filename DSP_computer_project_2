@@ -1,1 +1,73 @@
+%% CP 10.8
+
+% Filter specifications
+Fs = 1;  % Sampling frequency
+wp = [0.35*pi, 0.65*pi];  % Passband edge frequencies
+ws = [0.2*pi, 0.8*pi];    % Stopband edge frequencies
+rp = 0.1;  % Passband ripple in dB
+rs = 40;   % Stopband attenuation in dB
+
+% Filter length
+N = 100;
+
+% Design filter using Kaiser window
+[kaiser_N, beta] = kaiserord([wp(1), wp(2)]/(2*pi), [1, 0], [10^(-rp/20), 10^(-rs/20)], Fs);
+h_kaiser = fir1(kaiser_N, [wp(1)/pi, wp(2)/pi], 'bandpass', kaiser(kaiser_N+1, beta), 'noscale');
+
+% Design filter using Blackman window
+h_blackman = fir1(N-1, [wp(1)/pi, wp(2)/pi], 'bandpass', blackman(N), 'noscale');
+
+% Plot impulse response for Kaiser window
+stem(h_kaiser);
+title('Kaiser Window - Impulse Response');
+xlabel('Sample');
+ylabel('Amplitude');
+
+% Plot frequency response for Kaiser window
+subplot(2, 2, 2);
+freqz(h_kaiser, 1, 1024, Fs);
+title('Kaiser Window - Frequency Response');
+
+% Plot impulse response for Blackman window
+subplot(2, 2, 3);
+stem(h_blackman);
+title('Blackman Window - Impulse Response');
+xlabel('Sample');
+ylabel('Amplitude');
+
+% Plot frequency response for Blackman window
+subplot(2, 2, 4);
+freqz(h_blackman, 1, 1024, Fs);
+title('Blackman Window - Frequency Response');
+
+%% CP 10.10
+
+% Filter specifications
+wp = 0.75*pi;       % Passband edge frequency
+ws = 0.6*pi;        % Stopband frequency
+rp = 0.5;           % Passband ripple in dB
+rs = 50;            % Stopband attenuation in dB
+
+% Normalized frequencies
+wp = wp/pi;
+ws = ws/pi;
+
+% Filter order
+N = 50;
+
+% Design filter using Remez algorithm with a small transition band
+delta = 0.05;  % Small transition band
+b = remez(N, [0, (ws-delta), ws, wp, (wp+delta), 1], [0, 0, 1, 1, 0, 0]);
+
+% Plot impulse response
+figure;
+stem(b);
+title('Remez Algorithm - Impulse Response');
+xlabel('Sample');
+ylabel('Amplitude');
+
+% Plot frequency response
+freqz(b, 1, 1024, 1);
+title('Remez Algorithm - Frequency Response');
+
 
