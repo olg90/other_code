@@ -1,32 +1,35 @@
 %% CP 10.8
-
 clear
 close all
 clc
 
-Fs = 10;
-F = [0.2*pi, 0.35*pi, 0.65*pi, 0.8*pi];
+% Set up all the parameters for the filter
+Fs = 1;
+F = [0.2*pi, 0.35*pi, 0.65*pi, 0.8*pi]/2/pi;
 A = [0, 1, 0];
 ripple = 0.5;
 attenuation = 10^(-50/20);
 DEV = [attenuation ripple, attenuation];
 [N,Wn,beta,filtype] = kaiserord(F,A,DEV,Fs);
 
+% Get the kaiser FIR response
 frequency_response_kaiser = fir1(N,Wn,filtype,kaiser(N+1, beta));
 [H,w] = freqz(frequency_response_kaiser);
 f=w*Fs/(2*pi);
+
+% Plot the kaiser FIR
 subplot(2,2,1)
 plot(f, 20*log10(abs(H)));
 title("Kaiser");
 xlabel('Frequency, (Hz)')
 ylabel('Magnitude, (dB)')
-xline(0.2*pi,'r--')
-xline(0.35*pi,'r--')
-xline(0.65*pi,'r--')
-xline(0.8*pi,'r--')
+xline(0.2*pi/2/pi,'r--')
+xline(0.35*pi/2/pi,'r--')
+xline(0.65*pi/2/pi,'r--')
+xline(0.8*pi/2/pi,'r--')
 subplot(2,2,2)
 stem(frequency_response_kaiser)
-title("Kaiser");
+title("Kaiser frequency response");
 xlabel('n')
 ylabel('h(n)')
 
@@ -38,48 +41,48 @@ plot(f, 20*log10(abs(H)));
 title("Blackman");
 xlabel('Frequency, (Hz)')
 ylabel('Magnitude, (dB)')
-xline(0.2*pi,'r--')
-xline(0.35*pi,'r--')
-xline(0.65*pi,'r--')
-xline(0.8*pi,'r--')
+xline(0.2*pi/2/pi,'r--')
+xline(0.35*pi/2/pi,'r--')
+xline(0.65*pi/2/pi,'r--')
+xline(0.8*pi/2/pi,'r--')
 subplot(2,2,4)
 stem(frequency_response_blackman)
-title("Blackman");
+title("Blackman frequency response");
 xlabel('n')
 ylabel('h(n)')
 
 %% CP 10.10
 
-% Filter specifications
-f_passband = 0.75*pi;       % Passband edge frequency
-f_stopband = 0.6*pi;        % Stopband frequency
-ripple_passband = 0.5;           % Passband ripple in dB
-ripple_stopband = 50;            % Stopband attenuation in dB
-Fs = 1000;
+clear
+close all
+clc
 
-% Normalized frequencies
-f_passband = f_passband/pi;
-f_stopband = f_stopband/pi;
-
-% Filter order
-N = 50;
-
-% Design filter using Remez algorithm with a small transition band
-delta = 0.05;  % Small transition band
-b = remez(N, [0, (f_stopband-delta), f_stopband, f_passband, (f_passband+delta), 1], [0, 0, 1, 1, 0, 0]);
+% Set up parameters
+w_passband = 0.75*pi;
+w_stopband = 0.6*pi;
+passband_ripple = 0.5;
+stopband_attenuation = 10^(-50/20);
+Fs = 1;
+F = [w_stopband, w_passband]/2/pi;
+A = [0, 1];
+dev = [passband_ripple, stopband_attenuation]; % ---------- Not sure how to use this
+N = 25;
+b = firpm(N, F, A, 'h');
 
 % Plot impulse response
-figure;
+subplot(1,2,1)
 stem(b);
 title('Remez Algorithm - Impulse Response');
-xlabel('Sample');
-ylabel('Amplitude');
+xlabel('n');
+ylabel('h(n)');
 
 % Plot frequency response
-freqz(b, 1, 1024, 1);
+[H,w] = freqz(b);
+subplot(1,2,2)
+f=w*Fs/(2*pi);
+plot(f, 20*log10(abs(H)))
+xline(F(1), 'r--')
+xline(F(2), 'r--')
+xlabel("Frequency, Hz")
+ylabel('Magnitude')
 title('Remez Algorithm - Frequency Response');
-
-
-[n,fo,mo,w] = remezord( [f_stopband f_passband]/(2*pi), [0, 1], [ripple_passband, ripple_stopband], Fs);
-b = remez(n,fo,mo,w)
-
