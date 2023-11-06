@@ -34,7 +34,10 @@ xlabel('n')
 ylabel('h(n)')
 
 % Blackman window
-frequency_response_blackman = fir1(N,Wn,filtype,blackman(N+1));
+
+transition_width = F(3) - F(2);
+N = ceil(4 / transition_width);
+frequency_response_blackman = fir1(N,[F(2), F(3)],blackman(N+1));
 [H,w] = freqz(frequency_response_blackman);
 subplot(2,2,3)
 plot(f, 20*log10(abs(H)));
