@@ -6,10 +6,10 @@ clc
 % Set up all the parameters for the filter
 Fs = 1;
 F = [0.2*pi, 0.35*pi, 0.65*pi, 0.8*pi]/2/pi;
-A = [0, 1, 0];
+A = [0, 1, 0]; % From 0 to 0.2pi is 0, from % o.35pi to 0.65 pi is 1, from 0.8pi to Fs/2 is 0.
 ripple = 0.25;
 attenuation = 10^(-50/20);
-DEV = [attenuation ripple, attenuation];
+DEV = [attenuation, ripple, attenuation]; % Attenuation from 0-.2, ripple from 0.35-0.65, atten on last.
 [N,Wn,beta,filtype] = kaiserord(F,A,DEV,Fs);
 
 % Get the kaiser FIR response
@@ -64,9 +64,9 @@ passband_ripple = 0.5;
 stopband_attenuation = 10^(-50/20);
 
 Fs = 1;
-F = [w_stopband, w_passband]/2/pi;
+F = [w_stopband, w_passband]/2/pi; % Normalize frequency between 0 and 1
 A = [0, 1];
-DEV = [passband_ripple, stopband_attenuation];
+DEV = [stopband_attenuation, passband_ripple];
 
 [N,Fo,Ao,W] = firpmord(F,A,DEV,Fs);
 b = firpm(N,Fo,Ao,W);
