@@ -7,7 +7,7 @@ clc
 Fs = 1;
 F = [0.2*pi, 0.35*pi, 0.65*pi, 0.8*pi]/2/pi;
 A = [0, 1, 0];
-ripple = 0.5;
+ripple = 0.25;
 attenuation = 10^(-50/20);
 DEV = [attenuation ripple, attenuation];
 [N,Wn,beta,filtype] = kaiserord(F,A,DEV,Fs);
@@ -62,12 +62,14 @@ w_passband = 0.75*pi;
 w_stopband = 0.6*pi;
 passband_ripple = 0.5;
 stopband_attenuation = 10^(-50/20);
+
 Fs = 1;
 F = [w_stopband, w_passband]/2/pi;
 A = [0, 1];
-dev = [passband_ripple, stopband_attenuation]; % ---------- Not sure how to use this
-N = 25;
-b = firpm(N, F, A, 'h');
+DEV = [passband_ripple, stopband_attenuation];
+
+[N,Fo,Ao,W] = firpmord(F,A,DEV,Fs);
+b = firpm(N,Fo,Ao,W);
 
 % Plot impulse response
 subplot(1,2,1)
