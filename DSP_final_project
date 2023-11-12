@@ -1,1 +1,88 @@
 
+% load data
+clear all;
+close all;
+clc;
+
+dp = load('poulami_ecg.mat');
+do = load('oliver_ecg.mat');
+dp = dp.PC; % Extract from cell
+do = do.olg;
+%%
+
+% add noise to data
+
+% std = 0.1;
+% stdo = std;
+% stdp = std;
+
+stdo = 0.01;
+stdp = 0.1;
+no = normrnd(0,stdo,[length(do),1]);
+np = normrnd(0,stdp,[length(dp),1]);
+dpn = dp + np;
+don = do + no;
+
+% plotting information
+nmax = 68; % This is the maximum number of seconds plottable
+nsec = 10; % SET THIS TO SOMETHING UP TO NMAX
+Fs = 1000; % Increments of 1000 since sample rate is 1000 samples / second, FIXED.
+
+% plotting setup
+prange = Fs*nsec; % Plotting range
+trange = linspace(0, nsec, prange); % Time range for plotting
+onplot = don(1:prange);
+pnplot = dpn(1:prange);
+
+% Plot data
+subplot(2,2,1)
+plot(trange, onplot , 'r-')
+title(sprintf('Oliver ECG, noise STD = %.2f', stdo));
+ylabel('Signal')
+xlabel('Time, (Seconds)')
+xlim([0, nsec])
+subplot(2,2,3)
+plot(trange, pnplot , 'b-')
+ylabel('Signal')
+title(sprintf('Poulami ECG, noise STD = %.2f', stdp));
+xlabel('Time, (Seconds)')
+xlim([0, nsec])
+
+% take the fft's
+Nfft = 2^10; % 1024 = 2^10
+ffto = fft(onplot, Nfft);
+fftp = fft(pnplot, Nfft);
+mago = abs(ffto);
+magp = abs(fftp);
+logo = 20*log10(mago);
+logp = 20*log10(magp);
+
+subplot(2,2,2)
+frequencies = linspace(0, 0.5, length(mago)/2);
+plot(frequencies, logo(1:length(mago)/2))
+title('Oliver magnitude spectrum')
+ylabel('Magnitude')
+xlabel('Frequency, f')
+
+xlim([0, 0.5])
+
+subplot(2,2,4)
+plot(frequencies, logp(1:length(magp)/2))
+title('Poulami magnitude spectrum')
+ylabel('Magnitude')
+xlabel('Frequency, f')
+xlim([0, 0.5])
+
+
+% IDEA: Maybe increase STDEV and plot correctly-identified-peaks vs STDEV.
+% Maybe try different types of noise line linear noise or additional
+% sinusoidal noise that could be present because of medical equipment being
+% picked up nearby by the machinery.  Maybe add multiple kinds of noise and
+% combinations and see how the algorithm fairs.  Maybe see under what
+% conditions and under what types of noise the algorithm still works.
+% Maybe for fast sinusoidal noise the frequency of the noise will have an
+% effect on how accurately the algorithm will work.  Maybe see under what
+% conditions the noise fails as in what types of noise will this be
+% ineffective to detect the R peaks.
+
+
