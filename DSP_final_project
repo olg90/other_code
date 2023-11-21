@@ -115,9 +115,10 @@ band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
 [peakso, loco] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
 [peaksp, locp] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
 
-stdmin = 0.1; % min = 0            
-stdmax = 0.1;
+stdmin = 0.01; % min = 0            
+stdmax = 0.01;
 nstds = 1;
+
 for std = linspace(stdmin, stdmax, nstds)
     no = normrnd(0,std,[length(do),1]);
     np = normrnd(0,std,[length(dp),1]);
@@ -130,4 +131,12 @@ for std = linspace(stdmin, stdmax, nstds)
     [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
 end
 
+subplot(1,2,1)
+plot(do)
+hold on
+plot(loco, peakso, 'o')
 
+subplot(1,2,2)
+plot(ddodir)
+hold on
+plot(locor, peaksor, 'o')
