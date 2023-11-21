@@ -103,3 +103,31 @@ xlabel('Frequency, f')
 % effect on how accurately the algorithm will work.  Maybe see under what
 % conditions the noise fails as in what types of noise will this be
 % ineffective to detect the R peaks.
+
+%%
+
+% de-noise the data with a highpass FIR filter
+low_cutoff = 0.5/(0.5*1000);
+high_cutoff = 50/(0.5*1000); 
+filter_order = 100;
+band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
+
+[peakso, loco] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
+[peaksp, locp] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
+
+stdmin = 0.1; % min = 0            
+stdmax = 0.1;
+nstds = 1;
+for std = linspace(stdmin, stdmax, nstds)
+    no = normrnd(0,std,[length(do),1]);
+    np = normrnd(0,std,[length(dp),1]);
+    dpn = dp + np;
+    don = do + no;
+    ddpdir = filter(band_pass_filter, 1, dpn);
+    ddodir = filter(band_pass_filter, 1, don);
+    
+    [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
+    [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
+end
+
+
