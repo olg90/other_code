@@ -1,4 +1,3 @@
-
 % load data
 clear all;
 close all;
@@ -22,6 +21,14 @@ no = normrnd(0,stdo,[length(do),1]);
 np = normrnd(0,stdp,[length(dp),1]);
 dpn = dp + np;
 don = do + no;
+
+% de-noise the data with FIR filter design
+low_cutoff = 0.5/(0.5*1000);
+high_cutoff = 50/(0.5*1000); 
+filter_order = 100;
+band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
+ddp = filter(band_pass_filter, 1, dpn);
+ddo = filter(band_pass_filter, 1, don);
 
 % plotting information
 nmax = 68; % This is the maximum number of seconds plottable
@@ -57,21 +64,33 @@ magp = abs(fftp);
 logo = 20*log10(mago);
 logp = 20*log10(magp);
 
+% subplot(2,2,2)
+% frequencies = linspace(0, 0.5, length(mago)/2);
+% plot(frequencies, ddo)
+% title('Oliver magnitude spectrum')
+% ylabel('Magnitude')
+% xlabel('Frequency, f')
+% 
+% xlim([0, 0.5])
+% 
+% subplot(2,2,4)
+% plot(frequencies, logp(1:length(magp)/2))
+% title('Poulami magnitude spectrum')
+% ylabel('Magnitude')
+% xlabel('Frequency, f')
+% xlim([0, 0.5])
+
 subplot(2,2,2)
-frequencies = linspace(0, 0.5, length(mago)/2);
-plot(frequencies, logo(1:length(mago)/2))
-title('Oliver magnitude spectrum')
+plot(ddo(1:prange))
+title('Oliver FIR')
 ylabel('Magnitude')
 xlabel('Frequency, f')
-
-xlim([0, 0.5])
 
 subplot(2,2,4)
-plot(frequencies, logp(1:length(magp)/2))
-title('Poulami magnitude spectrum')
+plot(ddp(1:prange))
+title('Poulami FIR')
 ylabel('Magnitude')
 xlabel('Frequency, f')
-xlim([0, 0.5])
 
 
 % IDEA: Maybe increase STDEV and plot correctly-identified-peaks vs STDEV.
@@ -84,5 +103,3 @@ xlim([0, 0.5])
 % effect on how accurately the algorithm will work.  Maybe see under what
 % conditions the noise fails as in what types of noise will this be
 % ineffective to detect the R peaks.
-
-
