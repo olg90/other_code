@@ -126,7 +126,7 @@ stdarray = linspace(stdmin, stdmax, nstds);
 ocors = [];
 pcors = [];
 
-nsums = 20;
+nsums = 100;
 for i = 1:nsums
     disp(i)
     [ocormat, pcormat] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
@@ -139,8 +139,14 @@ pcormatavg = mean(pcors, 1);
 
 subplot(1,2,1)
 plot(stdarray, ocormatavg)
+xlabel('Noise, (std)')
+ylabel('% peaks correctly identified')
+title('Oliver ECG, FIR')
 subplot(1,2,2)
 plot(stdarray, pcormatavg)
+xlabel('Noise, (std)')
+ylabel('% peaks correctly identified')
+title('Poulami ECG, FIR')
 
 function [ocormat, pcormat] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
     ocormat = [];
