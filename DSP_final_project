@@ -16,7 +16,7 @@ do = do.olg;
 % stdp = std;
 
 stdo = 0.01;
-stdp = 0.1;
+stdp = 10000;
 no = normrnd(0,stdo,[length(do),1]);
 np = normrnd(0,stdp,[length(dp),1]);
 dpn = dp + np;
@@ -113,30 +113,90 @@ filter_order = 100;
 band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
 
 [peakso, loco] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
-[peaksp, locp] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
+[peaksp, locp] = findpeaks(dp, 'MinPeakHeight', 0.6*max(dp), 'MinPeakDistance', 0.6*Fs);
 
-stdmin = 0.01; % min = 0            
-stdmax = 0.01;
-nstds = 1;
+stdmin = 0; % min = 0            
+stdmax = 4;
+nstds = 1000;
+toleranceo = 1;
+tolerancep = 1;
 
-for std = linspace(stdmin, stdmax, nstds)
-    no = normrnd(0,std,[length(do),1]);
-    np = normrnd(0,std,[length(dp),1]);
-    dpn = dp + np;
-    don = do + no;
-    ddpdir = filter(band_pass_filter, 1, dpn);
-    ddodir = filter(band_pass_filter, 1, don);
-    
-    [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
-    [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
+stdarray = linspace(stdmin, stdmax, nstds);
+
+ocors = [];
+pcors = [];
+
+nsums = 20;
+for i = 1:nsums
+    disp(i)
+    [ocormat, pcormat] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
+    ocors = [ocors; ocormat];
+    pcors = [pcors; pcormat];
 end
 
-subplot(1,2,1)
-plot(do)
-hold on
-plot(loco, peakso, 'o')
+ocormatavg = mean(ocors, 1);
+pcormatavg = mean(pcors, 1);
 
+subplot(1,2,1)
+plot(stdarray, ocormatavg)
 subplot(1,2,2)
-plot(ddodir)
-hold on
-plot(locor, peaksor, 'o')
+plot(stdarray, pcormatavg)
+
+function [ocormat, pcormat] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
+    ocormat = [];
+    pcormat = [];
+    for std = stdarray
+        no = normrnd(0,std,[length(do),1]);
+        np = normrnd(0,std,[length(dp),1]);
+        dpn = dp + np;
+        don = do + no;
+        
+        low_cutoff = 0.5/(0.5*1000);
+        high_cutoff = 50/(0.5*1000); 
+        filter_order = 100;
+        band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
+        
+        ddpdir = filter(band_pass_filter, 1, dpn);
+        ddodir = filter(band_pass_filter, 1, don);
+
+        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
+        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
+
+        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
+        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
+
+        percoroi = correcto / length(loco);
+        percorpi = correctp / length(locp);
+
+        ocormat = [ocormat, percoroi];
+        pcormat = [pcormat, percorpi];
+
+    end
+end
+
+function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
+
+    correcto = 0;
+    
+    % o
+    for i = 1:length(peaksor)
+        po = peaksor(i);
+        lo = locor(i);
+        
+        dfo = abs(lo - loco);
+        
+        [disto, indo] = min(dfo);
+        
+        clo = loco(indo);
+        
+        clpo = peakso(indo);
+        
+        normo = sqrt((clpo - po)^2 + ((lo - clo)/Fs)^2);
+        
+        if normo < toleranceo
+            correcto = correcto + 1;
+        end
+    end
+    
+    outputs = correcto;
+end
