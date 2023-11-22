@@ -116,17 +116,19 @@ band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
 [peaksp, locp] = findpeaks(dp, 'MinPeakHeight', 0.6*max(dp), 'MinPeakDistance', 0.6*Fs);
 
 stdmin = 0; % min = 0            
-stdmax = 4;
+stdmax = 2;
 nstds = 1000;
-toleranceo = 1;
-tolerancep = 1;
+
+tolerance = 0.25;
+toleranceo = tolerance;
+tolerancep = tolerance;
 
 stdarray = linspace(stdmin, stdmax, nstds);
 
 ocors = [];
 pcors = [];
 
-nsums = 100;
+nsums = 10;
 for i = 1:nsums
     disp(i)
     [ocormat, pcormat] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
@@ -180,29 +182,29 @@ function [ocormat, pcormat] = get_corrects(do, dp, peakso, loco, peaksp, locp, s
     end
 end
 
-function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
+function outputs = get_correct(peaksr, locr, loc, peaks, Fs, tolerance)
 
-    correcto = 0;
+    correct = 0;
     
     % o
-    for i = 1:length(peaksor)
-        po = peaksor(i);
-        lo = locor(i);
+    for i = 1:length(peaksr)
+        p = peaksr(i);
+        L = locr(i);
         
-        dfo = abs(lo - loco);
+        df = abs(L - loc);
         
-        [disto, indo] = min(dfo);
+        [dist, ind] = min(df);
         
-        clo = loco(indo);
+        cl = loc(ind);
         
-        clpo = peakso(indo);
+        clp = peaks(ind);
         
-        normo = sqrt((clpo - po)^2 + ((lo - clo)/Fs)^2);
+        norm = sqrt((clp - p)^2 + ((L - cl)/Fs)^2);
         
-        if normo < toleranceo
-            correcto = correcto + 1;
+        if norm < tolerance
+            correct = correct + 1;
         end
     end
     
-    outputs = correcto;
+    outputs = correct;
 end
