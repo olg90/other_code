@@ -125,47 +125,55 @@ tolerancep = tolerance;
 
 stdarray = linspace(stdmin, stdmax, nstds);
 
-ocorsdir = [];
-pcorsdir = [];
-ocorswav = [];
-pcorswav = [];
+ocors = [];
+pcors = [];
+ocorsw = [];
+pcorsw = [];
 
 nsums = 10;
+
+% Wavelet
 for i = 1:nsums
     disp(i)
-    [ocormatdir, pcormatdir,ocormatwav, pcormatwav] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
-    ocorsdir = [ocorsdir; ocormatdir];
-    pcorsdir = [pcorsdir; pcormatdir];
-    ocorswav = [ocorswav; ocormatwav];
-    pcorswav = [pcorswav; pcormatwav];
+    [ocormatw, pcormatw] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
+    ocorsw = [ocorsw; ocormatw];
+    pcorsw = [pcorsw; pcormatw];
 end
 
-ocormatavgdir = mean(ocorsdir, 1);
-pcormatavgdir = mean(pcorsdir, 1);
-ocormatavgwav = mean(ocorswav, 1);
-pcormatavgwav = mean(pcorswav, 1);
+% FIR
+for i = 1:nsums
+    disp(i)
+    [ocormat, pcormat] = get_corrects_fir(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
+    ocors = [ocors; ocormat];
+    pcors = [pcors; pcormat];
+end
+
+
+
+
+ocormatavg = mean(ocors, 1);
+pcormatavg = mean(pcors, 1);
+ocormatavgw = mean(ocorsw, 1);
+pcormatavgw = mean(pcorsw, 1);
 
 subplot(1,2,1)
-plot(stdarray, ocormatavgdir, 'r')
+plot(stdarray, ocormatavg)
 hold on
-plot(stdarray, ocormatavgwav, 'b')
+plot(stdarray, ocormatavgw)
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
 title('Oliver ECG, FIR')
-
 subplot(1,2,2)
-plot(stdarray, pcormatavgdir, 'r')
+plot(stdarray, pcormatavg)
 hold on
-plot(stdarray, pcormatavgwav, 'b')
+plot(stdarray, pcormatavgw)
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
 title('Poulami ECG, FIR')
 
-function [ocormatdir, pcormatdir, ocormatwav, pcormatwav] = get_corrects(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
-    ocormatdir = [];
-    pcormatdir = [];
-    ocormatwav = [];
-    pcormatwav = [];
+function [ocormat, pcormat] = get_corrects_fir(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
+    ocormat = [];
+    pcormat = [];
     for std = stdarray
         no = normrnd(0,std,[length(do),1]);
         np = normrnd(0,std,[length(dp),1]);
@@ -180,28 +188,51 @@ function [ocormatdir, pcormatdir, ocormatwav, pcormatwav] = get_corrects(do, dp,
         ddpdir = filter(band_pass_filter, 1, dpn);
         ddodir = filter(band_pass_filter, 1, don);
         
-        ddowav = wavelet_denoise(don);
-        ddpwav = wavelet_denoise(dpn);
+        
 
-        [peaksordir, locordir] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
-        [peaksprdir, locprdir] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
-        [peaksorwav, locorwav] = findpeaks(ddowav, 'MinPeakHeight', 0.6*max(ddowav), 'MinPeakDistance', 0.6*Fs);
-        [peaksprwav, locprwav] = findpeaks(ddpwav, 'MinPeakHeight', 0.6*max(ddpwav), 'MinPeakDistance', 0.6*Fs);
+        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
+        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
 
-        correctodir = get_correct(peaksordir, locordir, loco, peakso, Fs, toleranceo);
-        correctpdir = get_correct(peaksprdir, locprdir, locp, peaksp, Fs, tolerancep);
-        correctowav = get_correct(peaksorwav, locorwav, loco, peakso, Fs, toleranceo);
-        correctpwav = get_correct(peaksprwav, locprwav, locp, peaksp, Fs, tolerancep);
+        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
+        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
 
-        percoroidir = correctodir / length(loco);
-        percorpidir = correctpdir / length(locp);
-        percoroiwav = correctowav / length(loco);
-        percorpiwav = correctpwav / length(locp);
+        percoroi = correcto / length(loco);
+        percorpi = correctp / length(locp);
 
-        ocormatdir = [ocormatdir, percoroidir];
-        pcormatdir = [pcormatdir, percorpidir];
-        ocormatwav = [ocormatwav, percoroidir];
-        pcormatwav = [pcormatwav, percorpidir];
+        ocormat = [ocormat, percoroi];
+        pcormat = [pcormat, percorpi];
+
+    end
+end
+
+function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
+    ocormat = [];
+    pcormat = [];
+    for std = stdarray
+        no = normrnd(0,std,[length(do),1]);
+        np = normrnd(0,std,[length(dp),1]);
+        dpn = dp + np;
+        don = do + no;
+        
+        low_cutoff = 0.5/(0.5*1000);
+        high_cutoff = 50/(0.5*1000); 
+        filter_order = 100;
+        band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
+        
+        ddpdir = wavelet_denoise(don); % ------------ CHANGE IS HERE
+        ddodir = wavelet_denoise(dpn); % ------------ CHANGE IS HERE
+       
+        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
+        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
+
+        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
+        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
+
+        percoroi = correcto / length(loco);
+        percorpi = correctp / length(locp);
+
+        ocormat = [ocormat, percoroi];
+        pcormat = [pcormat, percorpi];
 
     end
 end
@@ -233,12 +264,38 @@ function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
     outputs = correcto;
 end
 
-function ecgDenoised = wavelet_denoise(data_noisy)
-    waveletType = 'db4';
-    maxLevel = 30;
-    [coefficients, levels] = wavedec(data_noisy, maxLevel, waveletType);
-    sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
-    threshold = sqrt(2 * log(length(data_noisy))) * sigma;
-    coefficientsDenoised = wthresh(coefficients, 's', threshold);
-    ecgDenoised = waverec(coefficientsDenoised, levels, waveletType);
-end
+% function ecgDenoised = wavelet_denoise(data_noisy)
+%     waveletType = 'db4';
+%     maxLevel = 30;
+%     [coefficients, levels] = wavedec(data_noisy, maxLevel, waveletType);
+%     sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
+%     threshold = sqrt(2 * log(length(data_noisy))) * sigma;
+%     coefficientsDenoised = wthresh(coefficients, 's', threshold);
+%     ecgDenoised = waverec(coefficientsDenoised, levels, waveletType);
+% end
+
+% Assuming you have the ECG signal in the variable 'ecg_signal'
+
+% 1. Moving Average Filter
+windowSize = 5;
+filtered_ecg_ma = movmean(ecg_signal, windowSize);
+
+% 2. Median Filter
+windowSize = 5;
+filtered_ecg_median = medfilt1(ecg_signal, windowSize);
+
+% 3. Butterworth Filter
+order = 4;
+cutoff_frequency = 0.5; % Adjust as needed
+[b, a] = butter(order, cutoff_frequency, 'low');
+filtered_ecg_butter = filtfilt(b, a, ecg_signal);
+
+% 4. Wavelet Thresholding
+filtered_ecg_wavelet = wavelet_denoise(ecg_signal);
+
+% 5. Kalman Filter
+filtered_ecg_kalman = kalman_filter(ecg_signal);
+
+% 6. Adaptive Filtering (LMS Filter)
+mu = 0.01; % Adjust as needed
+filtered_ecg_lms = lms(ecg_signal, mu);
