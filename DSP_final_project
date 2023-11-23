@@ -125,85 +125,89 @@ tolerancep = tolerance;
 
 stdarray = linspace(stdmin, stdmax, nstds);
 
-ocors = [];
-pcors = [];
-ocorsw = [];
-pcorsw = [];
+ocorsfir = [];
+pcorsfir = [];
+% ocorsw = [];
+% pcorsw = [];
+ocorsmedian = [];
+ocorsbutterworth = [];
+ocorskalman = [];
+
+pcorsmedian = [];
+pcorsbutterworth = [];
+pcorskalman = [];
 
 nsums = 10;
+%%%%%%%%%%%
 
-% Wavelet
-for i = 1:nsums
-    disp(i)
-    [ocormatw, pcormatw] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
-    ocorsw = [ocorsw; ocormatw];
-    pcorsw = [pcorsw; pcormatw];
-end
+% % Wavelet
+% for i = 1:nsums
+%     disp(i)
+%     [ocormatw, pcormatw] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
+%     ocorsw = [ocorsw; ocormatw];
+%     pcorsw = [pcorsw; pcormatw];
+% end
 
 % FIR
 for i = 1:nsums
     disp(i)
-    [ocormat, pcormat] = get_corrects_fir(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
-    ocors = [ocors; ocormat];
-    pcors = [pcors; pcormat];
+    [ocormatfir, pcormatfir] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    stdarray, toleranceo, tolerancep, Fs, 'FIR');
+    ocorsfir = [ocorsfir; ocormatfir];
+    pcorsfir = [pcorsfir; pcormatfir];
+    
+    [ocormatmedian, pcormatmedian] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    stdarray, toleranceo, tolerancep, Fs, 'median');
+    ocorsmedian = [ocorsmedian; ocormatmedian];
+    pcorsmedian = [pcorsmedian; pcormatmedian];
+
+    [ocormatbutterworth, pcormatbutterworth] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    stdarray, toleranceo, tolerancep, Fs, 'butterworth');
+    ocorsbutterworth = [ocorsbutterworth; ocormatbutterworth];
+    pcorsbutterworth = [pcorsbutterworth; pcormatbutterworth];
+    
+    [ocormatkalman, pcormatkalman] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    stdarray, toleranceo, tolerancep, Fs, 'kalman');
+    ocorskalman = [ocorskalman; ocormatkalman];
+    pcorskalman = [pcorskalman; pcormatkalman];
 end
 
+ocormatavgfir = mean(ocorsfir, 1);
+pcormatavgfir = mean(pcorsfir, 1);
 
+ocormatavgmedian = mean(ocorsmedian, 1);
+pcormatavgmedian = mean(pcorsmedian, 1);
 
+ocormatavgbutterworth = mean(ocorsbutterworth, 1);
+pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 
-ocormatavg = mean(ocors, 1);
-pcormatavg = mean(pcors, 1);
-ocormatavgw = mean(ocorsw, 1);
-pcormatavgw = mean(pcorsw, 1);
+ocormatavgkalman = mean(ocorskalman, 1);
+pcormatavgkalman = mean(pcorskalman, 1);
+
+% ocormatavgw = mean(ocorsw, 1);
+% pcormatavgw = mean(pcorsw, 1);
 
 subplot(1,2,1)
-plot(stdarray, ocormatavg)
+plot(stdarray, ocormatavgfir, 'DisplayName', 'FIR')
 hold on
-plot(stdarray, ocormatavgw)
+plot(stdarray, ocormatavgmedian, 'DisplayName', 'Median')
+plot(stdarray, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarray, ocormatavgkalman, 'DisplayName', 'Kalman')
+legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
 title('Oliver ECG, FIR')
+
 subplot(1,2,2)
-plot(stdarray, pcormatavg)
+plot(stdarray, pcormatavgfir, 'DisplayName', 'FIR')
 hold on
-plot(stdarray, pcormatavgw)
+plot(stdarray, pcormatavgmedian, 'DisplayName', 'Median')
+plot(stdarray, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarray, pcormatavgkalman, 'DisplayName', 'Kalman')
+legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
 title('Poulami ECG, FIR')
-
-function [ocormat, pcormat] = get_corrects_fir(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
-    ocormat = [];
-    pcormat = [];
-    for std = stdarray
-        no = normrnd(0,std,[length(do),1]);
-        np = normrnd(0,std,[length(dp),1]);
-        dpn = dp + np;
-        don = do + no;
-        
-        low_cutoff = 0.5/(0.5*1000);
-        high_cutoff = 50/(0.5*1000); 
-        filter_order = 100;
-        band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
-        
-        ddpdir = filter(band_pass_filter, 1, dpn);
-        ddodir = filter(band_pass_filter, 1, don);
-        
-        
-
-        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
-        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
-
-        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
-        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
-
-        percoroi = correcto / length(loco);
-        percorpi = correctp / length(locp);
-
-        ocormat = [ocormat, percoroi];
-        pcormat = [pcormat, percorpi];
-
-    end
-end
 
 function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
     ocormat = [];
@@ -213,12 +217,7 @@ function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, loc
         np = normrnd(0,std,[length(dp),1]);
         dpn = dp + np;
         don = do + no;
-        
-        low_cutoff = 0.5/(0.5*1000);
-        high_cutoff = 50/(0.5*1000); 
-        filter_order = 100;
-        band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
-        
+               
         ddpdir = wavelet_denoise(don); % ------------ CHANGE IS HERE
         ddodir = wavelet_denoise(dpn); % ------------ CHANGE IS HERE
        
@@ -240,12 +239,10 @@ end
 function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
 
     correcto = 0;
-    
-    % o
+   
     for i = 1:length(peaksor)
         po = peaksor(i);
         lo = locor(i);
-        
         dfo = abs(lo - loco);
         
         [disto, indo] = min(dfo);
@@ -276,26 +273,103 @@ end
 
 % Assuming you have the ECG signal in the variable 'ecg_signal'
 
-% 1. Moving Average Filter
-windowSize = 5;
-filtered_ecg_ma = movmean(ecg_signal, windowSize);
+function [ocormat, pcormat] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs, filter_type)
+    ocormat = [];
+    pcormat = [];
+    
+    for std = stdarray
+        no = normrnd(0, std, [length(do), 1]);
+        np = normrnd(0, std, [length(dp), 1]);
+        dpn = dp + np;
+        don = do + no;
 
-% 2. Median Filter
-windowSize = 5;
-filtered_ecg_median = medfilt1(ecg_signal, windowSize);
+        switch lower(filter_type)
+            case 'fir'
+                % FIR Bandpass Filter
+                low_cutoff = 0.5 / (0.5 * Fs);
+                high_cutoff = 50 / (0.5 * Fs);
+                filter_order = 100;
+                band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
+                
+                ddpdir = filter(band_pass_filter, 1, dpn);
+                ddodir = filter(band_pass_filter, 1, don);
 
-% 3. Butterworth Filter
-order = 4;
-cutoff_frequency = 0.5; % Adjust as needed
-[b, a] = butter(order, cutoff_frequency, 'low');
-filtered_ecg_butter = filtfilt(b, a, ecg_signal);
+            case 'ma'
+                % Moving Average Filter
+                window_size_ma = 50;
+                ddodir = movmean(don, window_size_ma);
+                ddpdir = movmean(dpn, window_size_ma);
 
-% 4. Wavelet Thresholding
-filtered_ecg_wavelet = wavelet_denoise(ecg_signal);
+            case 'median'
+                % Median Filter
+                window_size_median = 25;
+                ddodir = medfilt1(don, window_size_median);
+                ddpdir = medfilt1(dpn, window_size_median);
 
-% 5. Kalman Filter
-filtered_ecg_kalman = kalman_filter(ecg_signal);
+            case 'butterworth'
+                % Butterworth Filter
+                order_butter = 4;
+                cutoff_frequency = 50;
+                [b, a] = butter(order_butter, cutoff_frequency / (Fs / 2), 'low');
+                ddodir = filtfilt(b, a, don);
+                ddpdir = filtfilt(b, a, dpn);
 
-% 6. Adaptive Filtering (LMS Filter)
-mu = 0.01; % Adjust as needed
-filtered_ecg_lms = lms(ecg_signal, mu);
+            case 'kalman'
+                % Kalman Filter for don
+                Q = 0.01;
+                R = 0.1;
+                x_hat = don(1);
+                P = 1;
+                kalman_filtered_signal_don = zeros(size(don));
+
+                for k = 2:length(don)
+                    % Prediction
+                    x_hat_minus = x_hat;
+                    P_minus = P + Q;
+
+                    % Update
+                    K = P_minus / (P_minus + R);
+                    x_hat = x_hat_minus + K * (don(k) - x_hat_minus);
+                    P = (1 - K) * P_minus;
+
+                    kalman_filtered_signal_don(k) = x_hat;
+                end
+
+                % Kalman Filter for dpn
+                x_hat = dpn(1);
+                P = 1;
+                kalman_filtered_signal_dpn = zeros(size(dpn));
+
+                for k = 2:length(dpn)
+                    % Prediction
+                    x_hat_minus = x_hat;
+                    P_minus = P + Q;
+
+                    % Update
+                    K = P_minus / (P_minus + R);
+                    x_hat = x_hat_minus + K * (dpn(k) - x_hat_minus);
+                    P = (1 - K) * P_minus;
+
+                    kalman_filtered_signal_dpn(k) = x_hat;
+                end
+
+                ddodir = kalman_filtered_signal_don;
+                ddpdir = kalman_filtered_signal_dpn;
+
+            otherwise
+                error('Invalid filter type. Use ''FIR'', ''MA'', ''Median'', ''Butterworth'', or ''Kalman''.');
+        end
+
+        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6 * max(ddodir), 'MinPeakDistance', 0.6 * Fs);
+        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6 * max(ddpdir), 'MinPeakDistance', 0.6 * Fs);
+        
+        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
+        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
+
+        percoroi = correcto / length(loco);
+        percorpi = correctp / length(locp);
+
+        ocormat = [ocormat, percoroi];
+        pcormat = [pcormat, percorpi];
+    end
+end
