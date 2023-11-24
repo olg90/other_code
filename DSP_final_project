@@ -174,14 +174,6 @@ pcorskalman = [];
 nsums = 10;
 %%%%%%%%%%%
 
-% % Wavelet
-% for i = 1:nsums
-%     disp(i)
-%     [ocormatw, pcormatw] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs);
-%     ocorsw = [ocorsw; ocormatw];
-%     pcorsw = [pcorsw; pcormatw];
-% end
-
 % FIR
 for i = 1:nsums
     disp(i)
@@ -244,10 +236,11 @@ ylabel('% peaks correctly identified')
 title('Poulami ECG, FIR')
 
 %%
-std = 0.2;
+std = 0.3;
 [ofir, pfir] = denoise_algorithm(do, dp, std, Fs, 'fir');
 [oma, pma] = denoise_algorithm(do, dp, std, Fs, 'ma');
 [omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
+[obut, pbut] = denoise_algorithm(do, dp, std, Fs, 'butterworth');
 [okal, pkal] = denoise_algorithm(do, dp, std, Fs, 'kalman');
 
 ofir = ofir(1:10*Fs);
@@ -258,38 +251,48 @@ omed = omed(1:10*Fs);
 pmed = pmed(1:10*Fs);
 okal = okal(1:10*Fs);
 pkal = pkal(1:10*Fs);
+obut = obut(1:10*Fs);
+pbut = pbut(1:10*Fs);
+
 
 sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
 fontsize = 12;
 
-subplot(4,2,1)
+subplot(5,2,1)
 plot(trange, ofir)
 ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
 title('Oliver denoised', 'FontSize', fontsize)
 
-subplot(4,2,2)
+subplot(5,2,2)
 plot(trange, pfir)
 title('Poulami denoised', 'FontSize', fontsize)
 
-subplot(4,2,3)
+subplot(5,2,3)
 plot(trange, oma)
 ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(4,2,4)
+subplot(5,2,4)
 plot(trange, pma)
 
-subplot(4,2,5)
+subplot(5,2,5)
 plot(trange, omed)
 ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(4,2,6)
+subplot(5,2,6)
 plot(trange, pmed)
 
-subplot(4,2,7)
+subplot(5,2,7)
+plot(trange, obut)
+ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
+
+subplot(5,2,8)
+plot(trange, obut)
+
+subplot(5,2,9)
 plot(trange, okal)
 ylabel('kalman', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(4,2,8)
+subplot(5,2,10)
 plot(trange, pkal)
 
 %
@@ -398,19 +401,19 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
 
             case 'ma'
                 % Moving Average Filter
-                window_size_ma = 50;
+                window_size_ma = 15; %50
                 ddodir = movmean(don, window_size_ma);
                 ddpdir = movmean(dpn, window_size_ma);
 
             case 'median'
                 % Median Filter
-                window_size_median = 25;
+                window_size_median =20; %25
                 ddodir = medfilt1(don, window_size_median);
                 ddpdir = medfilt1(dpn, window_size_median);
 
             case 'butterworth'
                 % Butterworth Filter
-                order_butter = 4;
+                order_butter = 5;
                 cutoff_frequency = 50;
                 [b, a] = butter(order_butter, cutoff_frequency / (Fs / 2), 'low');
                 ddodir = filtfilt(b, a, don);
@@ -418,7 +421,7 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
 
             case 'kalman'
                 % Kalman Filter for don
-                Q = 0.001;
+                Q = 0.01;
                 R = 0.1;
                 x_hat = don(1);
                 P = 1;
