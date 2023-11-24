@@ -182,16 +182,17 @@ tolerancep = tolerance;
 stdarray = linspace(stdmin, stdmax, nstds);
 
 ocorsfir = [];
-pcorsfir = [];
-% ocorsw = [];
-% pcorsw = [];
 ocorsmedian = [];
 ocorsbutterworth = [];
 ocorskalman = [];
+ocorswav = [];
 
+pcorsfir = [];
 pcorsmedian = [];
 pcorsbutterworth = [];
 pcorskalman = [];
+pcorswav = [];
+
 
 nsums = 10;
 %%%%%%%%%%%
@@ -226,6 +227,12 @@ for i = 1:nsums
     stdarray, toleranceo, tolerancep, Fs, 'kalman');
     ocorskalman = [ocorskalman; ocormatkalman];
     pcorskalman = [pcorskalman; pcormatkalman];
+
+    [ocormatwav, pcormatwav] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    stdarray, toleranceo, tolerancep, Fs, 'kalman');
+    ocorswav = [ocorswav; ocormatwav];
+    pcorswav = [pcorswav; pcormatwav];
+
 end
 
 ocormatavgfir = mean(ocorsfir, 1);
@@ -240,8 +247,8 @@ pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 ocormatavgkalman = mean(ocorskalman, 1);
 pcormatavgkalman = mean(pcorskalman, 1);
 
-% ocormatavgw = mean(ocorsw, 1);
-% pcormatavgw = mean(pcorsw, 1);
+ocormatavgw = mean(ocorswav, 1);
+pcormatavgw = mean(pcorswav, 1);
 
 subplot(1,2,1)
 plot(stdarray, ocormatavgfir, 'DisplayName', 'FIR')
@@ -249,6 +256,7 @@ hold on
 plot(stdarray, ocormatavgmedian, 'DisplayName', 'Median')
 plot(stdarray, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
 plot(stdarray, ocormatavgkalman, 'DisplayName', 'Kalman')
+plot(stdarray, ocormatavgwav, 'DisplayName', 'Wavelet')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
@@ -260,6 +268,7 @@ hold on
 plot(stdarray, pcormatavgmedian, 'DisplayName', 'Median')
 plot(stdarray, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
 plot(stdarray, pcormatavgkalman, 'DisplayName', 'Kalman')
+plot(stdarray, pcormatavgwav, 'DisplayName', 'Wavelet')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
