@@ -124,28 +124,6 @@ yticks([])
 
 xlim([0, nsec])
 
-%%
-
-std = 0.01;
-[ofir, pfir] = denoise_algorithm(do, dp, std, Fs, 'fir');
-[oma, pma] = denoise_algorithm(do, dp, std, Fs, 'ma');
-[omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
-[okal, pkal] = denoise_algorithm(do, dp, std, Fs, 'kalman');
-
-
-subplot(5,2,1)
-plot(ofir)
-subplot(5,2,2)
-plot(pfir)
-subplot(5,2,3)
-subplot(5,2,4)
-subplot(5,2,5)
-subplot(5,2,6)
-subplot(5,2,7)
-subplot(5,2,8)
-subplot(5,2,9)
-subplot(5,2,10)
-%%
 
 
 
@@ -266,7 +244,7 @@ ylabel('% peaks correctly identified')
 title('Poulami ECG, FIR')
 
 %%
-std = 0.3;
+std = 0.2;
 [ofir, pfir] = denoise_algorithm(do, dp, std, Fs, 'fir');
 [oma, pma] = denoise_algorithm(do, dp, std, Fs, 'ma');
 [omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
@@ -282,31 +260,38 @@ okal = okal(1:10*Fs);
 pkal = pkal(1:10*Fs);
 
 sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
+fontsize = 12;
 
-subplot(5,2,1)
-plot(ofir)
-ylabel('FIR')
-title('Oliver denoised')
-subplot(5,2,2)
-plot(pfir)
-title('Poulami denoised')
-subplot(5,2,3)
-plot(oma)
-ylabel('moving average')
-subplot(5,2,4)
-plot(pma)
-subplot(5,2,5)
-plot(omed)
-ylabel('median')
-subplot(5,2,6)
-plot(pmed)
-subplot(5,2,7)
-plot(okal)
-ylabel('kalman')
-subplot(5,2,8)
-plot(pkal)
-subplot(5,2,9)
-subplot(5,2,10)
+subplot(4,2,1)
+plot(trange, ofir)
+ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
+title('Oliver denoised', 'FontSize', fontsize)
+
+subplot(4,2,2)
+plot(trange, pfir)
+title('Poulami denoised', 'FontSize', fontsize)
+
+subplot(4,2,3)
+plot(trange, oma)
+ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
+
+subplot(4,2,4)
+plot(trange, pma)
+
+subplot(4,2,5)
+plot(trange, omed)
+ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
+
+subplot(4,2,6)
+plot(trange, pmed)
+
+subplot(4,2,7)
+plot(trange, okal)
+ylabel('kalman', 'FontWeight', 'bold', 'FontSize', fontsize)
+
+subplot(4,2,8)
+plot(trange, pkal)
+
 %
 
 function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
@@ -433,7 +418,7 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
 
             case 'kalman'
                 % Kalman Filter for don
-                Q = 0.01;
+                Q = 0.001;
                 R = 0.1;
                 x_hat = don(1);
                 P = 1;
