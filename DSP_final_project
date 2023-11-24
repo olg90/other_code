@@ -182,17 +182,16 @@ tolerancep = tolerance;
 stdarray = linspace(stdmin, stdmax, nstds);
 
 ocorsfir = [];
+pcorsfir = [];
+% ocorsw = [];
+% pcorsw = [];
 ocorsmedian = [];
 ocorsbutterworth = [];
 ocorskalman = [];
-ocorswav = [];
 
-pcorsfir = [];
 pcorsmedian = [];
 pcorsbutterworth = [];
 pcorskalman = [];
-pcorswav = [];
-
 
 nsums = 10;
 %%%%%%%%%%%
@@ -227,12 +226,6 @@ for i = 1:nsums
     stdarray, toleranceo, tolerancep, Fs, 'kalman');
     ocorskalman = [ocorskalman; ocormatkalman];
     pcorskalman = [pcorskalman; pcormatkalman];
-
-    [ocormatwav, pcormatwav] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
-    stdarray, toleranceo, tolerancep, Fs, 'kalman');
-    ocorswav = [ocorswav; ocormatwav];
-    pcorswav = [pcorswav; pcormatwav];
-
 end
 
 ocormatavgfir = mean(ocorsfir, 1);
@@ -247,8 +240,8 @@ pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 ocormatavgkalman = mean(ocorskalman, 1);
 pcormatavgkalman = mean(pcorskalman, 1);
 
-ocormatavgw = mean(ocorswav, 1);
-pcormatavgw = mean(pcorswav, 1);
+% ocormatavgw = mean(ocorsw, 1);
+% pcormatavgw = mean(pcorsw, 1);
 
 subplot(1,2,1)
 plot(stdarray, ocormatavgfir, 'DisplayName', 'FIR')
@@ -256,7 +249,6 @@ hold on
 plot(stdarray, ocormatavgmedian, 'DisplayName', 'Median')
 plot(stdarray, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
 plot(stdarray, ocormatavgkalman, 'DisplayName', 'Kalman')
-plot(stdarray, ocormatavgwav, 'DisplayName', 'Wavelet')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
@@ -268,7 +260,6 @@ hold on
 plot(stdarray, pcormatavgmedian, 'DisplayName', 'Median')
 plot(stdarray, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
 plot(stdarray, pcormatavgkalman, 'DisplayName', 'Kalman')
-plot(stdarray, pcormatavgwav, 'DisplayName', 'Wavelet')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
@@ -281,8 +272,6 @@ std = 0.3;
 [omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
 [okal, pkal] = denoise_algorithm(do, dp, std, Fs, 'kalman');
 
-[owav, pwav] = denoise_algorithm(do, dp, std, Fs, 'wavelet');
-
 ofir = ofir(1:10*Fs);
 pfir = pfir(1:10*Fs);
 oma = oma(1:10*Fs);
@@ -291,11 +280,6 @@ omed = omed(1:10*Fs);
 pmed = pmed(1:10*Fs);
 okal = okal(1:10*Fs);
 pkal = pkal(1:10*Fs);
-
-owav = owav(1:10*Fs);
-pwav = pwav(1:10*Fs);
-
-
 
 sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
 
@@ -322,10 +306,7 @@ ylabel('kalman')
 subplot(5,2,8)
 plot(pkal)
 subplot(5,2,9)
-plot(owav)
-ylabel('wavelet')
 subplot(5,2,10)
-plot(pwav)
 %
 
 function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
@@ -380,15 +361,15 @@ function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
     outputs = correcto;
 end
 
-function ecgDenoised = wavelet_denoise(data_noisy)
-    waveletType = 'db4';
-    maxLevel = 30;
-    [coefficients, levels] = wavedec(data_noisy, maxLevel, waveletType);
-    sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
-    threshold = sqrt(2 * log(length(data_noisy))) * sigma;
-    coefficientsDenoised = wthresh(coefficients, 's', threshold);
-    ecgDenoised = waverec(coefficientsDenoised, levels, waveletType);
-end
+% function ecgDenoised = wavelet_denoise(data_noisy)
+%     waveletType = 'db4';
+%     maxLevel = 30;
+%     [coefficients, levels] = wavedec(data_noisy, maxLevel, waveletType);
+%     sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
+%     threshold = sqrt(2 * log(length(data_noisy))) * sigma;
+%     coefficientsDenoised = wthresh(coefficients, 's', threshold);
+%     ecgDenoised = waverec(coefficientsDenoised, levels, waveletType);
+% end
 
 % Assuming you have the ECG signal in the variable 'ecg_signal'
 
@@ -491,24 +472,6 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
 
                 ddodir = kalman_filtered_signal_don;
                 ddpdir = kalman_filtered_signal_dpn;
-
-            case 'wavelet'
-                waveletType = 'db4';
-                maxLevel = 30;
-                [coefficients, levels] = wavedec(don, maxLevel, waveletType);
-                sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
-                threshold = sqrt(2 * log(length(don))) * sigma;
-                coefficientsDenoised = wthresh(coefficients, 's', threshold);
-
-                ddodir = waverec(coefficientsDenoised, levels, waveletType);
-
-                [coefficients, levels] = wavedec(dpn, maxLevel, waveletType);
-                sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
-                threshold = sqrt(2 * log(length(dpn))) * sigma;
-                coefficientsDenoised = wthresh(coefficients, 's', threshold);
-
-                ddpdir = waverec(coefficientsDenoised, levels, waveletType);
-
 
             otherwise
                 error('Invalid filter type. Use ''FIR'', ''MA'', ''Median'', ''Butterworth'', or ''Kalman''.');
