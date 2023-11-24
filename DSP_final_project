@@ -265,6 +265,50 @@ xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
 title('Poulami ECG, FIR')
 
+%%
+std = 0.3;
+[ofir, pfir] = denoise_algorithm(do, dp, std, Fs, 'fir');
+[oma, pma] = denoise_algorithm(do, dp, std, Fs, 'ma');
+[omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
+[okal, pkal] = denoise_algorithm(do, dp, std, Fs, 'kalman');
+
+ofir = ofir(1:10*Fs);
+pfir = pfir(1:10*Fs);
+oma = oma(1:10*Fs);
+pma = pma(1:10*Fs);
+omed = omed(1:10*Fs);
+pmed = pmed(1:10*Fs);
+okal = okal(1:10*Fs);
+pkal = pkal(1:10*Fs);
+
+sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
+
+subplot(5,2,1)
+plot(ofir)
+ylabel('FIR')
+title('Oliver denoised')
+subplot(5,2,2)
+plot(pfir)
+title('Poulami denoised')
+subplot(5,2,3)
+plot(oma)
+ylabel('moving average')
+subplot(5,2,4)
+plot(pma)
+subplot(5,2,5)
+plot(omed)
+ylabel('median')
+subplot(5,2,6)
+plot(pmed)
+subplot(5,2,7)
+plot(okal)
+ylabel('kalman')
+subplot(5,2,8)
+plot(pkal)
+subplot(5,2,9)
+subplot(5,2,10)
+%
+
 function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
     ocormat = [];
     pcormat = [];
