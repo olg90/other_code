@@ -160,16 +160,15 @@ tolerancep = tolerance;
 stdarray = linspace(stdmin, stdmax, nstds);
 
 ocorsfir = [];
-pcorsfir = [];
-% ocorsw = [];
-% pcorsw = [];
 ocorsmedian = [];
+ocorsma = [];
 ocorsbutterworth = [];
-ocorskalman = [];
 
+pcorsfir = [];
 pcorsmedian = [];
+pcorsma = [];
 pcorsbutterworth = [];
-pcorskalman = [];
+
 
 nsums = 10;
 %%%%%%%%%%%
@@ -182,6 +181,11 @@ for i = 1:nsums
     ocorsfir = [ocorsfir; ocormatfir];
     pcorsfir = [pcorsfir; pcormatfir];
     
+    [ocormatma, pcormatma] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    stdarray, toleranceo, tolerancep, Fs, 'ma');
+    ocorsma = [ocorsma; ocormatma];
+    pcorsma = [pcorsma; pcormatma];
+    
     [ocormatmedian, pcormatmedian] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
     stdarray, toleranceo, tolerancep, Fs, 'median');
     ocorsmedian = [ocorsmedian; ocormatmedian];
@@ -192,14 +196,13 @@ for i = 1:nsums
     ocorsbutterworth = [ocorsbutterworth; ocormatbutterworth];
     pcorsbutterworth = [pcorsbutterworth; pcormatbutterworth];
     
-    [ocormatkalman, pcormatkalman] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
-    stdarray, toleranceo, tolerancep, Fs, 'kalman');
-    ocorskalman = [ocorskalman; ocormatkalman];
-    pcorskalman = [pcorskalman; pcormatkalman];
 end
 
 ocormatavgfir = mean(ocorsfir, 1);
 pcormatavgfir = mean(pcorsfir, 1);
+
+ocormatavgma = mean(ocorsma, 1);
+pcormatavgma = mean(pcorsma, 1);
 
 ocormatavgmedian = mean(ocorsmedian, 1);
 pcormatavgmedian = mean(pcorsmedian, 1);
@@ -207,18 +210,12 @@ pcormatavgmedian = mean(pcorsmedian, 1);
 ocormatavgbutterworth = mean(ocorsbutterworth, 1);
 pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 
-ocormatavgkalman = mean(ocorskalman, 1);
-pcormatavgkalman = mean(pcorskalman, 1);
-
-% ocormatavgw = mean(ocorsw, 1);
-% pcormatavgw = mean(pcorsw, 1);
-
 subplot(1,2,1)
 plot(stdarray, ocormatavgfir, 'DisplayName', 'FIR')
 hold on
 plot(stdarray, ocormatavgmedian, 'DisplayName', 'Median')
+plot(stdarray, ocormatavgma, 'DisplayName', 'Moving Avg.')
 plot(stdarray, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
-plot(stdarray, ocormatavgkalman, 'DisplayName', 'Kalman')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
@@ -228,20 +225,20 @@ subplot(1,2,2)
 plot(stdarray, pcormatavgfir, 'DisplayName', 'FIR')
 hold on
 plot(stdarray, pcormatavgmedian, 'DisplayName', 'Median')
+plot(stdarray, pcormatavgma, 'DisplayName', 'Moving Avg.')
 plot(stdarray, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
-plot(stdarray, pcormatavgkalman, 'DisplayName', 'Kalman')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
 title('Poulami ECG, FIR')
 
 %%
-std = 0.3;
+std = 0.2;
 [ofir, pfir] = denoise_algorithm(do, dp, std, Fs, 'fir');
 [oma, pma] = denoise_algorithm(do, dp, std, Fs, 'ma');
 [omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
 [obut, pbut] = denoise_algorithm(do, dp, std, Fs, 'butterworth');
-[okal, pkal] = denoise_algorithm(do, dp, std, Fs, 'kalman');
+
 
 ofir = ofir(1:10*Fs);
 pfir = pfir(1:10*Fs);
@@ -249,8 +246,6 @@ oma = oma(1:10*Fs);
 pma = pma(1:10*Fs);
 omed = omed(1:10*Fs);
 pmed = pmed(1:10*Fs);
-okal = okal(1:10*Fs);
-pkal = pkal(1:10*Fs);
 obut = obut(1:10*Fs);
 pbut = pbut(1:10*Fs);
 
@@ -258,43 +253,70 @@ pbut = pbut(1:10*Fs);
 sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
 fontsize = 12;
 
-subplot(5,2,1)
+subplot(4,2,1)
 plot(trange, ofir)
 ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
 title('Oliver denoised', 'FontSize', fontsize)
 
-subplot(5,2,2)
+subplot(4,2,2)
 plot(trange, pfir)
 title('Poulami denoised', 'FontSize', fontsize)
 
-subplot(5,2,3)
+subplot(4,2,3)
 plot(trange, oma)
 ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(5,2,4)
+subplot(4,2,4)
 plot(trange, pma)
 
-subplot(5,2,5)
+subplot(4,2,5)
 plot(trange, omed)
 ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(5,2,6)
+subplot(4,2,6)
 plot(trange, pmed)
 
-subplot(5,2,7)
+subplot(4,2,7)
 plot(trange, obut)
 ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(5,2,8)
+subplot(4,2,8)
 plot(trange, obut)
 
-subplot(5,2,9)
-plot(trange, okal)
-ylabel('kalman', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(5,2,10)
-plot(trange, pkal)
-
+%
+% sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
+% fontsize = 12;
+% 
+% subplot(4,1,1)
+% plot(trange, ofir)
+% ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
+% title('Oliver denoised', 'FontSize', fontsize)
+% subplot(4,1,2)
+% plot(trange, oma)
+% ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
+% subplot(4,1,3)
+% plot(trange, omed)
+% ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
+% subplot(4,1,4)
+% plot(trange, obut)
+% ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
+% 
+% sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
+% fontsize = 12;
+% subplot(4,1,1)
+% plot(trange, pfir)
+% ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
+% title('Poulami denoised', 'FontSize', fontsize)
+% subplot(4,1,2)
+% plot(trange, pma)
+% ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
+% subplot(4,1,3)
+% plot(trange, pmed)
+% ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
+% subplot(4,1,4)
+% plot(trange, obut)
+% ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
 %
 
 function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
@@ -413,53 +435,11 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
 
             case 'butterworth'
                 % Butterworth Filter
-                order_butter = 5;
+                order_butter = 2;
                 cutoff_frequency = 50;
                 [b, a] = butter(order_butter, cutoff_frequency / (Fs / 2), 'low');
                 ddodir = filtfilt(b, a, don);
                 ddpdir = filtfilt(b, a, dpn);
-
-            case 'kalman'
-                % Kalman Filter for don
-                Q = 0.01;
-                R = 0.1;
-                x_hat = don(1);
-                P = 1;
-                kalman_filtered_signal_don = zeros(size(don));
-
-                for k = 2:length(don)
-                    % Prediction
-                    x_hat_minus = x_hat;
-                    P_minus = P + Q;
-
-                    % Update
-                    K = P_minus / (P_minus + R);
-                    x_hat = x_hat_minus + K * (don(k) - x_hat_minus);
-                    P = (1 - K) * P_minus;
-
-                    kalman_filtered_signal_don(k) = x_hat;
-                end
-
-                % Kalman Filter for dpn
-                x_hat = dpn(1);
-                P = 1;
-                kalman_filtered_signal_dpn = zeros(size(dpn));
-
-                for k = 2:length(dpn)
-                    % Prediction
-                    x_hat_minus = x_hat;
-                    P_minus = P + Q;
-
-                    % Update
-                    K = P_minus / (P_minus + R);
-                    x_hat = x_hat_minus + K * (dpn(k) - x_hat_minus);
-                    P = (1 - K) * P_minus;
-
-                    kalman_filtered_signal_dpn(k) = x_hat;
-                end
-
-                ddodir = kalman_filtered_signal_don;
-                ddpdir = kalman_filtered_signal_dpn;
 
             otherwise
                 error('Invalid filter type. Use ''FIR'', ''MA'', ''Median'', ''Butterworth'', or ''Kalman''.');
