@@ -1,0 +1,75 @@
+% Lowpass filter specifications
+Fs = 10000;             % Sampling frequency
+Fp = 1000;              % Passband edge
+Fst = 1500;             % Stopband edge
+Rp = 1;                 % Passband ripple (dB)
+A = 50;                 % Stopband attenuation (dB)
+
+% Design lowpass filters
+[b_butter, a_butter] = butter(10, Fp/(Fs/2), 'low');
+[b_cheby1, a_cheby1] = cheby1(10, Rp, Fp/(Fs/2), 'low');
+[b_cheby2, a_cheby2] = cheby2(10, A, Fst/(Fs/2), 'low');
+[b_ellip, a_ellip] = ellip(10, Rp, A, Fp/(Fs/2), 'low');
+
+% Plot Butterworth lowpass filter frequency response
+figure;
+freqz(b_butter, a_butter, 512, Fs);
+title('Butterworth Lowpass Filter Frequency Response');
+
+% Plot Chebyshev Type I lowpass filter frequency response
+figure;
+freqz(b_cheby1, a_cheby1, 512, Fs);
+title('Chebyshev Type I Lowpass Filter Frequency Response');
+
+% Plot Chebyshev Type II lowpass filter frequency response
+figure;
+freqz(b_cheby2, a_cheby2, 512, Fs);
+title('Chebyshev Type II Lowpass Filter Frequency Response');
+
+% Plot Elliptical lowpass filter frequency response
+figure;
+freqz(b_ellip, a_ellip, 512, Fs);
+title('Elliptical Lowpass Filter Frequency Response');
+
+% Bandpass filter specifications
+Fst1 = 500;             % Stopband edge 1
+Fp1 = 1000;             % Passband edge 1
+Fp2 = 2000;             % Passband edge 2
+Fst2 = 2500;            % Stopband edge 2
+
+% Design bandpass filters
+[b_butter_bp, a_butter_bp] = butter(10, [Fp1 Fp2]/(Fs/2), 'bandpass');
+[b_cheby1_bp, a_cheby1_bp] = cheby1(10, Rp, [Fp1 Fp2]/(Fs/2), 'bandpass');
+[b_cheby2_bp, a_cheby2_bp] = cheby2(10, A, [Fst1 Fst2]/(Fs/2), 'bandpass');
+[b_ellip_bp, a_ellip_bp] = ellip(10, Rp, A, [Fp1 Fp2]/(Fs/2), 'bandpass');
+
+% Plot Butterworth bandpass filter frequency response
+figure;
+freqz(b_butter_bp, a_butter_bp, 512, Fs);
+title('Butterworth Bandpass Filter Frequency Response');
+
+% Plot Chebyshev Type I bandpass filter frequency response
+figure;
+freqz(b_cheby1_bp, a_cheby1_bp, 512, Fs);
+title('Chebyshev Type I Bandpass Filter Frequency Response');
+
+% Plot Chebyshev Type II bandpass filter frequency response
+figure;
+freqz(b_cheby2_bp, a_cheby2_bp, 512, Fs);
+title('Chebyshev Type II Bandpass Filter Frequency Response');
+
+% Plot Elliptical bandpass filter frequency response
+figure;
+freqz(b_ellip_bp, a_ellip_bp, 512, Fs);
+title('Elliptical Bandpass Filter Frequency Response');
+
+% FIR Park McClellan (Remez) filter design for bandpass filter
+N = 100; % Filter order
+F = [0 Fst1 Fp1 Fp2 Fst2 Fs/2] / (Fs/2); % Frequency vector
+A = [0 0 1 1 0 0]; % Desired amplitude response
+b_remez = firpm(N, F, A);
+
+% Plot FIR bandpass filter frequency response
+figure;
+freqz(b_remez, 1, 512, Fs);
+title('FIR Bandpass Filter Frequency Response');
