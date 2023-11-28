@@ -18,6 +18,10 @@ class SignalPlotterApp:
 
         # Store parameters in a dictionary
         self.parameters = {param: tk.DoubleVar(value=5) for param in self.parameter_names}
+        self.x_min_var = tk.DoubleVar(value=0)
+        self.x_max_var = tk.DoubleVar(value=100)
+        self.x_var = tk.DoubleVar(value=self.x_max_var.get())
+        self.parameters["x"] = self.x_var
 
         for param_name, var in self.parameters.items():
             setattr(self, f"{param_name}_min_var", tk.DoubleVar(value=0))
@@ -48,7 +52,9 @@ class SignalPlotterApp:
         parameters = set()
         for func in self.functions:
             parameters.update(self.extract_function_parameters(func))
+        parameters.add('x')  # Add 'x' to the set of parameters
         return list(parameters)
+
 
     def extract_function_parameters(self, func):
         sig = signature(func)
@@ -73,13 +79,13 @@ class SignalPlotterApp:
 
     def create_update_params_button(self, root):
         update_params_button = ttk.Button(root, text="Update Parameters", command=self.update_parameters)
-        update_params_button.grid(row=len(self.parameter_names), column=0, pady=10)
+        update_params_button.grid(row=len(self.parameter_names) + 1, column=0, pady=10)
 
     def create_signal_plot(self, root):
         self.fig, self.ax = plt.subplots(figsize=(6, 4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
         self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.grid(row=0, column=1, rowspan=len(self.parameter_names), padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
+        self.canvas_widget.grid(row=0, column=1, rowspan=len(self.parameter_names) + 1, padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
 
     def update_parameters(self):
         for slider in self.sliders:
@@ -91,47 +97,45 @@ class SignalPlotterApp:
         self.update_plot()
 
     def update_plot(self, *args):
-        x = np.linspace(1, 100, 1000)
-
+        x_min = self.x_min_var.get()
+        x_max = self.x_var.get()  # Updated to use the current value of the x slider
+        x = np.linspace(x_min, x_max, 1000)
+    
         # Access parameters directly using instance variables
         params = {param: var.get() for param, var in self.parameters.items()}
-
+    
         self.ax.clear()
         for func in self.functions:
             # Only pass parameters relevant to the current function
             func_params = {param: params[param] for param in self.extract_function_parameters(func)}
             y = func(x, **func_params)
             self.ax.plot(x, y, label=str(func))
-
+    
         self.ax.legend()
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('Signal')
-        self.ax.set_xlim(x.min(), x.max())
+        self.ax.set_xlim(x_min, x_max)
         self.ax.set_ylim(0, None)
         self.canvas.draw()
-
+    
         # Update the slider labels with current values
         for slider in self.sliders:
             param_name = slider['frame'].children['!label'].cget("text")
             value = getattr(self, param_name).get()
             slider['xmax_label'].configure(text=f"Value: {value:.2f}")
 
+
 # Example usage with different parameter names for each function
 # Example usage
-def tauv_function(x, c1, c2, k1, M1, p1, tauv, vth, M2):
+def calculate_expression(x, kc, kH, kmax, pr, vth, c, M, tauv):
     f = x
-    numerator1 = c1 * f * k1 * M1 * p1 * tauv
-    denominator1 = k1 + f * p1
-
-    inner_log1 = numerator1 / (numerator1 - denominator1 * vth)
-    term1 = c1 * f * k1 * M1 * p1 * tauv / (k1 + f * p1 * inner_log1)
-
-    inner_log2 = term1 / (term1 - (c2 * M2) / (f * np.log(inner_log1)))
-    term2 = 1 - vth / (term1 - (c2 * M2) / (f * np.log(inner_log2)))
-
-    result = np.log(1 / term2)
+    result = tauv*np.log(1 / (
+        1 - ((1 + (f * kc)**kH) * (kmax / (1 + (f * kc)**kH) + f * pr) * vth) /
+        (c * f * kmax * M * pr * tauv)
+    ))
     return 1/result
-functions = [tauv_function]
+
+functions = [calculate_expression]
 
 root = tk.Tk()
 app = SignalPlotterApp(root, functions=functions)
