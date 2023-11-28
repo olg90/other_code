@@ -1,0 +1,138 @@
+import tkinter as tk
+from tkinter import ttk
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from inspect import signature
+
+class SignalPlotterApp:
+    def __init__(self, root, functions):
+        root.title("Signal Plotter")
+
+        self.functions = functions
+
+        # Initialize variables and sliders
+        self.vars = {}
+        self.sliders = []
+        self.parameter_names = self.extract_parameters()
+
+        # Store parameters in a dictionary
+        self.parameters = {param: tk.DoubleVar(value=5) for param in self.parameter_names}
+
+        for param_name, var in self.parameters.items():
+            setattr(self, f"{param_name}_min_var", tk.DoubleVar(value=0))
+            setattr(self, f"{param_name}_max_var", tk.DoubleVar(value=10))
+            self.vars[param_name] = var
+
+            # Dynamically set instance variables (e.g., self.A, self.B, etc.)
+            setattr(self, param_name, var)
+
+            slider = self.create_slider(root, param_name, var,
+                                        getattr(self, f"{param_name}_min_var"),
+                                        getattr(self, f"{param_name}_max_var"))
+            self.sliders.append(slider)
+            slider['frame'].grid(row=self.parameter_names.index(param_name), column=0, padx=10, pady=5, sticky=tk.W)
+
+        # Create update parameters button and signal plot
+        self.create_update_params_button(root)
+        self.create_signal_plot(root)
+
+        # Configure row and column to expand proportionally
+        root.rowconfigure(0, weight=1)
+        root.columnconfigure(1, weight=1)
+
+        # Initialize the plot
+        self.update_plot()
+
+    def extract_parameters(self):
+        parameters = set()
+        for func in self.functions:
+            parameters.update(self.extract_function_parameters(func))
+        return list(parameters)
+
+    def extract_function_parameters(self, func):
+        sig = signature(func)
+        parameters = [param_name for param_name, param in sig.parameters.items() if param_name != 'x']
+        return parameters
+
+    def create_slider(self, root, label_text, slider_var, min_var, max_var):
+        frame = ttk.Frame(root, padding=(5, 5, 5, 5))
+        label = ttk.Label(frame, text=label_text)
+        label.grid(row=0, column=0, sticky=tk.E, padx=5)
+        xmin_entry = ttk.Entry(frame, textvariable=min_var, width=5)
+        xmin_entry.grid(row=0, column=1, padx=5)
+        slider = ttk.Scale(frame, from_=float(min_var.get()), to=float(max_var.get()), orient=tk.HORIZONTAL,
+                           length=200, variable=slider_var, command=self.update_plot)
+        slider.grid(row=0, column=2, padx=5)
+        xmax_entry = ttk.Entry(frame, textvariable=max_var, width=5)
+        xmax_entry.grid(row=0, column=3, padx=5)
+        xmax_label = ttk.Label(frame, text=f"Value: {max_var.get():.2f}")
+        xmax_label.grid(row=0, column=4, padx=5, sticky=tk.W)
+
+        return {'frame': frame, 'slider': slider, 'xmax_label': xmax_label}
+
+    def create_update_params_button(self, root):
+        update_params_button = ttk.Button(root, text="Update Parameters", command=self.update_parameters)
+        update_params_button.grid(row=len(self.parameter_names), column=0, pady=10)
+
+    def create_signal_plot(self, root):
+        self.fig, self.ax = plt.subplots(figsize=(6, 4))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=root)
+        self.canvas_widget = self.canvas.get_tk_widget()
+        self.canvas_widget.grid(row=0, column=1, rowspan=len(self.parameter_names), padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
+
+    def update_parameters(self):
+        for slider in self.sliders:
+            min_var = slider['frame'].children['!entry']
+            max_var = slider['frame'].children['!entry2']
+            slider['slider'].configure(from_=float(min_var.get()), to=float(max_var.get()))
+
+        # Call the update function after updating parameters
+        self.update_plot()
+
+    def update_plot(self, *args):
+        x = np.linspace(1, 100, 1000)
+
+        # Access parameters directly using instance variables
+        params = {param: var.get() for param, var in self.parameters.items()}
+
+        self.ax.clear()
+        for func in self.functions:
+            # Only pass parameters relevant to the current function
+            func_params = {param: params[param] for param in self.extract_function_parameters(func)}
+            y = func(x, **func_params)
+            self.ax.plot(x, y, label=str(func))
+
+        self.ax.legend()
+        self.ax.set_xlabel('x')
+        self.ax.set_ylabel('Signal')
+        self.ax.set_xlim(x.min(), x.max())
+        self.ax.set_ylim(0, None)
+        self.canvas.draw()
+
+        # Update the slider labels with current values
+        for slider in self.sliders:
+            param_name = slider['frame'].children['!label'].cget("text")
+            value = getattr(self, param_name).get()
+            slider['xmax_label'].configure(text=f"Value: {value:.2f}")
+
+# Example usage with different parameter names for each function
+# Example usage
+def tauv_function(x, c1, c2, k1, M1, p1, tauv, vth, M2):
+    f = x
+    numerator1 = c1 * f * k1 * M1 * p1 * tauv
+    denominator1 = k1 + f * p1
+
+    inner_log1 = numerator1 / (numerator1 - denominator1 * vth)
+    term1 = c1 * f * k1 * M1 * p1 * tauv / (k1 + f * p1 * inner_log1)
+
+    inner_log2 = term1 / (term1 - (c2 * M2) / (f * np.log(inner_log1)))
+    term2 = 1 - vth / (term1 - (c2 * M2) / (f * np.log(inner_log2)))
+
+    result = np.log(1 / term2)
+    return 1/result
+functions = [tauv_function]
+
+root = tk.Tk()
+app = SignalPlotterApp(root, functions=functions)
+root.mainloop()
