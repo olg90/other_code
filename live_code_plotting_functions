@@ -48,13 +48,15 @@ class SignalPlotterApp:
         # Initialize the plot
         self.update_plot()
 
+        # Bind Enter key to update_parameters method
+        root.bind('<Return>', self.update_parameters)
+
     def extract_parameters(self):
         parameters = set()
         for func in self.functions:
             parameters.update(self.extract_function_parameters(func))
         parameters.add('x')  # Add 'x' to the set of parameters
         return list(parameters)
-
 
     def extract_function_parameters(self, func):
         sig = signature(func)
@@ -87,7 +89,7 @@ class SignalPlotterApp:
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=0, column=1, rowspan=len(self.parameter_names) + 1, padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
 
-    def update_parameters(self):
+    def update_parameters(self, event=None):
         for slider in self.sliders:
             min_var = slider['frame'].children['!entry']
             max_var = slider['frame'].children['!entry2']
@@ -100,36 +102,34 @@ class SignalPlotterApp:
         x_min = self.x_min_var.get()
         x_max = self.x_var.get()  # Updated to use the current value of the x slider
         x = np.linspace(x_min, x_max, 1000)
-    
+
         # Access parameters directly using instance variables
         params = {param: var.get() for param, var in self.parameters.items()}
-    
+
         self.ax.clear()
         for func in self.functions:
             # Only pass parameters relevant to the current function
             func_params = {param: params[param] for param in self.extract_function_parameters(func)}
             y = func(x, **func_params)
             self.ax.plot(x, y, label=str(func))
-    
+
         self.ax.legend()
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('Signal')
         self.ax.set_xlim(x_min, x_max)
-        self.ax.set_ylim(0, None)
+        self.ax.set_ylim(None, None)
         self.canvas.draw()
-    
+
         # Update the slider labels with current values
         for slider in self.sliders:
             param_name = slider['frame'].children['!label'].cget("text")
             value = getattr(self, param_name).get()
             slider['xmax_label'].configure(text=f"Value: {value:.2f}")
 
-
-# Example usage with different parameter names for each function
-# Example usage
+# Example function
 def calculate_expression(x, kc, kH, kmax, pr, vth, c, M, tauv):
     f = x
-    result = tauv*np.log(1 / (
+    result = tauv * np.log(1 / (
         1 - ((1 + (f * kc)**kH) * (kmax / (1 + (f * kc)**kH) + f * pr) * vth) /
         (c * f * kmax * M * pr * tauv)
     ))
