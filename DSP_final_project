@@ -5,8 +5,16 @@ clc;
 
 dp = load('poulami_ecg.mat');
 do = load('oliver_ecg.mat');
-dp = dp.PC; % Extract from cell
 do = do.olg;
+dp = dp.PC; % Extract from cell
+
+dp = dp(1:length(do)); % Make Poulami's data the same length as Oliver's data
+
+plot(do)
+hold on
+plot(dp)
+
+
 %%
 
 % add noise to data
@@ -15,7 +23,7 @@ do = do.olg;
 % stdo = std;
 % stdp = std;
 
-stdo = 0.01;
+stdo = 0.3;
 stdp = 0.1;
 no = normrnd(0,stdo,[length(do),1]);
 np = normrnd(0,stdp,[length(dp),1]);
@@ -96,7 +104,9 @@ xlabel('Frequency, f')
 
 
 %%
+
 % Plot data
+
 subplot(2,2,1)
 plot(trange, oplot , 'r-')
 title(sprintf('Oliver ECG'));
@@ -123,6 +133,7 @@ title(sprintf('noise STD = %.2f', stdp));
 yticks([])
 
 xlim([0, nsec])
+
 
 
 
@@ -219,7 +230,7 @@ plot(stdarray, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
-title('Oliver ECG, FIR')
+title('Oliver ECG')
 
 subplot(1,2,2)
 plot(stdarray, pcormatavgfir, 'DisplayName', 'FIR')
@@ -230,7 +241,24 @@ plot(stdarray, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
 legend()
 xlabel('Noise, (std)')
 ylabel('% peaks correctly identified')
-title('Poulami ECG, FIR')
+title('Poulami ECG')
+
+%%
+ocorrdiff = ocormatavgma - ocormatavgbutterworth;
+pcorrdiff = pcormatavgma - pcormatavgbutterworth;
+
+ocorrdiffmean = smooth(ocorrdiff, 0.1, 'loess');  % You can adjust the smoothing parameter
+pcorrdiffmean = smooth(pcorrdiff, 0.1, 'loess');  % You can adjust the smoothing parameter
+
+alpha = 0.2;
+plot(stdarray, ocorrdiff, 'Color', [1,0,0, alpha], 'HandleVisibility', 'off')
+hold on
+plot(stdarray, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
+plot(stdarray, ocorrdiffmean, 'r', 'DisplayName', 'Oliver')
+plot(stdarray, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
+ylabel('Perentage correct difference')
+xlabel('Noise, (std)')
+legend('Oliver', 'Poulami')
 
 %%
 std = 0.2;
