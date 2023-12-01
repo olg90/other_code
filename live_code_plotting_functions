@@ -126,14 +126,9 @@ class SignalPlotterApp:
             value = getattr(self, param_name).get()
             slider['xmax_label'].configure(text=f"Value: {value:.2f}")
 
-# Example function
-def calculate_expression(x, kc, kH, kmax, pr, vth, c, M, tauv):
-    f = x
-    result = tauv * np.log(1 / (
-        1 - ((1 + (f * kc)**kH) * (kmax / (1 + (f * kc)**kH) + f * pr) * vth) /
-        (c * f * kmax * M * pr * tauv)
-    ))
-    return 1/result
+###############################################################################
+
+# DEFINE YOUR FUNCTIONS HERE AND PUT THEM IN THE LIST CALLED FUNCTIONS
 
 
 def sine(x, frequency, amplitude, phase):
@@ -145,7 +140,8 @@ def exp(x, tau):
 def product(x, A,B):
     return np.sin(A*x)*np.cos(x*B)
 
-functions = [sine, exp, product]
+functions = [sine, exp, product] # FUNCTIONS LIST HERE
+###############################################################################
 
 root = tk.Tk()
 app = SignalPlotterApp(root, functions=functions)
