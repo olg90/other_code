@@ -129,6 +129,7 @@ class SignalPlotterApp:
 ###############################################################################
 
 # DEFINE YOUR FUNCTIONS HERE AND PUT THEM IN THE LIST CALLED FUNCTIONS
+# YOUR INDEPENDENT VARIABLE MUST BE "x", and you can name all variables any other name
 
 
 def sine(x, frequency, amplitude, phase):
