@@ -239,7 +239,13 @@ legend()
 xlabel('Noise normalized by mean peak height')
 ylabel('% peaks correctly identified')
 title('Poulami ECG')
-
+%%
+meantestso = mean([ocormatavgfir; ocormatavgmedian; ocormatavgma; ocormatavgbutterworth], 1);
+meantestsp = mean([pcormatavgfir; pcormatavgmedian; pcormatavgma; pcormatavgbutterworth], 1);
+plot(stdarray/mpho,meantestso, 'DisplayName', 'Oliver')
+hold on
+plot(stdarray/mphp,meantestsp, 'DisplayName', 'Poulami')
+legend()
 %%
 ocorrdiff = ocormatavgma - ocormatavgbutterworth;
 pcorrdiff = pcormatavgma - pcormatavgbutterworth;
