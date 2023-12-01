@@ -151,22 +151,19 @@ xlim([0, nsec])
 
 %%
 
-% de-noise the data with a highpass FIR filter
-low_cutoff = 0.5/(0.5*1000);
-high_cutoff = 50/(0.5*1000); 
-filter_order = 100;
-band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
-
 [peakso, loco] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
 [peaksp, locp] = findpeaks(dp, 'MinPeakHeight', 0.6*max(dp), 'MinPeakDistance', 0.6*Fs);
 
-stdmin = 0; % min = 0            
+mpho = mean(peakso); % mean peak height oliver
+mphp = max(peaksp);
+
+stdmin = 0; % min = 0
 stdmax = 2;
 nstds = 1000;
 
-tolerance = 0.25;
-toleranceo = tolerance;
-tolerancep = tolerance;
+tolerance_percentage = 0.25; %0.25
+toleranceo = tolerance_percentage*mpho;
+tolerancep = tolerance_percentage*mphp;
 
 stdarray = linspace(stdmin, stdmax, nstds);
 
@@ -180,29 +177,28 @@ pcorsmedian = [];
 pcorsma = [];
 pcorsbutterworth = [];
 
-
 nsums = 3;
 %%%%%%%%%%%
 
 % FIR
 for i = 1:nsums
     disp(i)
-    [ocormatfir, pcormatfir] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    [ocormatfir, pcormatfir] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
     stdarray, toleranceo, tolerancep, Fs, 'FIR');
     ocorsfir = [ocorsfir; ocormatfir];
     pcorsfir = [pcorsfir; pcormatfir];
     
-    [ocormatma, pcormatma] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    [ocormatma, pcormatma] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
     stdarray, toleranceo, tolerancep, Fs, 'ma');
     ocorsma = [ocorsma; ocormatma];
     pcorsma = [pcorsma; pcormatma];
     
-    [ocormatmedian, pcormatmedian] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    [ocormatmedian, pcormatmedian] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
     stdarray, toleranceo, tolerancep, Fs, 'median');
     ocorsmedian = [ocorsmedian; ocormatmedian];
     pcorsmedian = [pcorsmedian; pcormatmedian];
 
-    [ocormatbutterworth, pcormatbutterworth] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, ...
+    [ocormatbutterworth, pcormatbutterworth] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
     stdarray, toleranceo, tolerancep, Fs, 'butterworth');
     ocorsbutterworth = [ocorsbutterworth; ocormatbutterworth];
     pcorsbutterworth = [pcorsbutterworth; pcormatbutterworth];
@@ -222,24 +218,25 @@ ocormatavgbutterworth = mean(ocorsbutterworth, 1);
 pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 
 subplot(1,2,1)
-plot(stdarray, ocormatavgfir, 'DisplayName', 'FIR')
+plot(stdarray/mpho, ocormatavgfir, 'DisplayName', 'FIR')
 hold on
-plot(stdarray, ocormatavgmedian, 'DisplayName', 'Median')
-plot(stdarray, ocormatavgma, 'DisplayName', 'Moving Avg.')
-plot(stdarray, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarray/mpho, ocormatavgmedian, 'DisplayName', 'Median')
+plot(stdarray/mpho, ocormatavgma, 'DisplayName', 'Moving Avg.')
+plot(stdarray/mpho, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
 legend()
-xlabel('Noise, (std)')
+xlabel('Noise normalized by mean peak height')
+xlim([0,2])
 ylabel('% peaks correctly identified')
 title('Oliver ECG')
 
 subplot(1,2,2)
-plot(stdarray, pcormatavgfir, 'DisplayName', 'FIR')
+plot(stdarray/mphp, pcormatavgfir, 'DisplayName', 'FIR')
 hold on
-plot(stdarray, pcormatavgmedian, 'DisplayName', 'Median')
-plot(stdarray, pcormatavgma, 'DisplayName', 'Moving Avg.')
-plot(stdarray, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarray/mphp, pcormatavgmedian, 'DisplayName', 'Median')
+plot(stdarray/mphp, pcormatavgma, 'DisplayName', 'Moving Avg.')
+plot(stdarray/mphp, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
 legend()
-xlabel('Noise, (std)')
+xlabel('Noise normalized by mean peak height')
 ylabel('% peaks correctly identified')
 title('Poulami ECG')
 
@@ -251,11 +248,11 @@ ocorrdiffmean = smooth(ocorrdiff, 0.1, 'loess');  % You can adjust the smoothing
 pcorrdiffmean = smooth(pcorrdiff, 0.1, 'loess');  % You can adjust the smoothing parameter
 
 alpha = 0.2;
-plot(stdarray, ocorrdiff, 'Color', [1,0,0, alpha], 'HandleVisibility', 'off')
+plot(stdarray/mpho, ocorrdiff, 'Color', [1,0,0, alpha], 'HandleVisibility', 'off')
 hold on
-plot(stdarray, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
-plot(stdarray, ocorrdiffmean, 'r', 'DisplayName', 'Oliver')
-plot(stdarray, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
+plot(stdarray/mphp, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
+plot(stdarray/mpho, ocorrdiffmean, 'r', 'DisplayName', 'Oliver')
+plot(stdarray/mphp, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
 ylabel('Perentage correct difference')
 xlabel('Noise, (std)')
 legend('Oliver', 'Poulami')
@@ -347,34 +344,7 @@ plot(trange, obut)
 % ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
 %
 
-function [ocormat, pcormat] = get_corrects_wav(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs)
-    ocormat = [];
-    pcormat = [];
-    for std = stdarray
-        no = normrnd(0,std,[length(do),1]);
-        np = normrnd(0,std,[length(dp),1]);
-        dpn = dp + np;
-        don = do + no;
-               
-        ddpdir = wavelet_denoise(don); % ------------ CHANGE IS HERE
-        ddodir = wavelet_denoise(dpn); % ------------ CHANGE IS HERE
-       
-        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6*max(ddodir), 'MinPeakDistance', 0.6*Fs);
-        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6*max(ddpdir), 'MinPeakDistance', 0.6*Fs);
-
-        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
-        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
-
-        percoroi = correcto / length(loco);
-        percorpi = correctp / length(locp);
-
-        ocormat = [ocormat, percoroi];
-        pcormat = [pcormat, percorpi];
-
-    end
-end
-
-function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
+function outputs = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, toleranceo)
 
     correcto = 0;
    
@@ -399,19 +369,8 @@ function outputs = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo)
     outputs = correcto;
 end
 
-% function ecgDenoised = wavelet_denoise(data_noisy)
-%     waveletType = 'db4';
-%     maxLevel = 30;
-%     [coefficients, levels] = wavedec(data_noisy, maxLevel, waveletType);
-%     sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
-%     threshold = sqrt(2 * log(length(data_noisy))) * sigma;
-%     coefficientsDenoised = wthresh(coefficients, 's', threshold);
-%     ecgDenoised = waverec(coefficientsDenoised, levels, waveletType);
-% end
 
-% Assuming you have the ECG signal in the variable 'ecg_signal'
-
-function [ocormat, pcormat] = get_corrects_combined(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs, filter_type)
+function [ocormat, pcormat] = run_correct_test(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs, filter_type)
     ocormat = [];
     pcormat = [];
     
@@ -422,8 +381,8 @@ function [ocormat, pcormat] = get_corrects_combined(do, dp, peakso, loco, peaksp
         [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6 * max(ddodir), 'MinPeakDistance', 0.6 * Fs);
         [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6 * max(ddpdir), 'MinPeakDistance', 0.6 * Fs);
         
-        correcto = get_correct(peaksor, locor, loco, peakso, Fs, toleranceo);
-        correctp = get_correct(peakspr, locpr, locp, peaksp, Fs, tolerancep);
+        correcto = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, toleranceo);
+        correctp = get_correct_peak_count(peakspr, locpr, locp, peaksp, Fs, tolerancep);
 
         percoroi = correcto / length(loco);
         percorpi = correctp / length(locp);
