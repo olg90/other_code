@@ -181,7 +181,7 @@ pcorsma = [];
 pcorsbutterworth = [];
 
 
-nsums = 10;
+nsums = 3;
 %%%%%%%%%%%
 
 % FIR
