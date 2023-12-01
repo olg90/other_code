@@ -135,7 +135,17 @@ def calculate_expression(x, kc, kH, kmax, pr, vth, c, M, tauv):
     ))
     return 1/result
 
-functions = [calculate_expression]
+
+def sine(x, frequency, amplitude, phase):
+    return amplitude*np.sin(x*frequency + phase)
+    
+def exp(x, tau):
+    return np.exp(-tau*x)
+
+def product(x, A,B):
+    return np.sin(A*x)*np.cos(x*B)
+
+functions = [sine, exp, product]
 
 root = tk.Tk()
 app = SignalPlotterApp(root, functions=functions)
