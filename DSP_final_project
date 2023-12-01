@@ -158,14 +158,16 @@ mpho = mean(peakso); % mean peak height oliver
 mphp = max(peaksp);
 
 stdmin = 0; % min = 0
-stdmax = 2;
+stdmaxo = 2*mpho;
+stdmaxp = 2*mphp;
 nstds = 1000;
 
 tolerance_percentage = 0.25; %0.25
 toleranceo = tolerance_percentage*mpho;
 tolerancep = tolerance_percentage*mphp;
 
-stdarray = linspace(stdmin, stdmax, nstds);
+stdarrayo = linspace(stdmin, stdmaxo, nstds);
+stdarrayp = linspace(stdmin, stdmaxp, nstds);
 
 ocorsfir = [];
 ocorsmedian = [];
@@ -184,22 +186,22 @@ nsums = 3;
 for i = 1:nsums
     disp(i)
     [ocormatfir, pcormatfir] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
-    stdarray, toleranceo, tolerancep, Fs, 'FIR');
+    stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, 'FIR');
     ocorsfir = [ocorsfir; ocormatfir];
     pcorsfir = [pcorsfir; pcormatfir];
     
     [ocormatma, pcormatma] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
-    stdarray, toleranceo, tolerancep, Fs, 'ma');
+    stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, 'ma');
     ocorsma = [ocorsma; ocormatma];
     pcorsma = [pcorsma; pcormatma];
     
     [ocormatmedian, pcormatmedian] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
-    stdarray, toleranceo, tolerancep, Fs, 'median');
+    stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, 'median');
     ocorsmedian = [ocorsmedian; ocormatmedian];
     pcorsmedian = [pcorsmedian; pcormatmedian];
 
     [ocormatbutterworth, pcormatbutterworth] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
-    stdarray, toleranceo, tolerancep, Fs, 'butterworth');
+    stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, 'butterworth');
     ocorsbutterworth = [ocorsbutterworth; ocormatbutterworth];
     pcorsbutterworth = [pcorsbutterworth; pcormatbutterworth];
     
@@ -218,11 +220,11 @@ ocormatavgbutterworth = mean(ocorsbutterworth, 1);
 pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 
 subplot(1,2,1)
-plot(stdarray/mpho, ocormatavgfir, 'DisplayName', 'FIR')
+plot(stdarrayo/mpho, ocormatavgfir, 'DisplayName', 'FIR')
 hold on
-plot(stdarray/mpho, ocormatavgmedian, 'DisplayName', 'Median')
-plot(stdarray/mpho, ocormatavgma, 'DisplayName', 'Moving Avg.')
-plot(stdarray/mpho, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarrayo/mpho, ocormatavgmedian, 'DisplayName', 'Median')
+plot(stdarrayo/mpho, ocormatavgma, 'DisplayName', 'Moving Avg.')
+plot(stdarrayo/mpho, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
 legend()
 xlabel('Noise normalized by mean peak height')
 xlim([0,2])
@@ -230,11 +232,11 @@ ylabel('% peaks correctly identified')
 title('Oliver ECG')
 
 subplot(1,2,2)
-plot(stdarray/mphp, pcormatavgfir, 'DisplayName', 'FIR')
+plot(stdarrayp/mphp, pcormatavgfir, 'DisplayName', 'FIR')
 hold on
-plot(stdarray/mphp, pcormatavgmedian, 'DisplayName', 'Median')
-plot(stdarray/mphp, pcormatavgma, 'DisplayName', 'Moving Avg.')
-plot(stdarray/mphp, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarrayp/mphp, pcormatavgmedian, 'DisplayName', 'Median')
+plot(stdarrayp/mphp, pcormatavgma, 'DisplayName', 'Moving Avg.')
+plot(stdarrayp/mphp, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
 legend()
 xlabel('Noise normalized by mean peak height')
 ylabel('% peaks correctly identified')
@@ -242,10 +244,26 @@ title('Poulami ECG')
 %%
 meantestso = mean([ocormatavgfir; ocormatavgmedian; ocormatavgma; ocormatavgbutterworth], 1);
 meantestsp = mean([pcormatavgfir; pcormatavgmedian; pcormatavgma; pcormatavgbutterworth], 1);
-plot(stdarray/mpho,meantestso, 'DisplayName', 'Oliver')
+
+smootho = smooth(meantestso, 0.1, 'loess');
+smoothp = smooth(meantestsp, 0.1, 'loess');
+
+plot(stdarrayo/mpho,meantestso, 'DisplayName', 'Oliver')
 hold on
-plot(stdarray/mphp,meantestsp, 'DisplayName', 'Poulami')
+plot(stdarrayp/mphp,meantestsp, 'DisplayName', 'Poulami')
 legend()
+%%
+sws = 100;
+mdiff = meantestso - meantestsp;
+sdiff = sum(mdiff);
+mus = movmean(mdiff, sws);
+plot(linspace(0,2,1000), mdiff, 'Color', [0,0,1,0.2], 'DisplayName', 'Differences');
+hold on
+plot(linspace(0,2,1000), mus, 'Color' , [0,0,0], 'DisplayName', 'Mean trend');
+legend(sprintf('Difference, Integral = %.2f', sdiff), 'Mean trend')
+title("Difference mean algorithm accuracy between Oliver and Poulami's data")
+xlabel('Noise normalized by mean peak height')
+
 %%
 ocorrdiff = ocormatavgma - ocormatavgbutterworth;
 pcorrdiff = pcormatavgma - pcormatavgbutterworth;
@@ -254,11 +272,11 @@ ocorrdiffmean = smooth(ocorrdiff, 0.1, 'loess');  % You can adjust the smoothing
 pcorrdiffmean = smooth(pcorrdiff, 0.1, 'loess');  % You can adjust the smoothing parameter
 
 alpha = 0.2;
-plot(stdarray/mpho, ocorrdiff, 'Color', [1,0,0, alpha], 'HandleVisibility', 'off')
+plot(stdarrayo/mpho, ocorrdiff, 'Color', [1,0,0, alpha], 'HandleVisibility', 'off')
 hold on
-plot(stdarray/mphp, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
-plot(stdarray/mpho, ocorrdiffmean, 'r', 'DisplayName', 'Oliver')
-plot(stdarray/mphp, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
+plot(stdarrayo/mphp, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
+plot(stdarrayo/mpho, ocorrdiffmean, 'r', 'DisplayName', 'Oliver')
+plot(stdarrayo/mphp, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
 ylabel('Perentage correct difference')
 xlabel('Noise, (std)')
 legend('Oliver', 'Poulami')
@@ -376,33 +394,31 @@ function outputs = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, tole
 end
 
 
-function [ocormat, pcormat] = run_correct_test(do, dp, peakso, loco, peaksp, locp, stdarray, toleranceo, tolerancep, Fs, filter_type)
-    ocormat = [];
-    pcormat = [];
+function [ocormat, pcormat] = run_correct_test(do, dp, peakso, loco, peaksp, locp, stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, filter_type)
+    ocormat = [];   
+    pcormat = []
     
-    for std = stdarray
-
-        [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type);
-
-        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6 * max(ddodir), 'MinPeakDistance', 0.6 * Fs);
-        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6 * max(ddpdir), 'MinPeakDistance', 0.6 * Fs);
-        
+    for std = stdarrayo
+        [ddodir] = denoise_algorithm(do, std, Fs, filter_type);
+        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6 * max(ddodir), 'MinPeakDistance', 0.6 * Fs);     
         correcto = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, toleranceo);
-        correctp = get_correct_peak_count(peakspr, locpr, locp, peaksp, Fs, tolerancep);
-
         percoroi = correcto / length(loco);
-        percorpi = correctp / length(locp);
-
         ocormat = [ocormat, percoroi];
+    end
+    
+    for std = stdarrayp
+        [ddpdir] = denoise_algorithm(dp, std, Fs, filter_type);
+        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6 * max(ddpdir), 'MinPeakDistance', 0.6 * Fs);
+        correctp = get_correct_peak_count(peakspr, locpr, locp, peaksp, Fs, tolerancep);
+        percorpi = correctp / length(locp);
         pcormat = [pcormat, percorpi];
     end
+    
 end
 
-function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
+function [ddodir] = denoise_algorithm(do, std, Fs, filter_type)
         no = normrnd(0, std, [length(do), 1]);
-        np = normrnd(0, std, [length(dp), 1]);
         don = do + no;
-        dpn = dp + np;
         switch lower(filter_type)
             case 'fir'
                 % FIR Bandpass Filter
@@ -410,21 +426,17 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
                 high_cutoff = 50 / (0.5 * Fs);
                 filter_order = 100;
                 band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
-                
-                ddpdir = filter(band_pass_filter, 1, dpn);
                 ddodir = filter(band_pass_filter, 1, don);
 
             case 'ma'
                 % Moving Average Filter
                 window_size_ma = 15; %50
                 ddodir = movmean(don, window_size_ma);
-                ddpdir = movmean(dpn, window_size_ma);
 
             case 'median'
                 % Median Filter
                 window_size_median =20; %25
                 ddodir = medfilt1(don, window_size_median);
-                ddpdir = medfilt1(dpn, window_size_median);
 
             case 'butterworth'
                 % Butterworth Filter
@@ -432,7 +444,6 @@ function [ddodir, ddpdir] = denoise_algorithm(do, dp, std, Fs, filter_type)
                 cutoff_frequency = 50;
                 [b, a] = butter(order_butter, cutoff_frequency / (Fs / 2), 'low');
                 ddodir = filtfilt(b, a, don);
-                ddpdir = filtfilt(b, a, dpn);
 
             otherwise
                 error('Invalid filter type. Use ''FIR'', ''MA'', ''Median'', ''Butterworth'', or ''Kalman''.');
