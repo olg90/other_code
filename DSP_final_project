@@ -242,16 +242,27 @@ xlabel('Noise normalized by mean peak height')
 ylabel('% peaks correctly identified')
 title('Poulami ECG')
 %%
+otests = [ocormatavgfir; ocormatavgmedian; ocormatavgma; ocormatavgbutterworth];
+ptests = [pcormatavgfir; pcormatavgmedian; pcormatavgma; pcormatavgbutterworth];
+
+opdiff = otests - ptests;
+
 meantestso = mean([ocormatavgfir; ocormatavgmedian; ocormatavgma; ocormatavgbutterworth], 1);
 meantestsp = mean([pcormatavgfir; pcormatavgmedian; pcormatavgma; pcormatavgbutterworth], 1);
 
 smootho = smooth(meantestso, 0.1, 'loess');
 smoothp = smooth(meantestsp, 0.1, 'loess');
 
-plot(stdarrayo/mpho,meantestso, 'DisplayName', 'Oliver')
+% plot(stdarrayo/mpho,meantestso, 'DisplayName', 'Oliver')
+% hold on
+% plot(stdarrayp/mphp,meantestsp, 'DisplayName', 'Poulami')
+% legend()
+plot(opdiff(2, :))
 hold on
-plot(stdarrayp/mphp,meantestsp, 'DisplayName', 'Poulami')
-legend()
+plot(smooth(opdiff(2,:), 0.1, 'loess'));
+
+sums = sum(opdiff, 2)
+
 %%
 sws = 100;
 mdiff = meantestso - meantestsp;
@@ -260,7 +271,7 @@ mus = movmean(mdiff, sws);
 plot(linspace(0,2,1000), mdiff, 'Color', [0,0,1,0.2], 'DisplayName', 'Differences');
 hold on
 plot(linspace(0,2,1000), mus, 'Color' , [0,0,0], 'DisplayName', 'Mean trend');
-legend(sprintf('Difference, Integral = %.2f', sdiff), 'Mean trend')
+legend(sprintf('Difference, Sum = %.2f', sdiff), 'Mean trend')
 title("Difference mean algorithm accuracy between Oliver and Poulami's data")
 xlabel('Noise normalized by mean peak height')
 
@@ -274,19 +285,23 @@ pcorrdiffmean = smooth(pcorrdiff, 0.1, 'loess');  % You can adjust the smoothing
 alpha = 0.2;
 plot(stdarrayo/mpho, ocorrdiff, 'Color', [1,0,0, alpha], 'HandleVisibility', 'off')
 hold on
-plot(stdarrayo/mphp, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
+plot(stdarrayp/mphp, pcorrdiff, 'Color', [0,0,1, alpha], 'HandleVisibility', 'off')
 plot(stdarrayo/mpho, ocorrdiffmean, 'r', 'DisplayName', 'Oliver')
-plot(stdarrayo/mphp, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
+plot(stdarrayp/mphp, pcorrdiffmean, 'b', 'DisplayName', 'Poulami')
 ylabel('Perentage correct difference')
 xlabel('Noise, (std)')
 legend('Oliver', 'Poulami')
 
 %%
 std = 0.2;
-[ofir, pfir] = denoise_algorithm(do, dp, std, Fs, 'fir');
-[oma, pma] = denoise_algorithm(do, dp, std, Fs, 'ma');
-[omed, pmed] = denoise_algorithm(do, dp, std, Fs, 'median');
-[obut, pbut] = denoise_algorithm(do, dp, std, Fs, 'butterworth');
+[ofir] = denoise_algorithm(do, std, Fs, 'fir');
+[pfir] = denoise_algorithm(dp, std, Fs, 'fir');
+[oma] = denoise_algorithm(do, std, Fs, 'ma');
+[pma] = denoise_algorithm(dp, std, Fs, 'ma');
+[omed] = denoise_algorithm(do, std, Fs, 'median');
+[pmed] = denoise_algorithm( dp, std, Fs, 'median');
+[obut] = denoise_algorithm(do, std, Fs, 'butterworth');
+[pbut] = denoise_algorithm(dp, std, Fs, 'butterworth');
 
 
 ofir = ofir(1:10*Fs);
@@ -299,73 +314,70 @@ obut = obut(1:10*Fs);
 pbut = pbut(1:10*Fs);
 
 
-sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
+% sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
+% fontsize = 12;
+% 
+% subplot(4,2,1)
+% plot(trange, ofir)
+% ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
+% title('Denoised ECG data of Oliver', 'FontSize', fontsize)
+% 
+% subplot(4,2,2)
+% plot(trange, pfir)
+% title('Denoised ECG data of Poulami', 'FontSize', fontsize)
+% 
+% subplot(4,2,3)
+% plot(trange, oma)
+% ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
+% 
+% subplot(4,2,4)
+% plot(trange, pma)
+% 
+% subplot(4,2,5)
+% plot(trange, omed)
+% ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
+% 
+% subplot(4,2,6)
+% plot(trange, pmed)
+% 
+% subplot(4,2,7)
+% plot(trange, obut)
+% ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
+% 
+% subplot(4,2,8)
+% plot(trange, obut)
+
+
 fontsize = 12;
 
-subplot(4,2,1)
+subplot(4,1,1)
 plot(trange, ofir)
 ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
-title('Oliver denoised', 'FontSize', fontsize)
-
-subplot(4,2,2)
-plot(trange, pfir)
-title('Poulami denoised', 'FontSize', fontsize)
-
-subplot(4,2,3)
+title('Denoised ECG data of Oliver, STD = 0.2', 'FontSize', fontsize)
+subplot(4,1,2)
 plot(trange, oma)
 ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
-
-subplot(4,2,4)
-plot(trange, pma)
-
-subplot(4,2,5)
+subplot(4,1,3)
 plot(trange, omed)
 ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
-
-subplot(4,2,6)
-plot(trange, pmed)
-
-subplot(4,2,7)
+subplot(4,1,4)
 plot(trange, obut)
 ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
 
-subplot(4,2,8)
+fontsize = 12;
+subplot(4,1,1)
+plot(trange, pfir)
+ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
+title('Denoised ECG data of Poulami, STD = 0.2', 'FontSize', fontsize)
+subplot(4,1,2)
+plot(trange, pma)
+ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
+subplot(4,1,3)
+plot(trange, pmed)
+ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
+subplot(4,1,4)
 plot(trange, obut)
-
-
-%
-% sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
-% fontsize = 12;
-% 
-% subplot(4,1,1)
-% plot(trange, ofir)
-% ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
-% title('Oliver denoised', 'FontSize', fontsize)
-% subplot(4,1,2)
-% plot(trange, oma)
-% ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
-% subplot(4,1,3)
-% plot(trange, omed)
-% ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
-% subplot(4,1,4)
-% plot(trange, obut)
-% ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
-% 
-% sgtitle(sprintf('STD = %.2f', std), 'FontWeight', 'bold')
-% fontsize = 12;
-% subplot(4,1,1)
-% plot(trange, pfir)
-% ylabel('FIR', 'FontWeight', 'bold', 'FontSize', fontsize)
-% title('Poulami denoised', 'FontSize', fontsize)
-% subplot(4,1,2)
-% plot(trange, pma)
-% ylabel('moving avg.', 'FontWeight', 'bold', 'FontSize', fontsize)
-% subplot(4,1,3)
-% plot(trange, pmed)
-% ylabel('median', 'FontWeight', 'bold', 'FontSize', fontsize)
-% subplot(4,1,4)
-% plot(trange, obut)
-% ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
+ylabel('butterworth', 'FontWeight', 'bold', 'FontSize', fontsize)
 %
 
 function outputs = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, toleranceo)
