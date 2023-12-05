@@ -138,7 +138,7 @@ periodo = 60/mean(odf);
 periodp = 60/mean(pdf);
 
 mpho = mean(peakso); % mean peak height oliver
-mphp = max(peaksp);
+mphp = mean(peaksp);
 
 vpho = var(peakso);
 vphp = var(peaksp);
