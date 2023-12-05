@@ -3,6 +3,7 @@ from tkinter import ttk
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from inspect import signature
 
 class SignalPlotterApp:
@@ -99,19 +100,33 @@ class SignalPlotterApp:
         update_params_button.grid(row=len(self.parameter_names) + 1, column=0, pady=10)
     
     def create_signal_plot(self, root):
-        self.fig, self.ax = plt.subplots(figsize=(6, 4))
+        num_functions = len(self.functions)
+    
+        if num_functions == 1:
+            self.fig, self.ax = plt.subplots(1, 1, figsize=(6, 4), constrained_layout=True)
+            self.colorbars = [self.fig.colorbar(mappable=None, ax=self.ax, orientation='vertical')]
+        else:
+            ncols = int(np.ceil(np.sqrt(num_functions)))
+            nrows = int(np.ceil(num_functions / ncols))
+            self.fig, self.axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 4 * nrows), constrained_layout=True)
+    
+            # Flatten the axes array to simplify the loop
+            self.axes = np.array(self.axes).flatten()
+    
+            # Create colorbars to the right of each figure
+            self.colorbars = []
+            for ax, func in zip(self.axes, self.functions):
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("right", size="5%", pad=0.1)
+                self.colorbars.append(self.fig.colorbar(mappable=None, cax=cax, orientation='vertical'))
+    
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=0, column=1, rowspan=len(self.parameter_names) + 1, padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
     
-        # Create colorbar to the right of the figure
-        cax = self.fig.add_axes([0.92, 0.1, 0.02, 0.8])  # Adjust these values to position the colorbar
-    
-        # Dummy image for the ScalarMappable
-        dummy_image = self.ax.imshow([[0, 0], [0, 0]], cmap='viridis', vmin=0, vmax=1)
-        self.colorbar = self.fig.colorbar(mappable=dummy_image, cax=cax)
-        self.colorbar.set_label('Colorbar Label')
-        self.ax.clear()
+        self.canvas.draw()
+
+
 
     def create_colormap_dropdown(self, root):
         colormap_label = ttk.Label(root, text="Select Colormap:")
@@ -137,56 +152,58 @@ class SignalPlotterApp:
         x_max = self.x_var.get()
         y_min = self.y_min_var.get()
         y_max = self.y_var.get()
-
-        n_steps = 1000
-        x = np.linspace(x_min, x_max, n_steps)
-        y = np.linspace(y_min, y_max, n_steps)
+    
+        x = np.linspace(x_min, x_max, 100)
+        y = np.linspace(y_min, y_max, 100)
         x, y = np.meshgrid(x, y)
-
+    
         # Access parameters directly using instance variables
         params = {param: var.get() for param, var in self.parameters.items()}
-
-        self.ax.clear()
-        legend_entries = []
-        for func in self.functions:
-            # Only pass parameters relevant to the current function
-            func_params = {param: params[param] for param in self.extract_function_parameters(func)}
-            z = func(x, y, **func_params)
-            func_name = func.__name__  # Get the name of the function
-            im = self.ax.imshow(z, extent=(x_min, x_max, y_min, y_max), origin='lower', aspect='auto', cmap=self.colormap_var.get())
-            legend_entries.append(im)
-
-        self.ax.set_xlabel('x')
-        self.ax.set_ylabel('y')
-        self.colorbar.update_normal(legend_entries[0])  # Update colorbar with the new data
+    
+        num_functions = len(self.functions)
+    
+        if num_functions > 1:
+            for i, ax in enumerate(self.axes):
+                if i < num_functions:  # Ensure i is within the bounds of functions
+                    ax.clear()
+                    func = self.functions[i]
+                    func_params = {param: params[param] for param in self.extract_function_parameters(func)}
+                    z = func(x, y, **func_params)
+                    im = ax.imshow(z, extent=(x_min, x_max, y_min, y_max), origin='lower', aspect='auto', cmap=self.colormap_var.get())
+                    self.colorbars[i].update_normal(im)  # Update colorbar with the new data
+                    ax.set_xlabel('x')
+                    ax.set_ylabel('y')
+        else:
+            self.ax.clear()
+            if self.functions:  # Check if functions list is not empty
+                func = self.functions[0]
+                func_params = {param: params[param] for param in self.extract_function_parameters(func)}
+                z = func(x, y, **func_params)
+                im = self.ax.imshow(z, extent=(x_min, x_max, y_min, y_max), origin='lower', aspect='auto', cmap=self.colormap_var.get())
+                self.colorbars[0].update_normal(im)  # Update colorbar with the new data
+            self.ax.set_xlabel('x')
+            self.ax.set_ylabel('y')
+    
         self.canvas.draw()
-
+    
         # Update the slider labels with current values
         for slider in self.sliders:
             param_name = slider['frame'].children['!label'].cget("text")
             value = getattr(self, param_name).get()
             slider['xmax_label'].configure(text=f"Value: {value:.2f}")
 
+
+
+
 # DEFINE YOUR FUNCTIONS HERE AND PUT THEM IN THE LIST CALLED FUNCTIONS
 # YOUR INDEPENDENT VARIABLES MUST BE "x" and "y", and you can name all other variables any other name
 
-def custom_function(x ,y, k1, p1, k2, p2, vth, c2, M2, c1, M1, tauv):
-    f1 = x
-    f2 = y
-    numerator = k1 + f1 * p1
-    denominator = k2 + f2 * p2
-
-    term1 = numerator * denominator * vth
-    term2 = -c2 * f2 * k2 * M2 * (k1 + f1 * p1) * p2
-    term3 = c1 * f1 * k1 * M1 * p1 * (k2 + f2 * p2)
-
-    inner_expression = term1 / (term2 + term3) * tauv
-    tauv_expression = np.log(1 / (1 - inner_expression))
-
-    return tauv_expression
+def custom_function_1(x, y, a, b):
+    return a * np.sin(b * x) * np.cos(y)
 
 
-functions_2d = [custom_function]  # FUNCTIONS LIST HERE
+
+functions_2d = [custom_function_1]  # FUNCTIONS LIST HERE
 
 root = tk.Tk()
 app = SignalPlotterApp(root, functions=functions_2d)
