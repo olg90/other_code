@@ -114,11 +114,7 @@ yticks([])
 
 xlim([0, nsec])
 
-
-
 %%
-
-% POULAMI RUN THIS BLOCK YOU PANCAKE <---------------------------
 
 [peakso, loco] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
 [peaksp, locp] = findpeaks(dp, 'MinPeakHeight', 0.6*max(dp), 'MinPeakDistance', 0.6*Fs);
