@@ -7,7 +7,6 @@ dp = load('poulami_ecg.mat');
 do = load('oliver_ecg.mat');
 do = do.olg;
 dp = dp.PC; % Extract from cell
-
 dp = dp(1:length(do)); % Make Poulami's data the same length as Oliver's data
 
 plot(do)
@@ -115,18 +114,11 @@ yticks([])
 
 xlim([0, nsec])
 
-% IDEA: Maybe increase STDEV and plot correctly-identified-peaks vs STDEV.
-% Maybe try different types of noise line linear noise or additional
-% sinusoidal noise that could be present because of medical equipment being
-% picked up nearby by the machinery. Maybe add multiple kinds of noise and
-% combinations and see how the algorithm fairs.  Maybe see under what
-% conditions and under what types of noise the algorithm still works.
-% Maybe for fast sinusoidal noise the frequency of the noise will have an
-% effect on how accurately the algorithm will work.  Maybe see under what
-% conditions the noise fails as in what types of noise will this be
-% ineffective to detect the R peaks.
+
 
 %%
+
+% POULAMI RUN THIS BLOCK YOU PANCAKE <---------------------------
 
 [peakso, loco] = findpeaks(do, 'MinPeakHeight', 0.6*max(do), 'MinPeakDistance', 0.6*Fs);
 [peaksp, locp] = findpeaks(dp, 'MinPeakHeight', 0.6*max(dp), 'MinPeakDistance', 0.6*Fs);
@@ -162,11 +154,13 @@ ocorsfir = [];
 ocorsmedian = [];
 ocorsma = [];
 ocorsbutterworth = [];
+ocorswav = [];
 
 pcorsfir = [];
 pcorsmedian = [];
 pcorsma = [];
 pcorsbutterworth = [];
+pcorswav = [];
 
 nsums = 3;
 %%%%%%%%%%%
@@ -194,6 +188,11 @@ for i = 1:nsums
     ocorsbutterworth = [ocorsbutterworth; ocormatbutterworth];
     pcorsbutterworth = [pcorsbutterworth; pcormatbutterworth];
     
+    [ocormatwav, pcormatwav] = run_correct_test(do, dp, peakso, loco, peaksp, locp, ...
+    stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, 'wavelet');
+    ocorswav = [ocorswav; ocormatwav];
+    pcorswav = [pcorswav; pcormatwav];
+    
 end
 
 ocormatavgfir = mean(ocorsfir, 1);
@@ -208,12 +207,16 @@ pcormatavgmedian = mean(pcorsmedian, 1);
 ocormatavgbutterworth = mean(ocorsbutterworth, 1);
 pcormatavgbutterworth = mean(pcorsbutterworth, 1);
 
+ocormatavgwav = mean(ocorsbutterworth, 1);
+pcormatavgwav = mean(pcorsbutterworth, 1);
+
 subplot(1,2,1)
 plot(stdarrayo/mpho, ocormatavgfir, 'DisplayName', 'FIR')
 hold on
 plot(stdarrayo/mpho, ocormatavgmedian, 'DisplayName', 'Median')
 plot(stdarrayo/mpho, ocormatavgma, 'DisplayName', 'Moving Avg.')
 plot(stdarrayo/mpho, ocormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarrayo/mpho, ocormatavgwav, 'DisplayName', 'Wavelet')
 legend()
 xlabel('Noise normalized by mean peak height')
 xlim([0,2])
@@ -226,6 +229,7 @@ hold on
 plot(stdarrayp/mphp, pcormatavgmedian, 'DisplayName', 'Median')
 plot(stdarrayp/mphp, pcormatavgma, 'DisplayName', 'Moving Avg.')
 plot(stdarrayp/mphp, pcormatavgbutterworth, 'DisplayName', 'Butterworth')
+plot(stdarrayp/mpho, opormatavgwav, 'DisplayName', 'Wavelet')
 legend()
 xlabel('Noise normalized by mean peak height')
 ylabel('% peaks correctly identified')
@@ -371,7 +375,44 @@ subplot(4,1,4)
 plot(trange, obut)
 ylabel('butterworth')
 xlabel('time, (sec)')
-%
+%%
+% Define filter specifications
+order_butter = 2;
+cutoff_frequency = 50;
+Fs = 1000; % replace with your actual sampling frequency
+
+% Design Butterworth filter
+[b, a] = butter(order_butter, cutoff_frequency / (Fs / 2), 'low');
+
+% Plot frequency response
+freqz(b, a, 1024, Fs);
+
+% Customize the plot
+title('Butterworth Filter Frequency Response');
+xlabel('Frequency (Hz)');
+ylabel('Magnitude (dB)');
+grid on;
+%%
+
+% Define filter specifications
+low_cutoff = 0.5 / (0.5 * Fs);
+high_cutoff = 50 / (0.5 * Fs);
+filter_order = 100;
+
+% Design bandpass FIR filter
+band_pass_filter = fir1(filter_order, [low_cutoff, high_cutoff], 'bandpass');
+
+% Plot frequency response
+freqz(band_pass_filter, 1, 1024, Fs);
+
+% Customize the plot
+title('Bandpass FIR Filter Frequency Response');
+xlabel('Frequency (Hz)');
+ylabel('Magnitude (dB)');
+grid on;
+
+
+%%
 
 function outputs = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, toleranceo)
 
@@ -403,22 +444,23 @@ function outputs = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, tole
     outputs = correcto;
 end
 
-
 function [ocormat, pcormat] = run_correct_test(do, dp, peakso, loco, peaksp, locp, stdarrayo, stdarrayp, toleranceo, tolerancep, Fs, filter_type)
-    ocormat = [];   
-    pcormat = []
-    
+
+    ocormat = [];
+    pcormat = [];
+
     for std = stdarrayo
+        
         [ddodir] = denoise_algorithm(do, std, Fs, filter_type);
-        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.6 * max(ddodir), 'MinPeakDistance', 0.6 * Fs);     
+        [peaksor, locor] = findpeaks(ddodir, 'MinPeakHeight', 0.5 * max(ddodir), 'MinPeakDistance', 0.6 * Fs);     
         correcto = get_correct_peak_count(peaksor, locor, loco, peakso, Fs, toleranceo);
         percoroi = correcto / length(loco);
         ocormat = [ocormat, percoroi];
     end
-    
+
     for std = stdarrayp
         [ddpdir] = denoise_algorithm(dp, std, Fs, filter_type);
-        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.6 * max(ddpdir), 'MinPeakDistance', 0.6 * Fs);
+        [peakspr, locpr] = findpeaks(ddpdir, 'MinPeakHeight', 0.4 * max(ddpdir), 'MinPeakDistance', 0.6 * Fs);
         correctp = get_correct_peak_count(peakspr, locpr, locp, peaksp, Fs, tolerancep);
         percorpi = correctp / length(locp);
         pcormat = [pcormat, percorpi];
@@ -454,6 +496,22 @@ function [ddodir] = denoise_algorithm(do, std, Fs, filter_type)
                 cutoff_frequency = 50;
                 [b, a] = butter(order_butter, cutoff_frequency / (Fs / 2), 'low');
                 ddodir = filtfilt(b, a, don);
+                
+            case 'wavelet'
+
+                %Choose the wavelet and set the maximum level of decomposition
+                waveletType = 'db4';
+                maxLevel = 5;
+                % Perform multilevel wavelet decomposition
+                [coefficients, levels] = wavedec(don, maxLevel, waveletType);
+                % Estimate the noise standard deviation (using median absolute deviation)
+                sigma = median(abs(coefficients - median(coefficients))) / 0.6745;
+                % Choose the threshold based on the universal threshold formula
+                threshold = sqrt(2 * log(length(don))) * sigma;
+                % Apply soft thresholding
+                coefficientsDenoised = wthresh(coefficients, 's', threshold);
+                % Reconstruct the denoised signal
+                ddodir = waverec(coefficientsDenoised, levels, waveletType);
 
             otherwise
                 error('Invalid filter type. Use ''FIR'', ''MA'', ''Median'', ''Butterworth'', or ''Kalman''.');
