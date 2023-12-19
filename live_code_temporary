@@ -61,14 +61,17 @@ class SignalPlotterApp:
         return parameters
 
     def create_sliders_for_all_functions(self, root):
-        for param_name in self.parameter_names:
+        # Sort the sliders based on parameter names
+        sorted_sliders = sorted(self.parameter_names, key=lambda param_name: param_name.lower())
+        
+        for param_name in sorted_sliders:
             var = self.parameters[param_name]
             min_var = getattr(self, f"{param_name}_min_var")
             max_var = getattr(self, f"{param_name}_max_var")
 
             slider = self.create_slider(root, param_name, var, min_var, max_var)
             self.sliders.append(slider)
-            slider['frame'].grid(row=self.parameter_names.index(param_name), column=0, padx=10, pady=5, sticky=tk.W)
+            slider['frame'].grid(row=sorted_sliders.index(param_name), column=0, padx=10, pady=5, sticky=tk.W)
 
     def create_slider(self, root, label_text, slider_var, min_var, max_var):
         frame = ttk.Frame(root, padding=(5, 5, 5, 5))
@@ -137,16 +140,17 @@ class SignalPlotterApp:
 # DEFINE YOUR FUNCTIONS HERE AND PUT THEM IN THE LIST CALLED FUNCTIONS
 # YOUR INDEPENDENT VARIABLE MUST BE "x", and you can name all variables any other name
 
-def sine(x, frequency, amplitude, phase):
-    return amplitude * np.sin(x * frequency + phase)
+# Example function
+def get_T_mean(x, c1, k1, M1, p1, c2, k2, M2, p2, vth, tauv):
+    f = x
+    numerator = vth
+    denominator = ((c1 * f * k1 * M1 * p1 * tauv) / (k1 + f * p1) - 
+                   (c2 * k2 * M2 * p2) / ((k2 + f * p2) * np.log((c1 * f * k1 * M1 * p1 * tauv) / (c1 * f * k1 * M1 * p1 * tauv - (k1 + f * p1) * vth))))
 
-def exp(x, tau):
-    return np.exp(-tau * x)
+    result = tauv * np.log(1 / (1 - numerator / denominator))
+    return 1/result
 
-def product(x, A, B):
-    return np.sin(A * x) * np.cos(x * B)
-
-functions = [sine, exp, product]  # FUNCTIONS LIST HERE
+functions = [get_T_mean]
 
 root = tk.Tk()
 app = SignalPlotterApp(root, functions=functions)
