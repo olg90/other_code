@@ -36,8 +36,21 @@ class SignalPlotterApp:
             # Dynamically set instance variables (e.g., self.A, self.B, etc.)
             setattr(self, param_name, var)
 
+        # Create a canvas with a vertical scrollbar for sliders
+        self.sliders_canvas = tk.Canvas(root, width=425)  # Increased width
+        sliders_scrollbar = tk.Scrollbar(root, orient="vertical", command=self.sliders_canvas.yview)
+
+        self.sliders_frame = ttk.Frame(self.sliders_canvas)
+
+        self.sliders_canvas.create_window((0, 0), window=self.sliders_frame, anchor="nw")
+        self.sliders_canvas.configure(yscrollcommand=sliders_scrollbar.set)
+
+        # Pack the canvas to the left of the main window
+        self.sliders_canvas.grid(row=0, column=0, rowspan=len(self.parameter_names) + 1, padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
+        sliders_scrollbar.grid(row=0, column=1, rowspan=len(self.parameter_names) + 1, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
+
         # Create sliders for all parameters alphabetically
-        self.create_sliders_for_all_functions(root)
+        self.create_sliders_for_all_functions()
 
         # Create update parameters button and signal plot
         self.create_update_params_button(root)
@@ -69,18 +82,21 @@ class SignalPlotterApp:
         parameters = [param_name for param_name, param in sig.parameters.items() if param_name not in ['x', 'y']]
         return parameters
 
-    def create_sliders_for_all_functions(self, root):
+    def create_sliders_for_all_functions(self):
         for param_name in self.parameter_names:
             var = self.parameters[param_name]
             min_var = getattr(self, f"{param_name}_min_var")
             max_var = getattr(self, f"{param_name}_max_var")
 
-            slider = self.create_slider(root, param_name, var, min_var, max_var)
+            slider = self.create_slider(param_name, var, min_var, max_var)
             self.sliders.append(slider)
-            slider['frame'].grid(row=self.parameter_names.index(param_name), column=0, padx=10, pady=5, sticky=tk.W)
+            slider['frame'].pack(side=tk.TOP, padx=10, pady=5, anchor="w")
 
-    def create_slider(self, root, label_text, slider_var, min_var, max_var):
-        frame = ttk.Frame(root, padding=(5, 5, 5, 5))
+        self.sliders_frame.update_idletasks()  # Update to get the actual frame size
+        self.sliders_canvas.config(scrollregion=self.sliders_canvas.bbox("all"))
+
+    def create_slider(self, label_text, slider_var, min_var, max_var):
+        frame = ttk.Frame(self.sliders_frame, padding=(5, 5, 5, 5))
         label = ttk.Label(frame, text=label_text)
         label.grid(row=0, column=0, sticky=tk.E, padx=5)
         xmin_entry = ttk.Entry(frame, textvariable=min_var, width=5)
@@ -124,9 +140,11 @@ class SignalPlotterApp:
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=0, column=1, rowspan=len(self.parameter_names) + 1, padx=10, pady=10, sticky=tk.W + tk.E + tk.N + tk.S)
     
+        # Remove the scrollbar on the right of the colorbar
+        for cbar in self.colorbars:
+            cbar.ax.yaxis.set_major_locator(plt.NullLocator())
+    
         self.canvas.draw()
-
-
 
     def create_colormap_dropdown(self, root):
         colormap_label = ttk.Label(root, text="Select Colormap:")
@@ -192,18 +210,18 @@ class SignalPlotterApp:
             value = getattr(self, param_name).get()
             slider['xmax_label'].configure(text=f"Value: {value:.2f}")
 
-
-
-
 # DEFINE YOUR FUNCTIONS HERE AND PUT THEM IN THE LIST CALLED FUNCTIONS
 # YOUR INDEPENDENT VARIABLES MUST BE "x" and "y", and you can name all other variables any other name
 
-def custom_function_1(x, y, a, b):
-    return a * np.sin(b * x) * np.cos(y)
+def Tmean(x, y, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e, tauv, vth):
+    f1, f2 = x, y
+    p1 = (p1e * (cp1 * f1) ** Hp1 + p1s) / (1 + (cp1 * f1) ** Hp1)
+    p2 = (p2e * (cp2 * f2) ** Hp2 + p2s) / (1 + (cp2 * f2) ** Hp2)
+    numerator = k1 + f1 * p1
+    denominator = -c2 * f2 * k2 * M2 * (k1 + f1 * p1) * p2 + c1 * f1 * k1 * M1 * p1 * (k2 + f2 * p2)
+    return tauv * np.log(1 / (1 - (numerator * (k2 + f2 * p2) * vth) / (denominator * tauv)))
 
-
-
-functions_2d = [custom_function_1]  # FUNCTIONS LIST HERE
+functions_2d = [Tmean, Tmean]  # FUNCTIONS LIST HERE
 
 root = tk.Tk()
 app = SignalPlotterApp(root, functions=functions_2d)
