@@ -1,0 +1,79 @@
+from numpy.random import gamma, randint, exponential
+from numpy import ones, zeros, concatenate, array, argsort, \
+    load, where, mean, var, around, linspace, save
+import matplotlib.pyplot as plt
+def getburst(x):
+    if x==1:
+        return 1
+def get_dist(x,dtype):
+    if dtype=='gamma':
+        return gamma(x[0],x[1]) # x0 shape, x1 scale,  mean = sh*sc
+    if dtype=='exp':
+        return exponential(x)
+def run_test(tmax, sh, sc, sh2, sc2):
+    t0=[get_dist([sh,sc],'gamma')]
+    while t0[-1] < tmax:
+# =============================================================================
+#         print(t0[-1])
+# =============================================================================
+        tnew=get_dist([sh,sc],'gamma')
+        t0.append(t0[-1]+tnew)
+    pnums=[getburst(1) for i in range(len(t0))]
+    tlist=[[get_dist([sh2, sc2],'gamma') for i in range(x)] for x in pnums]
+    tdegs=[[t0[i] + x for x in tlist[i]] for i in range(len(t0))]
+    tdegs=concatenate(tdegs)
+    id0=-1*ones(len(tdegs))
+    ts=concatenate([array(t0), tdegs])
+    ids=concatenate([pnums, id0])
+    sortind=argsort(ts)
+    times = ts[sortind]
+    changes = ids[sortind]
+    counts=[0]
+    for i in range(len(times)):
+        counts.append(counts[-1]+changes[i])
+    times = concatenate([[0], times])
+    if times[-1]>tmax:
+        maxind=where(times>tmax)[0][0]
+        tplot=times[:maxind]
+        cplot=counts[:maxind]
+    else:
+        tplot=times
+        cplot=counts
+    m=mean(counts[int(0.1*len(counts)):])
+    FF=var(counts[int(0.1*len(counts)):])/m   
+    return FF
+# =============================================================================
+# plt.step(tplot,cplot,label='mean={}, cv2={}'.format(around(m,3),around(cv2,3)))
+# plt.legend()
+# =============================================================================
+def get_FF(cva, cvd, tmax):
+    sh=1/cva**2 # CV = STD/mean = sqrt(k theta^2)/(k theta) = 1/sqrt(k)
+    sc=sh/20
+    sh2=1/cvd**2
+    sc2=sh2
+    FF=run_test(tmax, sh, sc, sh2, sc2)
+    return FF
+tmax=100
+sh=1/20
+sc=1
+sh2=1
+sc2=1
+cvdplots=[]
+cvalist=linspace(0.1, 10, 20)
+cvdlist=linspace(0.1, 10, 20)
+for i,cvd in enumerate(cvdlist):
+    fflist=[]
+    for j,cva in enumerate(cvalist):
+        print(i,j)
+        fflist.append(get_FF(cva, cvd, tmax))
+    cvdplots.append(fflist)
+
+for i,cvdplot in enumerate(cvdplots):
+    plt.plot(cvdlist, cvdplot, label='cvd={}'.format(around(cvdlist[i],3)))
+plt.legend()
+plt.show()
+
+save('cvdplots1010.npy', cvdplots)
+# =============================================================================
+# cvdplots=load('cvdplots1010.npy')
+# =============================================================================
