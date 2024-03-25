@@ -1,7 +1,9 @@
 from numpy.random import gamma, randint, exponential
 from numpy import ones, zeros, concatenate, array, argsort, \
-    load, where, mean, var, around, linspace, save
+    load, where, mean, var, around, linspace, save, mean
+import os
 import matplotlib.pyplot as plt
+
 def getburst(x):
     if x==1:
         return 1
@@ -48,30 +50,42 @@ def run_test(tmax, sh, sc, sh2, sc2):
 # =============================================================================
 def get_FF(cva, cvd, tmax):
     sh=1/cva**2 # CV = STD/mean = sqrt(k theta^2)/(k theta) = 1/sqrt(k)
-    sc=sh/20
+    sc=1/(sh*20)
     sh2=1/cvd**2
-    sc2=sh2
+    sc2=1/sh2
     FF=run_test(tmax, sh, sc, sh2, sc2)
     return FF
-tmax=100
-sh=1/20
-sc=1
-sh2=1
-sc2=1
-cvdplots=[]
-cvalist=linspace(0.1, 10, 20)
-cvdlist=linspace(0.1, 10, 20)
-for i,cvd in enumerate(cvdlist):
-    fflist=[]
-    for j,cva in enumerate(cvalist):
-        print(i,j)
-        fflist.append(get_FF(cva, cvd, tmax))
-    cvdplots.append(fflist)
+
+avgs=[]
+for q in range(100):
+    tmax=100
+    cvdplots=[]
+    cvdlist=linspace(0.1, 10, 10)
+    cvalist=linspace(0.1, 10, 100)
+    for i,cvd in enumerate(cvdlist):
+        fflist=[]
+        for j,cva in enumerate(cvalist):
+            print(q,i,j)
+            fflist.append(get_FF(cva, cvd, tmax))
+        cvdplots.append(fflist)
+    avgs.append(cvdplots)
+    
+cvdplots = mean(avgs, 0)
 
 for i,cvdplot in enumerate(cvdplots):
-    plt.plot(cvdlist, cvdplot, label='cvd={}'.format(around(cvdlist[i],3)))
+    plt.plot(cvalist, cvdplot, label='cv_d={}'.format(around(cvdlist[i],3)))
+plt.xlabel('cv of arrivals', fontsize = 20)
+plt.ylabel('Fano Factor', fontsize = 20)
+plt.tick_params(axis='both', labelsize = 20)
 plt.legend()
 plt.show()
+
+import pandas as pd
+
+df = pd.DataFrame(cvdplots.T, columns=['cv_d={}'.format(around(x,3)) for x in cvdlist], 
+               index=['cv_a={}'.format(around(x,3)) for x in cvalist])
+df.to_csv('cvdata.csv')
+
 
 save('cvdplots1010.npy', cvdplots)
 # =============================================================================
