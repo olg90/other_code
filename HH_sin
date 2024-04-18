@@ -55,16 +55,118 @@ def I_ext(t, frequency=0.1, amplitude=10):
 # Define an external sinusoidal current function (I_ext)
 # with specified frequency and amplitude.
 
+
+def get_x(xinf, x, taux, V):
+    return (xinf-x)/taux
+
+def ainf(V):
+    return (1+np.exp(-(V+31)/6))**(-1/4)
+def binf(V):
+    return (1+np.exp(V+66/7))**(-1/2)
+def cinf(V):
+    return (1+np.exp(V+66/7))**(-1/2)
+
+def winf(V):
+    return (1+np.exp(-(V+48))/6)**(-1/4)
+def zinf(V):
+    zeta=0.5
+    return (1-zeta)*(1+np.exp((V+71)/10))**(-1)+zeta
+
+def ninf(V):
+    return (1+np.exp(-(V+15)/5))**(-1/2)
+def pinf(V):
+    return (1+np.exp(-(V+23)/6))**(-1)
+
+def minf(V):
+    return (1+np.exp(-(V+38)/7))**(-1)
+def hinf(V):
+    return (1+np.exp((V+65)/6))**(-1)
+
+def taua(V):
+    return 100*(7*np.exp((V+60)/14)+29*np.exp(-(V+60)/24))**(-1)+0.1
+def taub(V):
+    return 1000*(14*np.exp((V+60)/27)+29*np.exp(-(V+60)/24))**(-1)+1
+def tauc(V):
+    return 90*(1+np.exp(-(V+66)/17))**(-1)+10
+def tauw(V):
+    return 100*(6*np.exp((V+60)/6)+16*np.exp(-(V+60)/45))**(-1)+1.5
+def tauz(V):
+    return 1000*(np.exp((V+60)/20)+np.exp(-(V+60)/8))**(-1)+50
+
+def taun(V):
+    return 100*(11*np.exp((V+60)/24)+21*np.exp(-(V+60)/23))**(-1)+0.7
+def taup(V):
+    return 100*(4*np.exp((V+60)/32)+5*np.exp(-(V+60)/22))**(-1)+5
+
+def taum(V):
+    return 10*(5*np.exp((V+60))+36*np.exp(-(V+60)/25))**(-1)+0.04
+def tauh(V):
+    return 100*(7*np.exp((V+60)/11)+10*np.exp(-(V+60)/25))**(-1)+0.6
+
 # Hodgkin-Huxley equations
 def dXdt(t, X):
-    V, m, h, n = X
-    
-    dVdt = (I_ext(t) - I_Na(V, m, h) - I_K(V, n) - I_L(V)) / C_m
-    dmdt = alpha_m(V)*(1.0 - m) - beta_m(V)*m
-    dhdt = alpha_h(V)*(1.0 - h) - beta_h(V)*h
-    dndt = alpha_n(V)*(1.0 - n) - beta_n(V)*n
-    
+    V, m, h, n = X # all defined variables values go here
+
+    dVdt=1/(C_m)*(I_A(gA,a,b,c,V,Vk)+
+                  I_LT(gLT,w,z,V,VK)+
+                  I_HT(gHT,phi,n,p,V,VK)+
+                  I_Na(gNA,m,h,V,VNa)+
+                  I_h(gh,r,V,Vh)+
+                  I_lk(glk,V,Vlk)+
+                  I_E(ge,t,tauE,V,VE)
+                  -I_ext(t, amplitude, frequency))
+
+    dadt = get_x(ainf(V),a,taua(V))
+    dbdt = get_x(binf(V),b,taub(V))
+    dcdt = get_x(cinf(V),c,tauc(V))
+
+    dwdt = get_x(winf(V), w, tauw(V))
+    dzdt = get_x(zinf(V), z, tauz(V))
+
+    dndt = get_x(ninf(V), n, taun(V))
+    dpdt = get_x(pinf(V), p, taup(V))
+
+    dmdt = (1+np.exp(-(V+38)/7))**(-1)
+    dhdt = (1+np.exp((V+65)/6))**(-1)
+
     return [dVdt, dmdt, dhdt, dndt]
+
+def I_A(gA,a,b,c,V,Vk):
+    return ga*a^4*b*c*(V-Vk)
+
+def I_LT(gLT,w,z,V,VK):
+    return gLT*w**4*z*(V-VK)
+
+
+
+def I_HT(gHT,n,p,V,VK):
+    phi=0.85
+    return gHT*(phi*n**2+(1-phi)*p)*(V-VK)
+
+def I_Na(gNA, m, h, V, VNa):
+    return gNA*m**3*h*(V-VNa)
+
+def I_h(gh,r,V,Vh):
+    return gh*r*(V-Vh)
+
+def rinf(V):
+    return (1+np.exp((V+76)/7))**(-1)
+
+def taur(V):
+    10**5*()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Define the system of ordinary differential equations (ODEs)
 # describing the Hodgkin-Huxley model.
