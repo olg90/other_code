@@ -11,50 +11,34 @@ E_Na = 50.0   # reversal potentials (mV)
 E_K = -77.0
 E_L = -54.387
 
-# Define model constants: membrane capacitance (C_m),
-# maximum conductances of sodium (g_Na), potassium (g_K), and leak (g_L) channels,
-# and reversal potentials for sodium (E_Na), potassium (E_K), and leak (E_L).
+# current functions
 
-# Channel gating kinetics
-def alpha_m(V):
-    return 0.1*(V + 40.0) / (1.0 - np.exp(-(V + 40.0) / 10.0))
+def I_A(gA,a,b,c,V,Vk):
+    return gA*a^4*b*c*(V-Vk)
 
-def beta_m(V):
-    return 4.0 * np.exp(-(V + 65.0) / 18.0)
+def I_LT(gLT,w,z,V,VK):
+    return gLT*w**4*z*(V-VK)
 
-def alpha_h(V):
-    return 0.07 * np.exp(-(V + 65.0) / 20.0)
+def I_HT(gHT,n,p,V,VK):
+    phi=0.85
+    return gHT*(phi*n**2+(1-phi)*p)*(V-VK)
 
-def beta_h(V):
-    return 1.0 / (1.0 + np.exp(-(V + 35.0) / 10.0))
+def I_Na(gNA, m, h, V, VNa):
+    return gNA*m**3*h*(V-VNa)
 
-def alpha_n(V):
-    return 0.01*(V + 55.0) / (1.0 - np.exp(-(V + 55.0) / 10.0))
+def I_h(gh,r,V,Vh):
+    return gh*r*(V-Vh)
 
-def beta_n(V):
-    return 0.125 * np.exp(-(V + 65) / 80.0)
+def I_lk(glk,V,Vlk):
+    return glk*(V-Vlk)
 
-# Define functions for voltage-dependent rate constants (alpha and beta)
-# for the activation (m) and inactivation (h) of sodium channels,
-# and for the activation (n) of potassium channels.
+def I_E(gE,t,tauE):
+    return gE*t/tauE*np.exp(1-t/tauE)
 
-# Membrane currents
-def I_Na(V, m, h):
-    return g_Na * m**3 * h * (V - E_Na)
-
-def I_K(V, n):
-    return g_K  * n**4 * (V - E_K)
-
-def I_L(V):
-    return g_L * (V - E_L)
-
-# External current
 def I_ext(t, frequency=0.1, amplitude=10):
     return amplitude * np.sin(2 * np.pi * frequency * t)
 
-# Define an external sinusoidal current function (I_ext)
-# with specified frequency and amplitude.
-
+# coefficient functions
 
 def get_x(xinf, x, taux, V):
     return (xinf-x)/taux
@@ -82,6 +66,11 @@ def minf(V):
 def hinf(V):
     return (1+np.exp((V+65)/6))**(-1)
 
+def rinf(V):
+    return (1+np.exp((V+76)/7))**(-1)
+
+# tau functions
+
 def taua(V):
     return 100*(7*np.exp((V+60)/14)+29*np.exp(-(V+60)/24))**(-1)+0.1
 def taub(V):
@@ -103,17 +92,29 @@ def taum(V):
 def tauh(V):
     return 100*(7*np.exp((V+60)/11)+10*np.exp(-(V+60)/25))**(-1)+0.6
 
+def taur(V):
+    10**5*(237*np.exp((V+60)/12)+17*np.exp(-(V+60)/14))**(-1)+25
+
 # Hodgkin-Huxley equations
+
+gA=0
+gLT=0
+gHT=150
+gNa=1000
+gh=0.5
+glk=2
+gE=
+
 def dXdt(t, X):
-    V, m, h, n = X # all defined variables values go here
+    V, a,b,c, w,z, n,p, m,h, r = X # all defined variables values go here
 
     dVdt=1/(C_m)*(I_A(gA,a,b,c,V,Vk)+
                   I_LT(gLT,w,z,V,VK)+
-                  I_HT(gHT,phi,n,p,V,VK)+
+                  I_HT(gHT,n,p,V,VK)+
                   I_Na(gNA,m,h,V,VNa)+
                   I_h(gh,r,V,Vh)+
                   I_lk(glk,V,Vlk)+
-                  I_E(ge,t,tauE,V,VE)
+                  I_E(gE,t,tauE,V,VE)
                   -I_ext(t, amplitude, frequency))
 
     dadt = get_x(ainf(V),a,taua(V))
@@ -126,47 +127,12 @@ def dXdt(t, X):
     dndt = get_x(ninf(V), n, taun(V))
     dpdt = get_x(pinf(V), p, taup(V))
 
-    dmdt = (1+np.exp(-(V+38)/7))**(-1)
-    dhdt = (1+np.exp((V+65)/6))**(-1)
+    dmdt = get_x(minf(V), m, taum(V))
+    dhdt = get_x(hinf(V), h, tauh(V))
 
-    return [dVdt, dmdt, dhdt, dndt]
+    drdt = get_x(rinf(V), r, taur(V))
 
-def I_A(gA,a,b,c,V,Vk):
-    return ga*a^4*b*c*(V-Vk)
-
-def I_LT(gLT,w,z,V,VK):
-    return gLT*w**4*z*(V-VK)
-
-
-
-def I_HT(gHT,n,p,V,VK):
-    phi=0.85
-    return gHT*(phi*n**2+(1-phi)*p)*(V-VK)
-
-def I_Na(gNA, m, h, V, VNa):
-    return gNA*m**3*h*(V-VNa)
-
-def I_h(gh,r,V,Vh):
-    return gh*r*(V-Vh)
-
-def rinf(V):
-    return (1+np.exp((V+76)/7))**(-1)
-
-def taur(V):
-    10**5*()
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return [dVdt, dadt, dbdt, dcdt, dwdt, dzdt, dndt, dpdt, dmdt, dhdt, drdt]
 
 # Define the system of ordinary differential equations (ODEs)
 # describing the Hodgkin-Huxley model.
