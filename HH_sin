@@ -2,19 +2,10 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
-# Constants
-C_m = 1.0   # membrane capacitance (uF/cm^2)
-g_Na = 120.0  # maximum conductances (mS/cm^2)
-g_K = 36.0
-g_L = 0.3
-E_Na = 50.0   # reversal potentials (mV)
-E_K = -77.0
-E_L = -54.387
-
 # current functions
 
-def I_A(gA,a,b,c,V,Vk):
-    return gA*a^4*b*c*(V-Vk)
+def I_A(gA,a,b,c,V,VK):
+    return gA*a^4*b*c*(V-VK)
 
 def I_LT(gLT,w,z,V,VK):
     return gLT*w**4*z*(V-VK)
@@ -95,23 +86,15 @@ def tauh(V):
 def taur(V):
     10**5*(237*np.exp((V+60)/12)+17*np.exp(-(V+60)/14))**(-1)+25
 
-# Hodgkin-Huxley equations
-
-gA=0
-gLT=0
-gHT=150
-gNa=1000
-gh=0.5
-glk=2
-gE=
+# Hodgkin-Huxley parameters
 
 def dXdt(t, X):
     V, a,b,c, w,z, n,p, m,h, r = X # all defined variables values go here
 
-    dVdt=1/(C_m)*(I_A(gA,a,b,c,V,Vk)+
+    dVdt=1/(C_m)*(I_A(gA,a,b,c,V,VK)+
                   I_LT(gLT,w,z,V,VK)+
                   I_HT(gHT,n,p,V,VK)+
-                  I_Na(gNA,m,h,V,VNa)+
+                  I_Na(gNa,m,h,V,VNa)+
                   I_h(gh,r,V,Vh)+
                   I_lk(glk,V,Vlk)+
                   I_E(gE,t,tauE,V,VE)
@@ -133,6 +116,37 @@ def dXdt(t, X):
     drdt = get_x(rinf(V), r, taur(V))
 
     return [dVdt, dadt, dbdt, dcdt, dwdt, dzdt, dndt, dpdt, dmdt, dhdt, drdt]
+
+
+# Paremeter values 
+
+C_m = 1.0   # membrane capacitance (uF/cm^2)
+g_Na = 120.0  # maximum conductances (mS/cm^2)
+g_K = 36.0
+g_L = 0.3
+E_Na = 50.0   # reversal potentials (mV)
+E_K = -77.0
+E_L = -54.387
+
+gA=0
+gLT=0
+gHT=150
+gNa=1000
+gh=0.5
+glk=2
+gE=0.7
+
+VK = -70
+VNa = 55
+Vh = -43
+Vlk = -65
+VE = 0
+
+tauE=0.4
+
+amplitude = 10
+frequency = 10
+
 
 # Define the system of ordinary differential equations (ODEs)
 # describing the Hodgkin-Huxley model.
