@@ -1,0 +1,46 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import binom
+
+import os
+
+os.chdir(r'C:\Users\olgud\OneDrive\Desktop\PhD\3-Research\Neuron\misc graphs')
+
+# Load data from Excel file
+filename = r'C:\Users\olgud\OneDrive\Desktop\PhD\3-Research\Neuron\ACF.xlsx'
+df = pd.read_excel(filename)
+
+# Extract the data from DataFrame and skip header rows (assuming data starts from row 11, column B)
+d = np.array(df)[10:, 1:][:, 0]
+
+c1='#1f77b4'
+c2='#d62728'
+
+# Plot histogram of the data
+plt.hist(d, bins=20, density=True, alpha=0.75, label='histogram of data',color=c1)
+
+# Define the parameters of the binomial distribution
+n = 28  # Number of trials
+p = 0.52 # Probability of success in each trial
+
+# Generate values of k (number of successes) from 0 to n
+k_values = np.arange(0, n + 1)
+
+# Calculate the probability mass function (PMF) of the binomial distribution
+binom_pmf = binom.pmf(k_values, n, p)
+
+# Plot the PMF of the binomial distribution
+plt.plot(k_values, binom_pmf, alpha=1, color=c2,
+         linewidth=5, label=f'binomial PMF (n={n}, p={p})')
+
+plt.xlim([6,23])
+
+plt.tick_params(axis='both', labelsize=10)
+# Show plot
+
+# =============================================================================
+# plt.savefig('histogram.png')
+# =============================================================================
+
+plt.show()
