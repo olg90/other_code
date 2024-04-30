@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # current functions
 
 def I_A(gA,a,b,c,V,VK):
-    return gA*a^4*b*c*(V-VK)
+    return gA*a**4*b*c*(V-VK)
 
 def I_LT(gLT,w,z,V,VK):
     return gLT*w**4*z*(V-VK)
@@ -31,7 +31,7 @@ def I_ext(t, frequency=0.1, amplitude=10):
 
 # coefficient functions
 
-def get_x(xinf, x, taux, V):
+def get_x(xinf, x, taux):
     return (xinf-x)/taux
 
 def ainf(V):
@@ -84,7 +84,7 @@ def tauh(V):
     return 100*(7*np.exp((V+60)/11)+10*np.exp(-(V+60)/25))**(-1)+0.6
 
 def taur(V):
-    10**5*(237*np.exp((V+60)/12)+17*np.exp(-(V+60)/14))**(-1)+25
+    return 10**5*(237*np.exp((V+60)/12)+17*np.exp(-(V+60)/14))**(-1)+25
 
 # Hodgkin-Huxley parameters
 
@@ -97,7 +97,7 @@ def dXdt(t, X):
                   I_Na(gNa,m,h,V,VNa)+
                   I_h(gh,r,V,Vh)+
                   I_lk(glk,V,Vlk)+
-                  I_E(gE,t,tauE,V,VE)
+                  I_E(gE,t,tauE)
                   -I_ext(t, amplitude, frequency))
 
     dadt = get_x(ainf(V),a,taua(V))
@@ -116,6 +116,7 @@ def dXdt(t, X):
     drdt = get_x(rinf(V), r, taur(V))
 
     return [dVdt, dadt, dbdt, dcdt, dwdt, dzdt, dndt, dpdt, dmdt, dhdt, drdt]
+
 
 
 # Paremeter values 
@@ -144,9 +145,8 @@ VE = 0
 
 tauE=0.4
 
-amplitude = 10
-frequency = 10
-
+amplitude = 0.5
+frequency = 20
 
 # Define the system of ordinary differential equations (ODEs)
 # describing the Hodgkin-Huxley model.
@@ -155,17 +155,25 @@ frequency = 10
 # h (sodium inactivation gating variable), and n (potassium gating variable).
 
 # Initial conditions
+
 V0 = -65.0  # initial membrane potential (mV)
+a0 = 0.32 # Don't know
+b0 = 0.32 # Don't know
+c0 = 0.32 # Don't know
+w0 = 0.32 # Don't know
+z0 = 0.32 # Don't know
+n0 = 0.32   # initial potassium gating variable
+p0 = 0.05 # Don't know
 m0 = 0.05   # initial sodium activation gating variable
 h0 = 0.6    # initial sodium inactivation gating variable
-n0 = 0.32   # initial potassium gating variable
+r0 = 0.32 # Don't know
 
 # Time vector
 t_span = (0, 100)  # simulation time span
 t_eval = np.linspace(*t_span, 1000)  # time points to evaluate
 
 # Solve ODE
-sol = solve_ivp(dXdt, t_span, [V0, m0, h0, n0], t_eval=t_eval)
+sol = solve_ivp(dXdt, t_span, [V0, a0, b0,c0,w0,z0,n0,p0,m0,h0,r0], t_eval=t_eval)
 
 # Use solve_ivp from scipy.integrate to solve the system of ODEs (dXdt)
 # with the specified initial conditions ([V0, m0, h0, n0])
@@ -184,3 +192,4 @@ plt.show()
 # Plot the membrane potential over time from the ODE solution.
 # This visualizes the dynamics of the Hodgkin-Huxley model
 # with an external sinusoidal current input.
+
