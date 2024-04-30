@@ -26,7 +26,7 @@ def I_lk(glk,V,Vlk):
 def I_E(gE,t,tauE):
     return gE*t/tauE*np.exp(1-t/tauE)
 
-def I_ext(t, frequency=0.1, amplitude=10):
+def I_ext(t, amplitude, frequency):
     return amplitude * np.sin(2 * np.pi * frequency * t)
 
 # coefficient functions
@@ -117,6 +117,10 @@ def dXdt(t, X):
 
     return [dVdt, dadt, dbdt, dcdt, dwdt, dzdt, dndt, dpdt, dmdt, dhdt, drdt]
 
+###############################################################################
+
+data = np.genfromtxt(r'C:\Users\olgud\OneDrive\Desktop\PhD\3-Research\Neuron\Finput450_NumInputs20.csv', delimiter=',')
+
 
 
 # Paremeter values 
@@ -145,8 +149,8 @@ VE = 0
 
 tauE=0.4
 
-amplitude = 0.5
-frequency = 20
+amplitude = 10
+frequency = 0.5
 
 # Define the system of ordinary differential equations (ODEs)
 # describing the Hodgkin-Huxley model.
@@ -187,6 +191,11 @@ plt.ylabel('Membrane Potential (mV)')
 plt.title('Hodgkin-Huxley Model with Sinusoidal Current')
 plt.legend()
 plt.grid(True)
+
+# =============================================================================
+# plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
+# plt.plot(data[:, 1], label='Finput450_NumInputs20_Ge')
+# =============================================================================
 plt.show()
 
 # Plot the membrane potential over time from the ODE solution.
