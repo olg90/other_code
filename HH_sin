@@ -184,7 +184,7 @@ sol = solve_ivp(dXdt, t_span, [V0, a0, b0,c0,w0,z0,n0,p0,m0,h0,r0], t_eval=t_eva
 # and evaluate the solution at the specified time points (t_eval).
 
 # Plot results
-plt.figure(figsize=(10, 6))
+plt.subplot(1,2,1)
 plt.plot(sol.t, sol.y[0], label='Membrane Potential (mV)')
 plt.xlabel('Time (ms)')
 plt.ylabel('Membrane Potential (mV)')
@@ -192,8 +192,9 @@ plt.title('Hodgkin-Huxley Model with Sinusoidal Current')
 plt.legend()
 plt.grid(True)
 
+plt.subplot(1,2,2)
+plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
 # =============================================================================
-# plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
 # plt.plot(data[:, 1], label='Finput450_NumInputs20_Ge')
 # =============================================================================
 plt.show()
