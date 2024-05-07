@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 kb=100
 kR=0.1
-muV=0.05
+muV=0.1
 kV=0.1
 
 V=0
@@ -70,14 +70,14 @@ while tcur<tmax:
         tmin=t4
     tcur+=tmin
     
-plt.plot(tRhist, Rhist, label='R')
-plt.plot(tVhist, Vhist, label='V')
+plt.plot(tRhist, Rhist, label='R', color='blue')
+plt.plot(tVhist, Vhist, label='V', color='red')
 
 # Plot horizontal lines
 plt.axhline(y=(kb * (kV + muV)) / (kR * (kV + muV)-kV*muV), linestyle='--',
-            color='red',label='kb(kV+muV)/(kR(kV+muV)-kV muV)')
+            color='blue',label='kb(kV+muV)/(kR(kV+muV)-kV muV)')
 plt.axhline(y=(kb * kV) / (kR * (kV + muV)-kV*muV), linestyle='--', 
-            color='blue',label='kb*kV/(kR(kV+muV)-kv muV)')
+            color='red',label='kb*kV/(kR(kV+muV)-kv muV)')
 
 plt.legend()
 plt.show()
@@ -88,3 +88,6 @@ if (2 * kR * kV + 2 * kR * muV +
  muV * np.sqrt(kR ** 2 - 2 * kR * kV + kV ** 2 - 2 * kR * muV + 6 * kV * muV + muV ** 2) > 
  kR ** 2 + kV ** 2 + 6 * kV * muV + muV ** 2):
     print('t')
+    
+if kR**2 + kV**2 + muV**2 + 6*kV*muV >= 2*kR*(kV + muV):
+    print('tt')
