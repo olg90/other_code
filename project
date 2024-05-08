@@ -1,21 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-kb=100
+kb=1000
 kR=0.1
-muV=0.1
-kV=0.1
+muF=0.1
+f=2
+pr=0.7
 
-V=0
+F=0
 R=0
 
 tmax=100
 
 Rhist=[10]
-Vhist=[0]
+Fhist=[0]
 tcur=0
 
-tVhist=[V]
+tFhist=[F]
 tRhist=[R]
 
 e=1e-6
@@ -23,71 +24,62 @@ while tcur<tmax:
     print(tcur)
     
     t1=np.random.exponential(1/(kb+e))
-    t2=np.random.exponential(1/(muV*V+e))
+    t2=np.random.exponential(1/(muF*F+e))
     t3=np.random.exponential(1/(kR*R+e))
-    t4=np.random.exponential(1/(kV*V+e))
+    t4=np.random.exponential(1/(f+e))
     
     tlist = [t1,t2,t3,t4]
     
-    tmin=[np.argmin(tlist)]
-    if len(tmin) > 1:
-        tmin=np.random.choice(tmin)
+    argmin=[np.argmin(tlist)]
+    if len(argmin) > 1:
+        arg=np.random.choice(argmin)
+        tmin=tlist[arg]
     else:
-        tmin=tmin[0]
+        tmin=tlist[argmin[0]]
     
     if t1 < t2 and t1 < t3 and t1< t4:
         R=R+1
         Rhist.append(R)
-        Vhist.append(V)
+        Fhist.append(F)
+        tRhist.append(tcur)
+        tFhist.append(tcur)
         tmin=t1
-        tRhist.append(tcur)
-        tVhist.append(tcur)
     if t2 < t1 and t2 < t3 and t2< t4:
-        if V>0:
+        if F>0:
             R=R+1
-            V=V-1
+            F=F-1
         Rhist.append(R)
-        Vhist.append(V)
+        Fhist.append(F)
         tRhist.append(tcur)
-        tVhist.append(tcur)
+        tFhist.append(tcur)
         tmin=t2
     if t3 < t2 and t3 < t1 and t3 < t4:
         if R>0:
             R=R-1
-            V=V+1
+            F=F+1
         Rhist.append(R)
-        Vhist.append(V)
+        Fhist.append(F)
         tRhist.append(tcur)
-        tVhist.append(tcur)
+        tFhist.append(tcur)
         tmin=t3
     if t4 < t2 and t4 < t3 and t4< t1:
-        if V>0:
-            V=V-1
+        b=np.random.binomial(F, pr)
+        F=F-b
         Rhist.append(R)
-        Vhist.append(V)
+        Fhist.append(F)
         tRhist.append(tcur)
-        tVhist.append(tcur)
+        tFhist.append(tcur)
         tmin=t4
     tcur+=tmin
     
 plt.plot(tRhist, Rhist, label='R', color='blue')
-plt.plot(tVhist, Vhist, label='V', color='red')
+plt.plot(tFhist, Fhist, label='F', color='red')
 
 # Plot horizontal lines
-plt.axhline(y=(kb * (kV + muV)) / (kR * (kV + muV)-kV*muV), linestyle='--',
-            color='blue',label='kb(kV+muV)/(kR(kV+muV)-kV muV)')
-plt.axhline(y=(kb * kV) / (kR * (kV + muV)-kV*muV), linestyle='--', 
-            color='red',label='kb*kV/(kR(kV+muV)-kv muV)')
+plt.axhline(y=kb/(f*pr), linestyle='--',
+            color='red',label='kb/(f pr)')
+plt.axhline(y=kb*(muF+f*pr)/(f*muF*pr), linestyle='--', 
+            color='blue',label='kb*(muF+f*pr)/(f*muF*pr)')
 
 plt.legend()
 plt.show()
-
-if (2 * kR * kV + 2 * kR * muV + 
- kR * np.sqrt(kR ** 2 - 2 * kR * kV + kV ** 2 - 2 * kR * muV + 6 * kV * muV + muV ** 2) + 
- kV * np.sqrt(kR ** 2 - 2 * kR * kV + kV ** 2 - 2 * kR * muV + 6 * kV * muV + muV ** 2) + 
- muV * np.sqrt(kR ** 2 - 2 * kR * kV + kV ** 2 - 2 * kR * muV + 6 * kV * muV + muV ** 2) > 
- kR ** 2 + kV ** 2 + 6 * kV * muV + muV ** 2):
-    print('t')
-    
-if kR**2 + kV**2 + muV**2 + 6*kV*muV >= 2*kR*(kV + muV):
-    print('tt')
