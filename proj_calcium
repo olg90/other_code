@@ -18,29 +18,28 @@ tmax=10
 Rhist=[R]
 Fhist=[F]
 Chist=[C]
-tcur=0
 
 tFhist=[0]
 tRhist=[0]
 tChist=[0]
 
 e=1e-6
+tcur=0
+
+tspike = f
 while tcur<tmax:
     print(tcur)
     
     t1=np.random.exponential(1/(kb+e))
     t2=np.random.exponential(1/(muF*F+e))
     t3=np.random.exponential(1/(kR*R*C+e))
-    t4=np.random.exponential(1/(f+e))
+    t4=tspike
     
-    tlist = [t1,t2,t3,t4]
+    tlist = [t1,t2,t3,tspike]
     
-    argmin=[np.argmin(tlist)]
-    if len(argmin) > 1:
-        arg=np.random.choice(argmin)
-        tmin=tlist[arg]
-    else:
-        tmin=tlist[argmin[0]]
+    argmin=np.argmin(tlist)
+
+    tmin=tlist[argmin]
     
     if t1 < t2 and t1 < t3 and t1< t4:
         R=R+1
@@ -89,6 +88,9 @@ while tcur<tmax:
         tChist.append(tcur)
         tmin=t4
     tcur+=tmin
+    tspike-=tmin
+    if tspike==0:
+        tspike=f
 
 plt.plot(tRhist, Rhist, label='R', color='blue')
 plt.plot(tFhist, Fhist, label='F', color='red')
