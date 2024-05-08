@@ -1,0 +1,106 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+kb=100
+kR=0.1
+muF=0.55
+pr=0.5
+a=10
+tauC=1
+
+f=2
+R=0
+F=0
+C=0
+
+tmax=10
+
+Rhist=[R]
+Fhist=[F]
+Chist=[C]
+tcur=0
+
+tFhist=[0]
+tRhist=[0]
+tChist=[0]
+
+e=1e-6
+while tcur<tmax:
+    print(tcur)
+    
+    t1=np.random.exponential(1/(kb+e))
+    t2=np.random.exponential(1/(muF*F+e))
+    t3=np.random.exponential(1/(kR*R*C+e))
+    t4=np.random.exponential(1/(f+e))
+    
+    tlist = [t1,t2,t3,t4]
+    
+    argmin=[np.argmin(tlist)]
+    if len(argmin) > 1:
+        arg=np.random.choice(argmin)
+        tmin=tlist[arg]
+    else:
+        tmin=tlist[argmin[0]]
+    
+    if t1 < t2 and t1 < t3 and t1< t4:
+        R=R+1
+        Rhist.append(R)
+        Fhist.append(F)
+        C=C*np.exp(-t1/tauC)
+        Chist.append(C)
+        tRhist.append(tcur)
+        tFhist.append(tcur)
+        tChist.append(tcur)
+        tmin=t1
+    if t2 < t1 and t2 < t3 and t2< t4:
+        if F>0:
+            R=R+1
+            F=F-1
+        Rhist.append(R)
+        Fhist.append(F)
+        C=C*np.exp(-t1/tauC)
+        Chist.append(C)
+        tRhist.append(tcur)
+        tFhist.append(tcur)
+        tChist.append(tcur)
+        tmin=t2
+    if t3 < t2 and t3 < t1 and t3 < t4:
+        if R>0:
+            R=R-1
+            F=F+1
+        Rhist.append(R)
+        Fhist.append(F)
+        C=C*np.exp(-t1/tauC)
+        Chist.append(C)
+        tRhist.append(tcur)
+        tFhist.append(tcur)
+        tChist.append(tcur)
+        tmin=t3
+    if t4 < t2 and t4 < t3 and t4< t1:
+        b=np.random.binomial(F, pr)
+        F=F-b
+        C=C*np.exp(-t1/tauC)
+        C=C+a
+        Rhist.append(R)
+        Fhist.append(F)
+        Chist.append(C)
+        tRhist.append(tcur)
+        tFhist.append(tcur)
+        tChist.append(tcur)
+        tmin=t4
+    tcur+=tmin
+
+plt.plot(tRhist, Rhist, label='R', color='blue')
+plt.plot(tFhist, Fhist, label='F', color='red')
+plt.plot(tChist, Chist, label='F', color='orange')
+
+# Plot horizontal lines
+# =============================================================================
+# plt.axhline(y=kb/(f*pr), linestyle='--',
+#             color='red',label='kb/(f pr)')
+# plt.axhline(y=kb*(muF+f*pr)/(f*muF*pr), linestyle='--', 
+#             color='blue',label='kb*(muF+f*pr)/(f*muF*pr)')
+# =============================================================================
+
+plt.legend()
+plt.show()
