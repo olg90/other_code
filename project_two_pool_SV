@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-def stimulate(nstim, n0):
+def simulate(nstim, n0):
     nhist=[]
     bhist=[]
     n=n0
@@ -22,9 +22,9 @@ M=100
 pr=0.1
 nstim=100
 n0=100
-a=[stimulate(nstim, n0) for i in range(10000)]
+a=[simulate(nstim, n0) for i in range(10000)]
 amean = np.mean(a, axis=0)
-plt.plot(amean/amean[0], label='stims')
+plt.plot(amean/amean[0], label='sim')
 # =============================================================================
 # times=np.linspace(0,100,100)
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
