@@ -18,8 +18,8 @@ def simulate(nstim, n0):
 e=1e-6
 f=100
 k=1
-M=100
 pr=0.1
+M=100
 nstim=100
 n0=100
 a=[simulate(nstim, n0) for i in range(10000)]
