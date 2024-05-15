@@ -27,8 +27,8 @@ plt.plot(np.mean(a, axis=0), label='stims')
 times=np.linspace(0,100,100)
 plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
 indices=range(100)
-A=k*M/(f*pr+k)
-plt.plot(indices, [pr*(A*(1-(f/(f*(1+pr)+k))**i)+n0*(f/(f*(1+pr)+k))**i) for i in indices],label='eq')
+equation = [pr*(k*M/(f*pr+k)*(1-(f/(f*(1+pr)+k))**i)+n0*(f/(f*(1+pr)+k))**i) for i in indices]
+plt.plot(indices, equation,label='eq')
 plt.legend()
 plt.show()
 
