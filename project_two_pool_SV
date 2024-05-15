@@ -30,9 +30,12 @@ plt.plot(amean/amean[0], label='stims')
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
 # =============================================================================
 indices=range(100)
-equation = np.array([pr*(k*M/(f*pr+k)*(1-(f/(f*(1+pr)+k))**i)+\
-                         n0*(f/(f*(1+pr)+k))**i) for i in indices])
-plt.plot(indices, equation/equation[0],label='eq')
+
+def bval(i):
+    A=k*M/(f*pr+k)
+    B=(f/(f*(1+pr)+k))**i
+    return pr*(A*(1-B)+n0*B)
+plt.plot(indices, [bval(i)/bval(0) for i in indices], label='eq')
 plt.legend()
 plt.show()
 
