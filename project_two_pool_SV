@@ -16,19 +16,23 @@ def x(nstim, n0):
         nhist.append(n)
     return np.array(bhist)
 e=1e-6
-f=12
+f=100
 k=1
 M=100
 pr=0.1
 nstim=100
 n0=100
 a=[x(nstim, n0) for i in range(10000)]
-plt.plot(np.mean(a, axis=0), label='stims')
-times=np.linspace(0,100,100)
-plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
+amean = np.mean(a, axis=0)
+plt.plot(amean/amean[0], label='stims')
+# =============================================================================
+# times=np.linspace(0,100,100)
+# plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
+# =============================================================================
 indices=range(100)
-equation = [pr*(k*M/(f*pr+k)*(1-(f/(f*(1+pr)+k))**i)+n0*(f/(f*(1+pr)+k))**i) for i in indices]
-plt.plot(indices, equation,label='eq')
+equation = np.array([pr*(k*M/(f*pr+k)*(1-(f/(f*(1+pr)+k))**i)+\
+                         n0*(f/(f*(1+pr)+k))**i) for i in indices])
+plt.plot(indices, equation/equation[0],label='eq')
 plt.legend()
 plt.show()
 
