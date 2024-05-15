@@ -1,0 +1,35 @@
+import numpy as np
+import matplotlib.pyplot as plt
+def x(nstim, n0):
+    nhist=[]
+    bhist=[]
+    n=n0
+    while len(bhist)<nstim:
+        t1=np.random.exponential(1/(f+e))
+        t2=np.random.exponential(1/(k*(M-n)+e))
+        if t1<t2:
+            b=np.random.binomial(n,pr)
+            n=n-b
+            bhist.append(b)
+        if t2<t1:
+            n=n+1
+        nhist.append(n)
+    return np.array(bhist)
+e=1e-6
+f=12
+k=1
+M=100
+pr=0.1
+nstim=100
+n0=100
+a=[x(nstim, n0) for i in range(10000)]
+plt.plot(np.mean(a, axis=0), label='stims')
+times=np.linspace(0,100,100)
+plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
+indices=range(100)
+A=k*M/(f*pr+k)
+plt.plot(indices, [pr*(A*(1-(f/(f*(1+pr)+k))**i)+n0*(f/(f*(1+pr)+k))**i) for i in indices],label='eq')
+plt.legend()
+plt.show()
+
+
