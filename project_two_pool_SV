@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def simulate(nstim, n0):
     nhist=[]
@@ -35,7 +36,13 @@ simsmean = np.mean(sims, axis=0)
 plt.plot(simsmean/simsmean[0], label='sim')
 indices=np.arange(nstim)
 
+data=pd.read_csv(r'C:\Users\olive\Downloads\Project data.csv')
+d100=data.iloc[:, 3]
+d100=np.array([x for x in d100 if np.isnan(x)==False])
+d100=d100/d100[0]
+
 plt.plot(indices, bval(indices)/bval(0), label='eq')
+plt.plot(range(len(d100)), d100)
 plt.legend()
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
 plt.xscale('log')
