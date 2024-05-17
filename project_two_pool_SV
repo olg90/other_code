@@ -1,5 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+e=1e-6
+f=100
+k=1
+pr=0.1
+M=100
+nstim=100
+n0=100
 def simulate(nstim, n0):
     nhist=[]
     bhist=[]
@@ -15,13 +22,6 @@ def simulate(nstim, n0):
             n=n+1
         nhist.append(n)
     return np.array(bhist)
-e=1e-6
-f=100
-k=1
-pr=0.1
-M=100
-nstim=100
-n0=100
 a=[simulate(nstim, n0) for i in range(10000)]
 amean = np.mean(a, axis=0)
 plt.plot(amean/amean[0], label='sim')
@@ -36,6 +36,7 @@ def bval(i):
     return pr*(A*(1-B)+n0*B)
 plt.plot(indices, bval(indices)/bval(0), label='eq')
 plt.legend()
+plt.axhline(y=0, xmin=0, xmax=100, color='k')
+plt.xscale('log')
 plt.show()
-
 
