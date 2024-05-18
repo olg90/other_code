@@ -1,9 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
+data=pd.read_csv(r'C:\Users\olive\Downloads\Project data.csv')
+d=data.iloc[:, 3]
+d = np.array([x for x in d if np.isnan(x)==False])
+e=1e-6
+f=200
+k=10
+pr=0.2
+M=100
+nstim=len(d)
+n0=10
 def simulate(nstim, n0):
-    nhist=[]
+# =============================================================================
+#     nhist=[]
+# =============================================================================
     bhist=[]
     n=n0
     while len(bhist)<nstim:
@@ -15,35 +26,39 @@ def simulate(nstim, n0):
             bhist.append(b)
         if t2<t1:
             n=n+1
-        nhist.append(n)
+# =============================================================================
+#         nhist.append(n)
+# =============================================================================
     return np.array(bhist)
-
+sim=[simulate(nstim, n0) for i in range(10000)]
+msim = np.mean(sim, axis=0)
+plt.plot(msim/msim[0], label='sim')
+# =============================================================================
+# times=np.linspace(0,100,100)
+# plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
+# =============================================================================
+indices=np.arange(nstim)
 def bval(i):
     A=k*M/(f*pr+k)
     B=(f/(f*(1+pr)+k))**i
     return pr*(A*(1-B)+n0*B)
+# =============================================================================
+# def nval(i):
+#     A = k*M*(1-pr)/(f+k)
+#     B = (2 *f + k) *(1 - pr)/(f + k)
+#     n1 = A + B * n0 
+#     return  A + B**(i - 1)*n1 + A*((1 - B**(i - 2))/(1 - B));
+# def bval(i):
+#     if i == 1:
+#         return pr * (n0 * (2*f + k) / (f + k) + M * k / (f + k))
+#     else: 
+#         return M * pr * k / (k + f) + pr * (1 + f/(f + k)) * nval(i - 1) 
+# =============================================================================
 
-data=pd.read_csv(r'C:\Users\olive\Downloads\Project data.csv')
-d1=data.iloc[:, 3]
-d1=np.array([x for x in d1 if np.isnan(x)==False])
-d1=d1/d1[0]
-
-e=1e-6
-f=100
-k=1
-pr=0.1
-M=100
-nstim=len(d1)
-n0=100
-
-sims=[simulate(nstim, n0) for i in range(10000)]
-simsmean = np.mean(sims, axis=0)
-plt.plot(simsmean/simsmean[0], label='sim', color='blue', marker='o', linewidth=1)
-plt.plot(np.arange(nstim), bval(np.arange(nstim))/bval(0), label='eq', 
-         color='orange', marker='o', linewidth=1)
-plt.plot(range(len(d1)), d1, label='data', color='k', marker='o', linewidth=1)
+plt.plot(indices, bval(indices)/bval(0), label='eq')
+plt.plot(d/d[0], label='data', color='k', marker='o', linewidth=1)
 plt.legend()
-# =============================================================================
-# plt.axhline(y=0, xmin=0, xmax=100, color='k')
-# =============================================================================
+plt.axhline(y=0, xmin=0, xmax=100, color='k')
 plt.show()
+
+#%%
