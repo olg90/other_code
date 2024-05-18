@@ -2,9 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 def simulate(nstim, n0):
-# =============================================================================
-#     nhist=[]
-# =============================================================================
     bhist=[]
     n=n0
     while len(bhist)<nstim:
@@ -16,17 +13,9 @@ def simulate(nstim, n0):
             bhist.append(b)
         if t2<t1:
             n=n+1
-# =============================================================================
-#         nhist.append(n)
-# =============================================================================
     return np.array(bhist)
 def bval(i):
-    # H=1, ck=1, k0 = 100, k1 = 0.1
-    # 1, 2, 60, 0.1
-    H=1
-    ck=2
-    k0 = 60
-    k1 = 0.1
+
     k=(k1*(i/ck)**H+k0)/(1+(i/ck))
     A=k*M/(f*pr+k)
     B=(f/(f*(1+pr)+k))**i
@@ -36,20 +25,28 @@ d=data.iloc[:, 3]
 d100 = np.array([x for x in d if np.isnan(x)==False])
 d=data.iloc[:, 2]
 d50 = np.array([x for x in d if np.isnan(x)==False])
-d=data.iloc[:, 2]
+d=data.iloc[:, 1]
 d2 = np.array([x for x in d if np.isnan(x)==False])
+#%%
 # Main Code -------------------------------------------------------------------
 e=1e-6
-f=200
+
+f=100
 k=10
 pr=0.2
 M=100
-nstim=len(d)
+nstim=len(d100)
 n0=10
+#H, ck, k0, k1
+# 1, 2, 30, 0.1
+H=1
+ck=2
+k0 = 30
+k1 = 0.1
 
 sim=[simulate(nstim, n0) for i in range(10000)]
 msim = np.mean(sim, axis=0)
-plt.plot(msim/msim[0], label='sim')
+plt.plot(msim/msim[0], label='sim', color='purple')
 # =============================================================================
 # times=np.linspace(0,100,100)
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
@@ -69,8 +66,10 @@ indices=np.arange(nstim)
 #         return M * pr * k / (k + f) + pr * (1 + f/(f + k)) * nval(i - 1) 
 # =============================================================================
 
-plt.plot(indices, bval(indices)/bval(0), label='eq', marker='o', linewidth=1)
-plt.plot(d100/d100[0], label='data', color='k', marker='o', linewidth=1)
+plt.plot(d100/d100[0], label='100 Hz', color='red', marker='o', linewidth=1)
+plt.plot(d50/d50[0], label='50 Hz', color='green', marker='o', linewidth=1)
+plt.plot(d2/d2[0], label='2 Hz', color='blue', marker='o', linewidth=1)
+plt.plot(indices, bval(indices)/bval(0), label='eq', marker='o', linewidth=1, color='black')
 plt.legend()
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
 plt.show()
