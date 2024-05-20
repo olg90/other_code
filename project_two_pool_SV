@@ -4,23 +4,40 @@ import pandas as pd
 def simulate(nstim, n0):
     bhist=[]
     n=n0
+    tfire=1/f
     while len(bhist)<nstim:
-        t1=np.random.exponential(1/(f+e))
-        t2=np.random.exponential(1/(k*(M-n)+e))
-        if t1<t2:
+        tfill=np.random.exponential(1/(k*(M-n)+e))
+        if tfire<tfill:
             b=np.random.binomial(n,pr)
             n=n-b
             bhist.append(b)
-        if t2<t1:
+            tfire=1/f
+        if tfill<tfire:
             n=n+1
+            tfire-=tfill
     return np.array(bhist)
 def bval(i):
-
     k=(k1*(i/ck)**H+k0)/(1+(i/ck))
     A=k*M/(f*pr+k)
     B=(f/(f*(1+pr)+k))**i
     return pr*(A*(1-B)+n0*B)
-data=pd.read_csv(r'C:\Users\olive\Downloads\Project data.csv')
+def bratio(i, k, f, pr, M, n0):
+    # Numerator
+    term1 = np.exp(-(((-1 + i) * (k + f * pr)) / f))
+    term2 = k * ((-1 + np.exp(i * (k / f + pr))) * M + n0)
+    term3 = f * n0 * pr
+    numerator = term1 * (term2 + term3)
+
+    # Denominator
+    term4 = k * ((-1 + np.exp(k / f + pr)) * M + n0)
+    term5 = f * n0 * pr
+    denominator = term4 + term5
+
+    # Final expression
+    result = numerator / denominator
+
+    return result
+data=pd.read_csv(r'C:\Users\ogamb\OneDrive\Desktop\Project data.csv')
 d=data.iloc[:, 3]
 d100 = np.array([x for x in d if np.isnan(x)==False])
 d=data.iloc[:, 2]
@@ -51,7 +68,7 @@ plt.plot(msim/msim[0], label='sim', color='purple')
 # times=np.linspace(0,100,100)
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
 # =============================================================================
-indices=np.arange(nstim)
+indices=np.arange(1, nstim+1)
 
 # =============================================================================
 # def nval(i):
@@ -69,7 +86,9 @@ indices=np.arange(nstim)
 plt.plot(d100/d100[0], label='100 Hz', color='red', marker='o', linewidth=1)
 plt.plot(d50/d50[0], label='50 Hz', color='green', marker='o', linewidth=1)
 plt.plot(d2/d2[0], label='2 Hz', color='blue', marker='o', linewidth=1)
-plt.plot(indices, bval(indices)/bval(0), label='eq', marker='o', linewidth=1, color='black')
-plt.legend()
+plt.plot(range(nstim), bratio(indices, k, f, pr, M, n0), label='eq', marker='o', linewidth=1, color='black')
+plt.ylabel('burst size normalized by first burst')
+plt.xlabel('stimulus #')
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
+plt.legend(loc='upper right')
 plt.show()
