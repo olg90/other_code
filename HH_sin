@@ -1,6 +1,35 @@
 import numpy as np
+import os
+import pandas as pd
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+
+
+def read_data(ftype, fname):
+    excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\excel_files'
+    txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\txt_files'
+    
+    if ftype == 0:  # Excel file
+        file_path = os.path.join(excel_dir, fname)
+        data = pd.read_csv(file_path)
+        return np.array(data)
+    elif ftype == 1:  # Text file
+        file_path = os.path.join(txt_dir, fname)
+        data = pd.read_csv(file_path, header=None).values.flatten()
+        return data
+    else:
+        print("Invalid file type. Please provide 0 for Excel file or 1 for text file.")
+
+def get_filenames():
+    excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\excel_files'
+    txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\txt_files'
+    
+    excel_files = [f for f in os.listdir(excel_dir) if os.path.isfile(os.path.join(excel_dir, f))]
+    txt_files = [f for f in os.listdir(txt_dir) if os.path.isfile(os.path.join(txt_dir, f))]
+    
+    return excel_files, txt_files
+
+############################################################
 
 # current functions
 
@@ -133,7 +162,7 @@ def dXdt(t, X):
 
 data = np.genfromtxt(r'C:\Users\ogamb\OneDrive\Desktop\Finput450_NumInputs20.csv', delimiter=',')
 
-
+enames, tnames = get_filenames()
 
 # Paremeter values 
 
@@ -220,3 +249,17 @@ plt.show()
 # Plot the membrane potential over time from the ODE solution.
 # This visualizes the dynamics of the Hodgkin-Huxley model
 # with an external sinusoidal current input.
+
+#%%
+fname=enames[6]
+print(fname)
+data = read_data(0, fname)  # Read the first text file
+plt.plot(data[:, 0], label='{}'.format(fname));
+plt.legend(loc='upper right')
+plt.show()
+
+
+
+
+
+
