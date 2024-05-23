@@ -4,7 +4,6 @@ import pandas as pd
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
-
 def read_data(ftype, fname):
     excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\excel_files'
     txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\txt_files'
@@ -61,7 +60,7 @@ def I_E(gE,t,tauE):
 # =============================================================================
 
 def I_ext(t, amplitude):
-    f0 = 2            # Start frequency (Hz)
+    f0 = 2.5            # Start frequency (Hz)
     f1 = 2000         # End frequency (Hz)
     t1_ms = 20000     # Duration of the chirp (milliseconds)
     t1 = t1_ms / 1000  # Convert duration to seconds
@@ -164,55 +163,41 @@ data = np.genfromtxt(r'C:\Users\ogamb\OneDrive\Desktop\Finput450_NumInputs20.csv
 
 enames, tnames = get_filenames()
 
-# Paremeter values 
 
-C_m = 1.0   # membrane capacitance (uF/cm^2)
-g_Na = 120.0  # maximum conductances (mS/cm^2)
-g_K = 36.0
-g_L = 0.3
-E_Na = 50.0   # reversal potentials (mV)
-E_K = -77.0
-E_L = -54.387
+# Paremeter values (27 parameters) -----------------------------------------
 
-gA=0
-gLT=0
-gHT=150
-gNa=1000
-gh=0.5
-glk=2
-gE=0.7
+C_m = 12  # membrane capacitance (uF/cm^2)
 
-VK = -70
-VNa = 55
-Vh = -43
-Vlk = -65
-VE = 0
+gA=0 # fast activating K+ conductance
+gLT=0 # Low threshold K+ conductance
+gHT=150 # High threshold K+ conductance
+gNa=1000 # Fast activating sodium conductance
+gh=0.5 # Hyperpolarization-conductance
+glk=2 # Leakage conductance
+gE=0.7 # Excitatory synaptic conductance
 
-tauE=0.4
+VK = -70 # potassium reverse potential
+VNa = 55 # sodium reverse potential
+Vh = -43 # hyperpolarizing reverse potential
+Vlk = -65 # leakage reverse potential
+VE = 0 # excitatory reverse potential
 
-amplitude = 10
-frequency = 2.5
+tauE=1.5 # delete e-3
 
-# starts with 2.5 Hz and ends with 2 KHz in the end
-
-# Define the system of ordinary differential equations (ODEs)
-# describing the Hodgkin-Huxley model.
-# This function dXdt(t, X) computes the derivatives of the state variables
-# V (membrane potential), m (sodium activation gating variable),
-# h (sodium inactivation gating variable), and n (potassium gating variable).
+amplitude = 100
 
 # Initial conditions
 
-V0 = -65.0  # initial membrane potential (mV)
-a0 = 0.32 # Don't know
+V0 = -65.0  # initial membrane potential (mV), 
+a0 = 0.32 # Don't know # Fast transient K+ current
 b0 = 0.32 # Don't know
 c0 = 0.32 # Don't know
-w0 = 0.32 # Don't know
+w0 = 0.32 # Don't know # Low-threshold K+ current
 z0 = 0.32 # Don't know
-n0 = 0.32   # initial potassium gating variable
+n0 = 0.32   # potassium gating variable # High-threshold K+ current
 p0 = 0.05 # Don't know
-m0 = 0.05   # initial sodium activation gating variable
-h0 = 0.6    # initial sodium inactivation gating variable
+m0 = 0.05   # sodium activation gating variable
+h0 = 0.6    # sodium inactivation gating variable
 r0 = 0.32 # Don't know
 
 # Time vector
@@ -225,41 +210,32 @@ sol = solve_ivp(dXdt, t_span, [V0,a0,b0,c0,w0,z0,n0,p0,m0,h0,r0], t_eval=t_eval)
 # Use solve_ivp from scipy.integrate to solve the system of ODEs (dXdt)
 # with the specified initial conditions ([V0, m0, h0, n0])
 # and evaluate the solution at the specified time points (t_eval).
-
+#%%
 # Plot results
 fs=15
-plt.figure()
-
-plt.title('HH model - sin input', fontsize=fs)
+plt.title('HH model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
 plt.xlabel('Time (ms)', fontsize=fs)
 plt.ylabel('Membrane Potential (mV)', fontsize=fs)
 plt.plot(np.linspace(5000, 25000, 20000), sol.y[0]/1000, 
-         label='Membrane Potential (mV)')
+         label='Hodgkin-Huxley-type model')
 plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
 plt.tick_params(axis='both', labelsize=fs)
 # =============================================================================
 # plt.plot(data[:, 1], label='Finput450_NumInputs20_Ge')
 # =============================================================================
-plt.grid(True)
+plt.grid(True, alpha = 0.3)
 plt.legend(fontsize=fs)
 plt.tight_layout()
 plt.show()
 
-
-# Plot the membrane potential over time from the ODE solution.
-# This visualizes the dynamics of the Hodgkin-Huxley model
-# with an external sinusoidal current input.
-
-#%%
-fname=enames[6]
-print(fname)
-data = read_data(0, fname)  # Read the first text file
-plt.plot(data[:, 0], label='{}'.format(fname));
-plt.legend(loc='upper right')
-plt.show()
-
-
-
-
+# =============================================================================
+# 
+# fname=enames[19]
+# print(fname)
+# data = read_data(0, fname)  # Read the first text file
+# plt.plot(data[:, 0], label='{}'.format(fname));
+# plt.legend(loc='upper right')
+# plt.show()
+# =============================================================================
 
 
