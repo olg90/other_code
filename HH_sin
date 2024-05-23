@@ -219,11 +219,11 @@ plt.ylabel('Membrane Potential (mV)', fontsize=fs)
 plt.plot(np.linspace(5000, 25000, 20000), sol.y[0]/1000, 
          label='Hodgkin-Huxley-type model')
 
-testnum=0
+testnum=1
 if testnum==0:
     plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
 if testnum==1:
-    plt.plot(read_data(0, enames[46])[:, 0], label='Finput450_NumInputs20_V')
+    plt.plot(read_data(0, enames[46])[:, 0], label=enames[46])
     
 plt.tick_params(axis='both', labelsize=fs)
 # =============================================================================
