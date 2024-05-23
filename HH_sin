@@ -213,18 +213,21 @@ sol = solve_ivp(dXdt, t_span, [V0,a0,b0,c0,w0,z0,n0,p0,m0,h0,r0], t_eval=t_eval)
 #%%
 # Plot results
 fs=15
-plt.title('HH model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
+plt.title('Hodgkin-Huxley-type model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
 plt.xlabel('Time (ms)', fontsize=fs)
 plt.ylabel('Membrane Potential (mV)', fontsize=fs)
 plt.plot(np.linspace(5000, 25000, 20000), sol.y[0]/1000, 
          label='Hodgkin-Huxley-type model')
-plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
+# =============================================================================
+# plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
+# =============================================================================
+plt.plot(read_data(0, enames[46])[:, 0], label='Finput450_NumInputs20_V')
 plt.tick_params(axis='both', labelsize=fs)
 # =============================================================================
 # plt.plot(data[:, 1], label='Finput450_NumInputs20_Ge')
 # =============================================================================
 plt.grid(True, alpha = 0.3)
-plt.legend(fontsize=fs)
+plt.legend(fontsize=fs, loc='upper right')
 plt.tight_layout()
 plt.show()
 
@@ -238,4 +241,14 @@ plt.show()
 # plt.show()
 # =============================================================================
 
+
+# =============================================================================
+# for x in range(len(enames)):
+#     fname=enames[x]
+#     print(fname)
+#     data = read_data(0, fname)  # Read the first text file
+#     plt.plot(data[:, 0], label='{}, {}'.format(x,fname));
+#     plt.legend(loc='upper right')
+#     plt.show()
+# =============================================================================
 
