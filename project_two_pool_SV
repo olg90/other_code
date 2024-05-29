@@ -92,3 +92,11 @@ plt.xlabel('stimulus #')
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
 plt.legend(loc='upper right')
 plt.show()
+def nval(i, A, B, n0):
+    return A*(1-B**i)/(1-B)+B**i*n0
+def bval(i, pr, M , k, f, n0):
+    #i >= 1
+    A=(1-pr)*M*(1-np.exp(-k/f))
+    B=(1-pr)*np.exp(-k/f)
+    return pr*M*(1-np.exp(-k/f))+pr*np.exp(-k/f)*nval(i-1, A, B, n0)
+    
