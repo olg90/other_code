@@ -16,27 +16,13 @@ def simulate(nstim, n0):
             n=n+1
             tfire-=tfill
     return np.array(bhist)
-def bval(i):
-    k=(k1*(i/ck)**H+k0)/(1+(i/ck))
-    A=k*M/(f*pr+k)
-    B=(f/(f*(1+pr)+k))**i
-    return pr*(A*(1-B)+n0*B)
-def bratio(i, k, f, pr, M, n0):
-    # Numerator
-    term1 = np.exp(-(((-1 + i) * (k + f * pr)) / f))
-    term2 = k * ((-1 + np.exp(i * (k / f + pr))) * M + n0)
-    term3 = f * n0 * pr
-    numerator = term1 * (term2 + term3)
-
-    # Denominator
-    term4 = k * ((-1 + np.exp(k / f + pr)) * M + n0)
-    term5 = f * n0 * pr
-    denominator = term4 + term5
-
-    # Final expression
-    result = numerator / denominator
-
-    return result
+def nval(i, A, B, n0):
+    return A*(1-B**i)/(1-B)+B**i*n0
+def bval(i, pr, M , k, f, n0):
+    #i >= 1
+    A=(1-pr)*M*(1-np.exp(-k/f))
+    B=(1-pr)*np.exp(-k/f)
+    return pr*M*(1-np.exp(-k/f))+pr*np.exp(-k/f)*nval(i-1, A, B, n0)
 data=pd.read_csv(r'C:\Users\ogamb\OneDrive\Desktop\Project data.csv')
 d=data.iloc[:, 3]
 d100 = np.array([x for x in d if np.isnan(x)==False])
@@ -47,7 +33,6 @@ d2 = np.array([x for x in d if np.isnan(x)==False])
 #%%
 # Main Code -------------------------------------------------------------------
 e=1e-6
-
 f=100
 k=10
 pr=0.2
@@ -60,7 +45,6 @@ H=1
 ck=2
 k0 = 30
 k1 = 0.1
-
 sim=[simulate(nstim, n0) for i in range(10000)]
 msim = np.mean(sim, axis=0)
 plt.plot(msim/msim[0], label='sim', color='purple')
@@ -69,34 +53,15 @@ plt.plot(msim/msim[0], label='sim', color='purple')
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
 # =============================================================================
 indices=np.arange(1, nstim+1)
-
-# =============================================================================
-# def nval(i):
-#     A = k*M*(1-pr)/(f+k)
-#     B = (2 *f + k) *(1 - pr)/(f + k)
-#     n1 = A + B * n0 
-#     return  A + B**(i - 1)*n1 + A*((1 - B**(i - 2))/(1 - B));
-# def bval(i):
-#     if i == 1:
-#         return pr * (n0 * (2*f + k) / (f + k) + M * k / (f + k))
-#     else: 
-#         return M * pr * k / (k + f) + pr * (1 + f/(f + k)) * nval(i - 1) 
-# =============================================================================
-
 plt.plot(d100/d100[0], label='100 Hz', color='red', marker='o', linewidth=1)
 plt.plot(d50/d50[0], label='50 Hz', color='green', marker='o', linewidth=1)
 plt.plot(d2/d2[0], label='2 Hz', color='blue', marker='o', linewidth=1)
-plt.plot(range(nstim), bratio(indices, k, f, pr, M, n0), label='eq', marker='o', linewidth=1, color='black')
+bratio=[bval(i, pr, M, k, f, n0)/bval(1, pr, M, k, f, n0) for i in indices]
+plt.plot(range(nstim), bratio, label='eq', marker='o', linewidth=1, color='black')
 plt.ylabel('burst size normalized by first burst')
 plt.xlabel('stimulus #')
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
 plt.legend(loc='upper right')
 plt.show()
-def nval(i, A, B, n0):
-    return A*(1-B**i)/(1-B)+B**i*n0
-def bval(i, pr, M , k, f, n0):
-    #i >= 1
-    A=(1-pr)*M*(1-np.exp(-k/f))
-    B=(1-pr)*np.exp(-k/f)
-    return pr*M*(1-np.exp(-k/f))+pr*np.exp(-k/f)*nval(i-1, A, B, n0)
+
     
