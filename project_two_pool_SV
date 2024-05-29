@@ -37,8 +37,8 @@ f=100
 k=10
 pr=0.2
 M=100
-nstim=len(d100)
 n0=10
+nstim=len(d100)
 #H, ck, k0, k1
 # 1, 2, 30, 0.1
 H=1
