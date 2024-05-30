@@ -137,7 +137,7 @@ def dXdt(t, X):
                   I_Na(gNa,m,h,V,VNa)+ # sodium
                   I_h(gh,r,V,Vh)+ # 
                   I_lk(glk,V,Vlk)+ # leakage
-                  I_E(gE,t,tauE)
+                  I_E(gE,t, tauE)
                   -I_ext(t, amplitude))
 
     dadt = get_x(ainf(V),a,taua(V))
