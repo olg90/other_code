@@ -19,18 +19,18 @@ def simulate(nstim, n0):
     return np.array(bhist)
 def fun(i):
     A0=0.1
-    A1=0.5
+    A1=0.2
     A2=0.01
-    c1=0.5
-    c2=0.3
+    c1=1
+    c2=0.5
     i1=1
-    i2=4
+    i2=20
     return (A1-A0)/(1+np.exp(-c1*(i-i1)))+(A2-A1)/(1+np.exp(-c2*(i-i2)))+A0
 def get_hill(x, x0,x1,Hx,cx):
     return (x1*(x/cx)**Hx+x0)/(1+(x/cx)**Hx)
 def bval(i, pr, M , k, f, n0):
     # i means the ith AP, which is i/f seconds in
-    #i >= 1
+    # i >= 1
 # =============================================================================
 #     H=1.5
 #     cx=10
@@ -43,7 +43,7 @@ def bval(i, pr, M , k, f, n0):
     B=(1-pr)*np.exp(-k/f)
     n_i_minus_1 = A*(1-B**(i-1))/(1-B)+B**(i-1)*n0
     return pr*M*(1-np.exp(-k/f))+pr*np.exp(-k/f)*n_i_minus_1
-data=pd.read_csv(r'C:\Users\ogamb\OneDrive\Desktop\Project data.csv')
+data=pd.read_csv(r'C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\Biomedical Modeling\Project data.csv')
 d=data.iloc[:, 3]
 d100 = np.array([x for x in d if np.isnan(x)==False])
 d=data.iloc[:, 2]
@@ -51,9 +51,9 @@ d50 = np.array([x for x in d if np.isnan(x)==False])
 d=data.iloc[:, 1]
 d2 = np.array([x for x in d if np.isnan(x)==False])
 # Main Code -------------------------------------------------------------------
-f=100
-k=10
-pr=0.1
+f=50
+k=20
+pr=0.2
 M=100
 n0=0
 nstim=len(d100)
@@ -67,6 +67,7 @@ nstim=len(d100)
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
 # =============================================================================
 indices = np.arange(1, nstim + 1)
+plt.subplot(1,2,1)
 plt.plot(indices, d100 / d100[0], label='100 Hz', color='red', marker='o', linewidth=1)
 plt.plot(indices, d50 / d50[0], label='50 Hz', color='green', marker='o', linewidth=1)
 plt.plot(indices, d2 / d2[0], label='2 Hz', color='blue', marker='o', linewidth=1)
@@ -80,13 +81,18 @@ plt.xlabel('stimulus #')
 # =============================================================================
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
 plt.legend(loc='upper right')
-plt.xscale('log')
+# =============================================================================
+# plt.xscale('log')
+# =============================================================================
 # =============================================================================
 # plt.ylim([0, 3])
 # =============================================================================
-plt.xlim(0.95, nstim)  # Adjust x-axis limits to ensure the first point is shown
+# =============================================================================
+# plt.xlim(0.95, nstim)  # Adjust x-axis limits to ensure the first point is shown
+# =============================================================================
+plt.subplot(1,2,2)
+plt.plot(fun(indices))
+plt.xlabel("stimulus #")
+plt.ylabel('probability')
+plt.title('Probability')
 plt.show()
-
-
-
-    
