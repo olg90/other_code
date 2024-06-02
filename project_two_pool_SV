@@ -76,7 +76,9 @@ d2 = np.array([x for x in d if np.isnan(x)==False])
 f=2
 k=10
 dlen=len(d100)
-pr=0.1*np.ones(dlen) # must be len = 48
+def get_pr(f, k, dlen):
+    return 0.1*np.ones(dlen)
+pr=get_pr(f, k, dlen) # must be len = 48
 M=100
 n0=0
 nstim=len(d100)
