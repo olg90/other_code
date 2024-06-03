@@ -67,21 +67,38 @@ def bval(i, pr, M , k, f, n0):
 # =============================================================================
 data=pd.read_csv(r'C:\Users\ogamb\OneDrive\Desktop\Project data.csv')
 d=data.iloc[:, 3]
-d100 = np.array([x for x in d if np.isnan(x)==False])
+d1 = np.array([x for x in d if np.isnan(x)==False])
 d=data.iloc[:, 2]
-d50 = np.array([x for x in d if np.isnan(x)==False])
+d5 = np.array([x for x in d if np.isnan(x)==False])
 d=data.iloc[:, 1]
 d2 = np.array([x for x in d if np.isnan(x)==False])
 # Main Code -------------------------------------------------------------------
-f=2
-k=10
-dlen=len(d100)
 def get_pr(f, k, dlen):
-    return 0.1*np.ones(dlen)
-pr=get_pr(f, k, dlen) # must be len = 48
+    i=np.arange(dlen)
+# =============================================================================
+#     pr = 0.1*np.exp(-0.03*x) # <-------------- edit here, 2 Hz
+# =============================================================================
+# =============================================================================
+#     pr = 0.9*np.exp(-0.05*x) # <-------------- edit here
+# =============================================================================
+# =============================================================================
+#     c = 1.5
+#     p0 = 0.4
+#     R0 = 0.3
+#     pr=(np.exp(-(c + f) * x) * (np.exp(c * x) * f * R0 + np.exp(f * x) * (c * p0 - f * (p0 + R0)))) / (c - f)
+# =============================================================================
+    
+    pr = i*np.exp(-i)+0.5*np.exp(-i/f/k)
+    return pr
+fs=[100,50,2]
+k=10
 M=100
 n0=0
-nstim=len(d100)
+nstim=len(d1)
+# =============================================================================
+# pr=get_pr(f, k, nstim) # must be len = 48
+# =============================================================================
+prs=[get_pr(f,k,nstim) for f in fs]
 # =============================================================================
 # sim=[simulate(nstim, n0) for i in range(10000)]
 # msim = np.mean(sim, axis=0)
@@ -92,11 +109,22 @@ nstim=len(d100)
 # plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
 # =============================================================================
 indices = np.arange(1, nstim + 1)
-plt.plot(indices, d100 / d100[0], label='100 Hz', color='red', marker='o', linewidth=1)
-plt.plot(indices, d50 / d50[0], label='50 Hz', color='green', marker='o', linewidth=1)
-plt.plot(indices, d2 / d2[0], label='2 Hz', color='blue', marker='o', linewidth=1)
-bratio = [bval(i, pr, M, k, f, n0) / bval(1, pr, M, k, f, n0) for i in indices]
-plt.plot(indices, bratio, label='eq', marker='o', linewidth=1, color='black')
+# =============================================================================
+# plt.subplot(1,2,1)
+# =============================================================================
+plt.scatter(indices, d1 / d1[0], label='100 Hz', color='red', 
+            marker='o', linewidth=1, s=10)
+plt.scatter(indices, d5 / d5[0], label='50 Hz', color='green',
+            marker='o', linewidth=1, s=10)
+plt.scatter(indices, d2 / d2[0], label='2 Hz', color='blue',
+            marker='o', linewidth=1, s=10)
+bratios = [[bval(i, prs[j], M, k, fs[j], n0) / bval(1, prs[j], M, k, fs[j], n0) for i in indices] for j in range(len(fs))]
+
+cs=['red', 'green', 'blue']
+ns=[100, 50, 2]
+for i in range(len(prs)):
+    plt.plot(indices, bratios[i], label='{} Hz'.format(ns[i]), 
+            linewidth=1, color=cs[i])
 plt.ylabel('normalized burst size')
 plt.xlabel('stimulus #')
 # =============================================================================
@@ -104,9 +132,14 @@ plt.xlabel('stimulus #')
 # plt.axhline(y=ss, xmin=0, xmax=100, color='orange')
 # =============================================================================
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
+for i in range(len(prs)):
+    plt.plot(indices, prs[i], 
+             label='pr-{} Hz'.format(fs[i]), color=cs[i], linestyle='--')
+
 plt.legend(loc='upper right')
-plt.xscale('log')
-plt.show()
+# =============================================================================
+# plt.xscale('log')
+# =============================================================================
 # =============================================================================
 # plt.ylim([0, 3])
 # =============================================================================
@@ -120,3 +153,16 @@ plt.show()
 # plt.title('Rate')
 # plt.show()
 # =============================================================================
+# =============================================================================
+# plt.subplot(1,2,2)
+# plt.plot(pr)
+# plt.xlabel("stimulus #")
+# plt.title('Probability')
+# plt.show()
+# =============================================================================
+if max(pr)>1:
+    plt.axvline(x=25, color='k', linestyle='--')
+    raise Exception('pmax>1')
+if min(pr)<0:
+    plt.axvline(x=25, color='k', linestyle='--')
+    raise Exception('pmin<0')
