@@ -1,67 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-def simulate(nstim, n0):
-    bhist=[]
-    n=n0
-    tfire=1/f
-    e=1e-6
-    while len(bhist)<nstim:
-        tfill=np.random.exponential(1/(k*(M-n)+e))
-        if tfire<tfill:
-            b=np.random.binomial(n,pr)
-            n=n-b
-            bhist.append(b)
-            tfire=1/f
-        if tfill<tfire:
-            n=n+1
-            tfire-=tfill
-    return np.array(bhist)
-def fun(i):
 # =============================================================================
-#     A0=0.1
-#     A1=0.2
-#     A2=0.1
-#     c1=1
-#     c2=1
-#     i1=10
-#     i2=20
-#     return (A1-A0)/(1+np.exp(-c1*(i-i1)))+(A2-A1)/(1+np.exp(-c2*(i-i2)))+A0
+# def simulate(nstim, n0):
+#     bhist=[]
+#     n=n0
+#     tfire=1/f
+#     e=1e-6
+#     while len(bhist)<nstim:
+#         tfill=np.random.exponential(1/(k*(M-n)+e))
+#         if tfire<tfill:
+#             b=np.random.binomial(n,pr)
+#             n=n-b
+#             bhist.append(b)
+#             tfire=1/f
+#         if tfill<tfire:
+#             n=n+1
+#             tfire-=tfill
+#     return np.array(bhist)
 # =============================================================================
-# =============================================================================
-#     return f*i*np.exp(-k*i)/(f*i+1)
-# =============================================================================
-# =============================================================================
-#     return (i/f)/(f+(i/f)**2)
-# =============================================================================
-    return (i/f)*np.exp(-i/f)
 def get_hill(x, x0,x1,Hx,cx):
     return (x1*(x/cx)**Hx+x0)/(1+(x/cx)**Hx)
 def bval(i, pr, M , k, f, n0):
     # i means the ith AP, which is i/f seconds in
     # i >= 1
-# =============================================================================
-#     H=1.5
-#     cx=10
-#     x0=0.1# start
-#     x1=0# end
-#     pr=get_hill(i, x0, x1, H, cx) # hill function
-# =============================================================================
-# =============================================================================
-#     k=fun(i)
-#     A=(1-pr)*M*(1-np.exp(-k/f))
-#     B=(1-pr)*np.exp(-k/f)
-#     n_i_minus_1 = A*(1-B**(i-1))/(1-B)+B**(i-1)*n0
-#     return pr*M*(1-np.exp(-k/f))+pr*np.exp(-k/f)*n_i_minus_1
-# =============================================================================
-
     def Q(n,i, pr):
         return np.prod(pr[n-1:i])
     A=M*(1-np.exp(-k/f))
     B=np.exp(-k/f)
-    
-    x = np.sum([pr[z]*B**(-z)*Q(z,i, pr) for z in range(0, i-1)])
-    return pr[i-1]*A+A*B**(i-1)*x+pr[0]*n0*B**i*Q(1,i-1, pr)
+    x = np.sum([B**(j)*Q(i-j,i, pr) for j in range(1, i)])
+    return pr[i-1]*(A*(x+1)+Q(1,i-1, pr)*B**(i-1)*n0)
 # =============================================================================
 # data=pd.read_csv(r'C:\Users\olgud\OneDrive\Desktop\PhD\1-Classes\Biomedical Modeling\Project data.csv')
 # =============================================================================
@@ -88,7 +56,7 @@ def get_pr(f, k, dlen):
 #     pr=(np.exp(-(c + f) * x) * (np.exp(c * x) * f * R0 + np.exp(f * x) * (c * p0 - f * (p0 + R0)))) / (c - f)
 # =============================================================================
     
-    pr = i*np.exp(-i)+0.5*np.exp(-i/f/k)
+    pr = i*np.exp(-i)+0.5*np.exp(-i/f*0.1)
     return pr
 fs=[100,50,2]
 k=10
