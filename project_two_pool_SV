@@ -43,94 +43,43 @@ d2 = np.array([x for x in d if np.isnan(x)==False])
 # Main Code -------------------------------------------------------------------
 def get_pr(f, k, dlen):
     i=np.arange(dlen)
-# =============================================================================
-#     pr = 0.1*np.exp(-0.03*x) # <-------------- edit here, 2 Hz
-# =============================================================================
-# =============================================================================
-#     pr = 0.9*np.exp(-0.05*x) # <-------------- edit here
-# =============================================================================
-# =============================================================================
-#     c = 1.5
-#     p0 = 0.4
-#     R0 = 0.3
-#     pr=(np.exp(-(c + f) * x) * (np.exp(c * x) * f * R0 + np.exp(f * x) * (c * p0 - f * (p0 + R0)))) / (c - f)
-# =============================================================================
-    
-    pr = i*np.exp(-i)+0.5*np.exp(-i/f*0.1)
+    pr=1/(1+0.4*np.exp(i/f))
     return pr
 fs=[100,50,2]
 k=10
 M=100
 n0=0
 nstim=len(d1)
-# =============================================================================
-# pr=get_pr(f, k, nstim) # must be len = 48
-# =============================================================================
 prs=[get_pr(f,k,nstim) for f in fs]
-# =============================================================================
-# sim=[simulate(nstim, n0) for i in range(10000)]
-# msim = np.mean(sim, axis=0)
-# plt.plot(msim/msim[0], label='sim', color='purple')
-# =============================================================================
-# =============================================================================
-# times=np.linspace(0,100,100)
-# plt.plot(times,pr*M*k/(f*pr+k)*(1-np.exp(-k*times)), label='bmean t')
-# =============================================================================
 indices = np.arange(1, nstim + 1)
 # =============================================================================
 # plt.subplot(1,2,1)
 # =============================================================================
-plt.scatter(indices, d1 / d1[0], label='100 Hz', color='red', 
-            marker='o', linewidth=1, s=10)
-plt.scatter(indices, d5 / d5[0], label='50 Hz', color='green',
-            marker='o', linewidth=1, s=10)
-plt.scatter(indices, d2 / d2[0], label='2 Hz', color='blue',
-            marker='o', linewidth=1, s=10)
+plt.plot(indices, d1 / d1[0], label='100 Hz', color='red', 
+            marker='o', linewidth=1, markersize=4)
+plt.plot(indices, d5 / d5[0], label='50 Hz', color='green',
+            marker='o', linewidth=1, markersize=4)
+plt.plot(indices, d2 / d2[0], label='2 Hz', color='blue',
+            marker='o', linewidth=1, markersize=4)
 bratios = [[bval(i, prs[j], M, k, fs[j], n0) / bval(1, prs[j], M, k, fs[j], n0) for i in indices] for j in range(len(fs))]
 
 cs=['red', 'green', 'blue']
-ns=[100, 50, 2]
 for i in range(len(prs)):
-    plt.plot(indices, bratios[i], label='{} Hz'.format(ns[i]), 
-            linewidth=1, color=cs[i])
+    plt.plot(indices, bratios[i], label='{} Hz'.format(fs[i]), 
+            marker='o', linewidth=1, color=cs[i], markerfacecolor='none')
 plt.ylabel('normalized burst size')
 plt.xlabel('stimulus #')
-# =============================================================================
-# ss=(np.exp(k/f)*M*(-1+np.exp(k/f)))/(((-1 + np.exp(k/f))*M + n0)*(-1+np.exp(k/f)+pr))
-# plt.axhline(y=ss, xmin=0, xmax=100, color='orange')
-# =============================================================================
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
 for i in range(len(prs)):
     plt.plot(indices, prs[i], 
              label='pr-{} Hz'.format(fs[i]), color=cs[i], linestyle='--')
 
+prmax=np.max(np.concatenate([prs[0], prs[1], prs[2]]))
+prmin=np.min(np.concatenate([prs[0], prs[1], prs[2]]))
 plt.legend(loc='upper right')
-# =============================================================================
-# plt.xscale('log')
-# =============================================================================
-# =============================================================================
-# plt.ylim([0, 3])
-# =============================================================================
-# =============================================================================
-# plt.xlim(0.95, nstim)  # Adjust x-axis limits to ensure the first point is shown
-# =============================================================================
-# =============================================================================
-# plt.subplot(1,2,2)
-# plt.plot(fun(indices))
-# plt.xlabel("stimulus #")
-# plt.title('Rate')
-# plt.show()
-# =============================================================================
-# =============================================================================
-# plt.subplot(1,2,2)
-# plt.plot(pr)
-# plt.xlabel("stimulus #")
-# plt.title('Probability')
-# plt.show()
-# =============================================================================
-if max(pr)>1:
+if prmax>1:
     plt.axvline(x=25, color='k', linestyle='--')
     raise Exception('pmax>1')
-if min(pr)<0:
+if prmin<0:
     plt.axvline(x=25, color='k', linestyle='--')
     raise Exception('pmin<0')
