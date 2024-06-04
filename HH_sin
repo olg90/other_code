@@ -5,8 +5,8 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
 def read_data(ftype, fname):
-    excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\excel_files'
-    txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\txt_files'
+    excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\German group current data\excel_files'
+    txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\German group current data\txt_files'
     
     if ftype == 0:  # Excel file
         file_path = os.path.join(excel_dir, fname)
@@ -20,8 +20,8 @@ def read_data(ftype, fname):
         print("Invalid file type. Please provide 0 for Excel file or 1 for text file.")
 
 def get_filenames():
-    excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\excel_files'
-    txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\current data\txt_files'
+    excel_dir = r'C:\Users\ogamb\OneDrive\Desktop\German group current data\excel_files'
+    txt_dir = r'C:\Users\ogamb\OneDrive\Desktop\German group current data\txt_files'
     
     excel_files = [f for f in os.listdir(excel_dir) if os.path.isfile(os.path.join(excel_dir, f))]
     txt_files = [f for f in os.listdir(txt_dir) if os.path.isfile(os.path.join(txt_dir, f))]
@@ -174,7 +174,7 @@ gHT=150 # High threshold K+ conductance
 gNa=1000 # Fast activating sodium conductance
 gh=0.5 # Hyperpolarization-conductance
 glk=2 # Leakage conductance
-gE=0.7 # Excitatory synaptic conductance
+gE=0 # Excitatory synaptic conductance, 0.7 orignally
 
 VK = -70 # potassium reverse potential
 VNa = 55 # sodium reverse potential
@@ -211,14 +211,16 @@ sol = solve_ivp(dXdt, t_span, [V0,a0,b0,c0,w0,z0,n0,p0,m0,h0,r0], t_eval=t_eval)
 # with the specified initial conditions ([V0, m0, h0, n0])
 # and evaluate the solution at the specified time points (t_eval).
 #%%
-# Plot results
-fs=15
-plt.title('Hodgkin-Huxley-type model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
-plt.xlabel('Time (ms)', fontsize=fs)
-plt.ylabel('Membrane Potential (mV)', fontsize=fs)
-plt.plot(np.linspace(5000, 25000, 20000), sol.y[0]/1000, 
-         label='Hodgkin-Huxley-type model')
 
+# Plot simulations
+fs=10
+plt.title('Hodgkin-Huxley-type model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
+plt.xlabel('time (ms)', fontsize=fs)
+plt.ylabel('membrane Potential (mV)', fontsize=fs)
+plt.plot(np.linspace(5000, 25000, 20000), sol.y[0]/1000, 
+         label='simulations')
+
+# Plot data
 testnum=1
 if testnum==0:
     plt.plot(data[:, 0], label='Finput450_NumInputs20_V')
@@ -244,14 +246,17 @@ plt.show()
 # plt.show()
 # =============================================================================
 
-
 # =============================================================================
+# 
 # for x in range(len(enames)):
 #     fname=enames[x]
 #     print(fname)
 #     data = read_data(0, fname)  # Read the first text file
-#     plt.plot(data[:, 0], label='{}, {}'.format(x,fname));
-#     plt.legend(loc='upper right')
+#     fig, ax = plt.subplots(1,2)
+#     ax[0].plot(data[:, 0], label='{}, {}'.format(x,fname));
+#     ax[0].legend(loc='upper right')
+#     ax[1].plot(data[:, 1], label='Ge'.format(x,fname));
+#     ax[1].legend(loc='upper right')
 #     plt.show()
+# 
 # =============================================================================
-
