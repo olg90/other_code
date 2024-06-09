@@ -1,0 +1,283 @@
+import numpy as np
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import plot as pt
+
+###############################################################################
+#
+#                          Functions to read in the data
+#
+###############################################################################
+
+# Functions to read data
+def read_data(ftype, fname):
+    excel_dir = r'C:\Users\Oliver\Desktop\German group current data\excel_files'
+    txt_dir = r'C:\Users\Oliver\Desktop\German group current data\txt_files'
+    if ftype == 0:  # Excel file
+        file_path = os.path.join(excel_dir, fname)
+        data = pd.read_csv(file_path)
+        return np.array(data)
+    elif ftype == 1:  # Text file
+        file_path = os.path.join(txt_dir, fname)
+        data = pd.read_csv(file_path, header=None).values.flatten()
+        return data
+    else:
+        print("Invalid file type. Please provide 0 for Excel file or 1 for text file.")
+
+def get_filenames():
+    excel_dir = r'C:\Users\Oliver\Desktop\German group current data\excel_files'
+    txt_dir = r'C:\Users\Oliver\Desktop\German group current data\txt_files'
+    excel_files = [f for f in os.listdir(excel_dir) if os.path.isfile(os.path.join(excel_dir, f))]
+    txt_files = [f for f in os.listdir(txt_dir) if os.path.isfile(os.path.join(txt_dir, f))]
+    return excel_files, txt_files
+
+###############################################################################
+#
+#                              Gating variables
+#
+###############################################################################
+
+def get_x(xinf, x, taux):
+    return (xinf - x) / taux
+
+def ainf(V): 
+    return (1 + np.exp(-(V + 31) / 6))**(-1 / 4)
+def binf(V): 
+    return (1 + np.exp(V + 66 / 7))**(-1 / 2)
+def cinf(V): 
+    return (1 + np.exp(V + 66 / 7))**(-1 / 2)
+
+def winf(V): 
+    return (1 + np.exp(-(V + 48) / 6))**(-1 / 4)
+def zinf(V):
+    zeta = 0.5
+    return (1 - zeta) * (1 + np.exp((V + 71) / 10))**(-1) + zeta
+
+def ninf(V):
+    return (1 + np.exp(-(V + 15) / 5))**(-1 / 2)
+def pinf(V): 
+    return (1 + np.exp(-(V + 23) / 6))**(-1)
+
+def minf(V): 
+    return (1 + np.exp(-(V + 38) / 7))**(-1)
+def hinf(V): 
+    return (1 + np.exp((V + 65) / 6))**(-1)
+
+def rinf(V): 
+    return (1 + np.exp((V + 76) / 7))**(-1)
+
+###############################################################################
+#
+#                              tau functions
+#
+###############################################################################
+
+def taua(V): 
+    return 100 * (7 * np.exp((V + 60) / 14) + 29 * np.exp(-(V + 60) / 24))**(-1) + 0.1
+def taub(V): 
+    return 1000 * (14 * np.exp((V + 60) / 27) + 29 * np.exp(-(V + 60) / 24))**(-1) + 1
+def tauc(V): 
+    return 90 * (1 + np.exp(-(V + 66) / 17))**(-1) + 10
+
+def tauw(V): 
+    return 100 * (6 * np.exp((V + 60) / 6) + 16 * np.exp(-(V + 60) / 45))**(-1) + 1.5
+def tauz(V): 
+    return 1000 * (np.exp((V + 60) / 20) + np.exp(-(V + 60) / 8))**(-1) + 50
+
+def taun(V): 
+    return 100 * (11 * np.exp((V + 60) / 24) + 21 * np.exp(-(V + 60) / 23))**(-1) + 0.7
+def taup(V): 
+    return 100 * (4 * np.exp((V + 60) / 32) + 5 * np.exp(-(V + 60) / 22))**(-1) + 5
+
+def taum(V): 
+    return 10 * (5 * np.exp((V + 60)) + 36 * np.exp(-(V + 60) / 25))**(-1) + 0.04
+def tauh(V): 
+    return 100 * (7 * np.exp((V + 60) / 11) + 10 * np.exp(-(V + 60) / 25))**(-1) + 0.6
+
+def taur(V): 
+    return 10**5 * (237 * np.exp((V + 60) / 12) + 17 * np.exp(-(V + 60) / 14))**(-1) + 25
+
+###############################################################################
+#
+#                             current functions
+#
+###############################################################################
+
+def I_A(gA, a, b, c, V, VK):
+    return gA * a**4 * b * c * (V - VK)
+
+def I_LT(gLT, w, z, V, VK):
+    return gLT * w**4 * z * (V - VK)
+
+def I_HT(gHT, n, p, V, VK):
+    phi = 0.85
+    return gHT * (phi * n**2 + (1 - phi) * p) * (V - VK)
+
+def I_Na(gNa, m, h, V, VNa):
+    return gNa * m**3 * h * (V - VNa)
+
+def I_h(gh, r, V, Vh):
+    return gh * r * (V - Vh)
+
+def I_lk(glk, V, Vlk):
+    return glk * (V - Vlk)
+
+def I_E(Gdata, Vdata):
+    return Gdata * Vdata
+
+# def I_E(gE,V,VE):
+#     return gE*(V-VE)
+
+def I_ext(i, I_ext_data):
+
+    if  0 <= i < 5000:
+        return 0
+    if 5000 <= i < 25000:
+        return I_ext_data[i-5000]
+    if i > 2500:
+        return 0
+# =============================================================================
+#     return 0
+# =============================================================================
+
+###############################################################################
+#
+#                             set up variables
+#
+###############################################################################
+
+dataname=0
+enames, tnames = get_filenames()
+
+data=read_data(0, enames[dataname])
+
+dlen = len(data)
+# Parameter values (27 parameters)
+Vdata = data[:, 0]
+G = data[:, 1]
+
+C_m = 12  # membrane capacitance (uF/cm^2)
+
+gA = 0  # fast activating K+ conductance
+gLT = 0  # Low threshold K+ conductance
+gHT = 150  # High threshold K+ conductance
+gNa = 1000  # Fast activating sodium conductance
+gh = 0.5  # Hyperpolarization-conductance
+glk = 2 #2  # Leakage conductance
+# gE=0.1
+
+VK = -70  # potassium reverse potential
+VNa = 55  # sodium reverse potential
+Vh = -43  # hyperpolarizing reverse potential
+Vlk = -65  # leakage reverse potential
+# VE = 0
+
+tauE = 1  # delete e-3
+
+# Initial conditions
+V0 = -65.0  # initial membrane potential (mV)
+a0 = 0.32  # Fast transient K+ current
+b0 = 0.32  # Fast transient K+ current
+c0 = 0.32  # Fast transient K+ current
+w0 = 0.32  # Low-threshold K+ current
+z0 = 0.32  # Low-threshold K+ current
+n0 = 0.32  # High-threshold K+ current
+p0 = 0.05  # High-threshold K+ current
+m0 = 0.05  # sodium activation gating variable
+h0 = 0.6  # sodium inactivation gating variable
+r0 = 0.32  # Hyperpolarization current
+
+# Time vector
+tmin = 0
+tmax = 30000
+dt = 0.001
+t = np.linspace(tmin, tmax, len(data))
+
+# Create the I_ext data
+f0 = 2.5          # Start frequency (Hz)
+f1 = 2000         # End frequency (Hz)
+t1_ms = 20000     # Duration of the chirp (milliseconds)
+t1 = t1_ms / 1000  # Convert duration to seconds
+k = (f1 - f0) / t1
+t_ext = np.linspace(0, 20000, 20000)
+I_ext_data = 1000*np.sin(2 * np.pi * (f0 * t_ext + 0.5 * k * t_ext**2))
+
+# pt(I_ext_data)
+# #%%
+# pt(G*Vdata)
+# #%%
+# pt([I_ext(i, I_ext_data) for i in range(30000)])
+# #%%
+
+# Variables initialization
+V = np.zeros(len(t))
+a = np.zeros(len(t))
+b = np.zeros(len(t))
+c = np.zeros(len(t))
+w = np.zeros(len(t))
+z = np.zeros(len(t))
+n = np.zeros(len(t))
+p = np.zeros(len(t))
+m = np.zeros(len(t))
+h = np.zeros(len(t))
+r = np.zeros(len(t))
+
+# Set initial conditions
+V[0] = V0
+a[0] = a0
+b[0] = b0
+c[0] = c0
+w[0] = w0
+z[0] = z0
+n[0] = n0
+p[0] = p0
+m[0] = m0
+h[0] = h0
+r[0] = r0
+
+###############################################################################
+#
+#                             run code
+#
+###############################################################################
+
+# Iteratively solve the difference equations
+for i in range(1, len(data)):
+
+    dVdt = (1 / C_m) * (I_A(gA, a[i-1], b[i-1], c[i-1], V[i-1], VK) +
+                        I_LT(gLT, w[i-1], z[i-1], V[i-1], VK) +
+                        I_HT(gHT, n[i-1], p[i-1], V[i-1], VK) +
+                        I_Na(gNa, m[i-1], h[i-1], V[i-1], VNa) +
+                        I_h(gh, r[i-1], V[i-1], Vh) +
+                        I_lk(glk, V[i-1], Vlk) +
+                        I_E(G[i-1], Vdata[i-1]) -
+# =============================================================================
+#                         I_E(gE,V[i-1],VE) -
+# =============================================================================
+                        I_ext(i-1, I_ext_data))
+    V[i] = V[i-1] + dVdt * dt
+
+    a[i] = a[i-1] + get_x(ainf(V[i-1]), a[i-1], taua(V[i-1])) * dt
+    b[i] = b[i-1] + get_x(binf(V[i-1]), b[i-1], taub(V[i-1])) * dt
+    c[i] = c[i-1] + get_x(cinf(V[i-1]), c[i-1], tauc(V[i-1])) * dt
+    w[i] = w[i-1] + get_x(winf(V[i-1]), w[i-1], tauw(V[i-1])) * dt
+    z[i] = z[i-1] + get_x(zinf(V[i-1]), z[i-1], tauz(V[i-1])) * dt
+    n[i] = n[i-1] + get_x(ninf(V[i-1]), n[i-1], taun(V[i-1])) * dt
+    p[i] = p[i-1] + get_x(pinf(V[i-1]), p[i-1], taup(V[i-1])) * dt
+    m[i] = m[i-1] + get_x(minf(V[i-1]), m[i-1], taum(V[i-1])) * dt
+    h[i] = h[i-1] + get_x(hinf(V[i-1]), h[i-1], tauh(V[i-1])) * dt
+    r[i] = r[i-1] + get_x(rinf(V[i-1]), r[i-1], taur(V[i-1])) * dt
+
+# Plot simulations
+fs = 10
+plt.title('Hodgkin-Huxley-type model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
+plt.xlabel('time (ms)', fontsize=fs)
+plt.ylabel('membrane Potential (mV)', fontsize=fs)
+plt.plot(t, V/1000, label='V(t)')
+plt.plot(t, data[:, 0], label=enames[dataname])
+plt.tick_params(axis='both', labelsize=fs)
+plt.grid(True, alpha=0.3)
+plt.legend(fontsize=fs, loc='upper right')
+plt.tight_layout()
+plt.show()
