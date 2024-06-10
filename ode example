@@ -1,0 +1,87 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+
+# Function to define the time-dependent input function I(t)
+def I(t, Iarray, t_array):
+    # Use searchsorted to find the closest index in t_array for the given time t
+    i = np.searchsorted(t_array, t) - 1
+    i = min(max(i, 0), len(Iarray) - 1)  # Ensure the index is within bounds
+    return Iarray[i]
+
+
+def f(s, t_array, I_array):
+    i = np.searchsorted(t_array, s) - 1
+    i = min(max(i, 0), len(Iarray) - 1) 
+    return i
+
+
+# Function to define the differential equation with parameters k and a
+def dXdt(x, t, k, a, Iarray, t_array):
+    dxdt = -k * x - I(t, Iarray, t_array)
+    return dxdt
+
+# Parameters
+k = 0.5  # Example value for k
+a = 1
+
+# Define time points and Iarray
+tmin = 4
+tmax = 9
+nsamples = 100
+t = np.linspace(tmin, tmax, nsamples)
+Iarray = np.sin(t)  # Example array for I(t)
+
+# Solve the differential equation
+y0 = [3]  # Initial condition for x
+sol = odeint(dXdt, y0, t, args=(k, a, Iarray, t))
+
+# Plot the solution
+plt.plot(t, sol)
+plt.xlabel('Time')
+plt.ylabel('x(t)')
+plt.title('Solution of the Differential Equation')
+plt.grid(True)
+plt.show()
+#%%
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameters
+k = 0.5  # Example value for k
+a = 1
+tmin = 0
+tmax = 10
+nsamples = 1000
+
+# Define time points and Iarray
+t = np.linspace(tmin, tmax, nsamples)
+Iarray = np.exp(-t)  # Example array for I(t)
+
+# Initial condition for x
+x = [3]
+
+# Time step
+dt = (tmax - tmin) / (nsamples - 1)
+
+# Difference equation implementation
+for i in range(1, nsamples):
+    # Get the current value of I
+    I_current = Iarray[i]
+    # Update x using the difference equation
+    x_new = x[-1] - k * x[-1] * dt - I_current * dt
+    x.append(x_new)
+
+# Convert the list to a numpy array for plotting
+x = np.array(x)
+
+# Plot the solution
+plt.plot(t, x, label='x(t)')
+plt.plot(t, Iarray, label='I(t)', linestyle='--')
+plt.xlabel('Time')
+plt.ylabel('x(t)')
+plt.title('Solution of the Difference Equation')
+plt.legend()
+plt.grid(True)
+plt.show()
