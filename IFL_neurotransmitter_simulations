@@ -1,53 +1,75 @@
 import numpy as np
 from matplotlib.pyplot import plot as pt
-f=100
+import matplotlib.pyplot as plt
+def kbar(z, k, k1, ttype):
+    if ttype=='n':
+        return k/(1+k1*z)
+    if ttype=='p':
+        return k*k1*z/(1+k1*z)
+f=2
 M=100
-k=4
-pr=0.1
-n=0
-x=0
-gammax=10 # neurotransmitter decay
-cx=10 # number of neurotransmitters per vesicle
+k=4 # refilling constant 1
+pr=0.1 # release probability
+nu=0 # number of unoccupied states
+no=M # number of occupied states
+nr=0 # number of repair states
+z=0 # number of neurotransmitters in cleft
+k1=1 # refilling constant 2
+kr=1 # repair rate
+gammaz=0.1 # neurotransmitter decay
+cz=10 # number of neurotransmitters per vesicle
+ttype='n'
 e=1e-6
-tdelta = 0.001
+tdelta = 0.01
 tcurr=0
-tmax=20
-nlist=[]
-xlist=[]
+tmax=100
+nulist=[]
+nolist=[]
+nrlist=[]
+zlist=[]
+timelist=[]
+
 while tcurr < tmax:
-    t1=np.random.exponential(1/f)
-    t2=np.random.exponential(1/(k*(M-n)+e))
-    t3=np.random.exponential(1/(gammax*x + e))
+# =============================================================================
+#     print(tcurr)
+# =============================================================================
+    t0=np.random.exponential(1/f)
+    t1=np.random.exponential(1/(kbar(z, k, k1, ttype)*(M-nu)+e))
+    t2=np.random.exponential(1/(gammaz*z + e))
+    t3=np.random.exponential(1/kr)
     tmeasure = tdelta
-    tlist=[t1,t2,t3,tmeasure]
+    tlist=[t0,t1,t2,t3,tmeasure]
     tmin=np.min(tlist)
     argmin = np.argmin(tlist)
     if argmin==0:
-        b = np.random.binomial(n, pr)
-        n = n - b
-        x = x + cx*b
+        b = np.random.binomial(no, pr)
+        no = no - b
+        nr = nr + b
+        z = z + cz*b
     if argmin == 1:
-        if n < M:
-            n = n + 1
+        if nu > 0:
+            nu=nu-1
+            no=no+1
     if argmin == 2:
-        if x > 0:
-            x = x - 1
+        if z > 0:
+            z = z - 1
+    if argmin == 3:
+        if (nr > 0) and (nu < M):
+            nr = nr-1
+            nu = nu+1
     tmeasure-=tmin
     if tmeasure == 0:
         tmeasure=tdelta
-    nlist.append(n)
-    xlist.append(x)
+    nulist.append(nu)
+    nolist.append(no)
+    nrlist.append(nr)
+    zlist.append(z)
     tcurr += tmin
-pt(nlist)
-pt(xlist)
-
-xbar = np.mean(xlist)
-def kfun(x):
-    return 1
-
-def kp(x):
-    return 1
-
-Sxk = -xbar/kfun(xbar)*kp(xbar)
-fx = np.var(xlist)/np.mean(xlist)
-print(fx)
+    timelist.append(tcurr)
+    
+pt(timelist,nulist, label='nu')
+pt(timelist,nolist, label = 'no')
+pt(timelist,nrlist,label='nr')
+pt(timelist,zlist, label='z')
+plt.legend()
+plt.show()
