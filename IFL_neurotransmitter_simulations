@@ -1,0 +1,53 @@
+import numpy as np
+from matplotlib.pyplot import plot as pt
+f=100
+M=100
+k=4
+pr=0.1
+n=0
+x=0
+gammax=10 # neurotransmitter decay
+cx=10 # number of neurotransmitters per vesicle
+e=1e-6
+tdelta = 0.001
+tcurr=0
+tmax=20
+nlist=[]
+xlist=[]
+while tcurr < tmax:
+    t1=np.random.exponential(1/f)
+    t2=np.random.exponential(1/(k*(M-n)+e))
+    t3=np.random.exponential(1/(gammax*x + e))
+    tmeasure = tdelta
+    tlist=[t1,t2,t3,tmeasure]
+    tmin=np.min(tlist)
+    argmin = np.argmin(tlist)
+    if argmin==0:
+        b = np.random.binomial(n, pr)
+        n = n - b
+        x = x + cx*b
+    if argmin == 1:
+        if n < M:
+            n = n + 1
+    if argmin == 2:
+        if x > 0:
+            x = x - 1
+    tmeasure-=tmin
+    if tmeasure == 0:
+        tmeasure=tdelta
+    nlist.append(n)
+    xlist.append(x)
+    tcurr += tmin
+pt(nlist)
+pt(xlist)
+
+xbar = np.mean(xlist)
+def kfun(x):
+    return 1
+
+def kp(x):
+    return 1
+
+Sxk = -xbar/kfun(xbar)*kp(xbar)
+fx = np.var(xlist)/np.mean(xlist)
+print(fx)
