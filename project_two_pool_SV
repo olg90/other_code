@@ -63,16 +63,68 @@ def get_pr(f, k, dlen):
 #     b=100 
 #     pr=np.exp(-i*a)/(1+np.exp(-i*b))
 # =============================================================================
-    p0=0.1
-    p1=0.4
-    H=1
-    c=2
-    pr=(p1*(i/c)**H+p0)/(1+(i/c)**H)
+# =============================================================================
+#     p0=0.1
+#     p1=0.4
+#     H=1
+#     c=2
+#     pr=(p1*(i/c)**H+p0)/(1+(i/c)**H)
+# =============================================================================
+    pr = np.exp(-0.02*(i+10))-0.01*np.exp(-i)
+# =============================================================================
+#     w = 1/(1+np.exp(-i))
+#     a = i/(i+f)
+#     b = np.exp(-i*0.2+0.01)
+#     pr =  a * w + (1-w)*b
+# =============================================================================
     return pr
+
+def compute_b_k(i, pr, M, n0, f, H):
+
+    # Initialize product and sum terms
+    product_term = 1.0
+    sum_term = 0.0
+    
+    # Compute product part
+    for K1 in range(i):
+        exponent = -(H((1 + K1) / f,f)) / f
+        product_term *= (-np.exp(exponent)) * (-1 + pr)
+    
+    # Compute sum part
+    for K2 in range(-1, i):
+        exponent = -(H((1 + K2) / f,f)) / f
+        inner_exp = -(1 - np.exp(H((1 + K2) / f,f) / f)) * M * pr
+        sum_term += np.exp(exponent) * inner_exp
+    
+    # Compute b[i]
+    numerator = np.exp(-(H(0,f) / f)) * product_term * (M * (-1 + pr) * pr + \
+                np.exp(H(0,f) / f) * (-((n0 + M * (-1 + pr)) * pr) + \
+                (-1 + pr) * sum_term))
+    denominator = (-1 + pr)
+    result = numerator / denominator
+    
+    return result
+
+def H(j,f):
+    i=j/f
+# =============================================================================
+#     k=0.3*i*f * np.exp(-i * f*0.7)
+# =============================================================================
+# =============================================================================
+#     a = i/f*np.exp(-i/f)
+#     b = np.exp(i)
+#     w = np.exp(-i/f)
+#     k = a*w+(1-w)*b
+# =============================================================================
+    k = 1/(1+i)
+    return k
+
 fs=[100,50,2]
 k=10
 M=100
+pr=0.1
 n0=0
+ttype='k'
 nstim=len(d1)
 prs=[get_pr(f,k,nstim) for f in fs]
 
@@ -106,28 +158,43 @@ plt.plot(indices, d5 / d5[0], label='50 Hz', color='green',
             marker='o', linewidth=1, markersize=4)
 plt.plot(indices, d2 / d2[0], label='2 Hz', color='blue',
             marker='o', linewidth=1, markersize=4)
-bratios = [[bval(i, prs[j], M, k, fs[j], n0) / bval(1, prs[j], M, k, fs[j], n0) for i in indices] for j in range(len(fs))]
+bratios = [[bval(i, prs[j], M, k, fs[j], n0) /\
+            bval(1, prs[j], M, k, fs[j], n0) for i in indices] \
+           for j in range(len(fs))]
+
+
+bkratios = [[compute_b_k(i, pr, M, n0, fs[j], H) / \
+             compute_b_k(1, pr, M, n0, fs[j], H) for i in indices] \
+            for j in range(len(fs))]
 
 cs=['red', 'green', 'blue']
 for i in range(len(prs)):
-    plt.plot(indices, bratios[i], label='{} Hz'.format(fs[i]), 
-            marker='o', linewidth=1, color=cs[i], markerfacecolor='none')
+    if ttype=='pr':
+        plt.plot(indices, bratios[i], label='{} Hz'.format(fs[i]), 
+                marker='o', linewidth=1, color=cs[i], markerfacecolor='none')
+    if ttype=='k':
+        plt.plot(indices, bkratios[i], label='{} Hz'.format(fs[i]), 
+                marker='o', linewidth=1, color=cs[i], markerfacecolor='none')
 plt.ylabel('normalized burst size')
 plt.xlabel('stimulus #')
 plt.axhline(y=0, xmin=0, xmax=100, color='k')
-for i in range(len(prs)):
-    plt.plot(indices, prs[i], 
-             label='pr-{} Hz'.format(fs[i]), color=cs[i], linestyle='--')
-
-prmax=np.max(np.concatenate([prs[0], prs[1], prs[2]]))
-prmin=np.min(np.concatenate([prs[0], prs[1], prs[2]]))
+if ttype == 'pr':
+    for i in range(len(prs)):
+        plt.plot(indices, prs[i], 
+                 label='pr-{} Hz'.format(fs[i]), color=cs[i], linestyle='--')
+    
+    prmax=np.max(np.concatenate([prs[0], prs[1], prs[2]]))
+    prmin=np.min(np.concatenate([prs[0], prs[1], prs[2]]))
+    
+    if prmax>1:
+        plt.axvline(x=25, color='k', linestyle='--')
+        raise Exception('pmax>1')
+    if prmin<0:
+        plt.axvline(x=25, color='k', linestyle='--')
+        raise Exception('pmin<0')
+        
 plt.legend(loc='upper right')
-if prmax>1:
-    plt.axvline(x=25, color='k', linestyle='--')
-    raise Exception('pmax>1')
-if prmin<0:
-    plt.axvline(x=25, color='k', linestyle='--')
-    raise Exception('pmin<0')
+plt.show()
 
 # =============================================================================
 # #%%
