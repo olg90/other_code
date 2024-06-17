@@ -7,17 +7,20 @@ def kbar(z, k, k1, ttype):
     if ttype=='p':
         return k*k1*z/(1+k1*z)
 f=2
-M=100
-k=4 # refilling constant 1
 pr=0.1 # release probability
-nu=0 # number of unoccupied states
-no=M # number of occupied states
-nr=0 # number of repair states
-z=0 # number of neurotransmitters in cleft
+
+M=100
+nu=0 # unoccupied states
+no=M # occupied states
+nr=0 #  repair states
+z=0 # neurotransmitters in cleft
+
+k=4 # refilling constant 1
 k1=1 # refilling constant 2
-kr=1 # repair rate
-gammaz=0.1 # neurotransmitter decay
+kr=7 # repair rate
+gammaz=1 # neurotransmitter decay
 cz=10 # number of neurotransmitters per vesicle
+
 ttype='n'
 e=1e-6
 tdelta = 0.01
