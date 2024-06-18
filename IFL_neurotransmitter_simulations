@@ -3,34 +3,38 @@ from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 def kbar(z, k, k1, ttype):
     if ttype=='n':
+        
         return k/(1+k1*z)
     if ttype=='p':
         return k*k1*z/(1+k1*z)
+    if ttype=='f':
+        return k
 f=2
 pr=0.1 # release probability
 
 M=100
-nu=0 # unoccupied states
+nu=0 # unoccupied states, nu+no+nr = M
 no=M # occupied states
 nr=0 #  repair states
 z=0 # neurotransmitters in cleft
 
 k=4 # refilling constant 1
-k1=1 # refilling constant 2
+k1=2 # refilling constant 2
 kr=7 # repair rate
-gammaz=1 # neurotransmitter decay
-cz=10 # number of neurotransmitters per vesicle
+
+gammaz=1 # neurotransmitter decay rate
+cz=1 # number of neurotransmitters per vesicle
 
 ttype='n'
-e=1e-6
-tdelta = 0.01
+e=1e-9
 tcurr=0
-tmax=100
-nulist=[]
-nolist=[]
-nrlist=[]
-zlist=[]
-timelist=[]
+tmax=1000
+
+nuhist=[]
+nohist=[]
+nrhist=[]
+zhist=[]
+thist=[]
 
 while tcurr < tmax:
 # =============================================================================
@@ -40,8 +44,10 @@ while tcurr < tmax:
     t1=np.random.exponential(1/(kbar(z, k, k1, ttype)*(M-nu)+e))
     t2=np.random.exponential(1/(gammaz*z + e))
     t3=np.random.exponential(1/kr)
-    tmeasure = tdelta
-    tlist=[t0,t1,t2,t3,tmeasure]
+    tlist=[t0,t1,t2,t3]
+# =============================================================================
+#     print(tcurr, tlist)
+# =============================================================================
     tmin=np.min(tlist)
     argmin = np.argmin(tlist)
     if argmin==0:
@@ -60,19 +66,31 @@ while tcurr < tmax:
         if (nr > 0) and (nu < M):
             nr = nr-1
             nu = nu+1
-    tmeasure-=tmin
-    if tmeasure == 0:
-        tmeasure=tdelta
-    nulist.append(nu)
-    nolist.append(no)
-    nrlist.append(nr)
-    zlist.append(z)
+    nuhist.append(nu)
+    nohist.append(no)
+    nrhist.append(nr)
+    zhist.append(z)
     tcurr += tmin
-    timelist.append(tcurr)
-    
-pt(timelist,nulist, label='nu')
-pt(timelist,nolist, label = 'no')
-pt(timelist,nrlist,label='nr')
-pt(timelist,zlist, label='z')
-plt.legend()
+    thist.append(tcurr)
+# =============================================================================
+# 
+# fn = 'Bookman'
+# 
+# plt.rcParams['font.family'] = fn
+# =============================================================================
+
+fig, ax = plt.subplots(4, 1)
+ax[0].plot(thist, nuhist, label='nu', color='#1f77b4')
+ax[0].set_ylabel('undocked\nvesicles')
+ax[0].set_xticks([])
+ax[1].plot(thist, nohist, label='no', color='#ff7f0e')
+ax[1].set_ylabel('docked\nvesicles')
+ax[1].set_xticks([])
+ax[2].plot(thist, nrhist, label='nr', color='red')
+ax[2].set_ylabel('repair\nstate\nvesicles')
+ax[2].set_xticks([])
+ax[3].plot(thist, zhist, label='z', color='green')
+ax[3].set_ylabel('neurotrans-\nmitters')
+ax[3].set_xlabel('time')
 plt.show()
+
