@@ -144,20 +144,20 @@ Vh = -0.043  # hyperpolarizing reverse potential
 Vlk = -0.065  # leakage reverse potential
 
 # Initial conditions
-V0 = -0.065  # initial membrane potential (mV)
-a0 = 0.32 # Fast transient K+ current
-b0 = 0.32  # Fast transient K+ current
-c0 = 0.32  # Fast transient K+ current
+V0 = -0.06  # initial membrane potential (mV)
+a0 = 0 # Fast transient K+ current
+b0 = 0  # Fast transient K+ current
+c0 = 0  # Fast transient K+ current
 
-w0 = 0.414691  # Low-threshold K+ current
-z0 = 0.699291  # Low-threshold K+ current
+w0 = 0.594  # Low-threshold K+ current
+z0 = 0.608  # Low-threshold K+ current
 
-n0 = 0  # High-threshold K+ current
+n0 = 0.85  # High-threshold K+ current
 p0 = 0  # High-threshold K+ current
 
-m0 = 0  # sodium activation gating variable
-h0 = 0  # sodium inactivation gating variable
-r0 = 0.120494  # Hyperpolarization current
+m0 = 0.043  # sodium activation gating variable
+h0 = 0.293  # sodium inactivation gating variable
+r0 = 0.063  # Hyperpolarization current
 
 # Time vector
 tmin = 0
@@ -206,7 +206,7 @@ r[0] = r0
 ###############################################################################
 
 # Iteratively solve the difference equations
-dt = 0.001 # time step for Euler equation
+dt = 1e-5 # time step for Euler equation
 
 iA = []
 iLT = []
@@ -230,7 +230,7 @@ for i in range(1, len(data)):
     i_E = G[i-1]* V[i-1]
     i_ext = 0 * I_ext(i-1, I_ext_data)
 
-    dVdt = (1 / C_m) * (i_A + i_LT + i_HT + i_NA + i_h + i_lk + i_E - i_ext)
+    dVdt = -(1 / C_m) * (i_A + i_LT + i_HT + i_NA + i_h + i_lk + i_E - i_ext)
     V[i] = V[i-1] + dVdt * dt
 
     # Add all the current values to a list for plotting
