@@ -1,96 +1,189 @@
 import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
-def kbar(z, k, k1, ttype):
-    if ttype=='n':
-        
-        return k/(1+k1*z)
-    if ttype=='p':
-        return k*k1*z/(1+k1*z)
-    if ttype=='f':
-        return k
-f=2
-pr=0.1 # release probability
 
-M=100
+
+# =============================================================================
+#      nu -> nu - 1   with rate   K*(M-no-nr), where K is: (-): k/(1+k1 z)
+#      no -> no + 1                           (+):kb+(k-kb)( k1 z / (1+ k1 z))
+# 
+# 
+#      no -> no - b   with rate   f
+#      nr -> nr + b
+#      z -> z + cb
+# 
+# 
+#      nr -> nr - 1   with rate   kr
+#      nu -> nu + 1                       # DELETE
+# 
+#      z -> z - 1     with rate   gammaz*z
+# =============================================================================
+
+def kbar(z, k, k1, kb, ftype):
+    
+    if ftype=='n': # negative feedback
+        return k/(1+k1*z)
+    
+    if ftype=='p': # positive feedback
+        return kb + (k-kb)*(k*k1*z/(1+k1*z))
+    
+    if ftype=='f':
+        return k
+    
+def ff(x):
+    return np.var(x)/np.mean(x)
+
+
+def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
+    
+    nuhist=[]
+    nohist=[]
+    nrhist=[]
+    zhist=[]
+    thist=[]
+    e=1e-9
+    tcurr=0
+    
+    while tcurr < tmax:
+# =============================================================================
+#         print(tcurr/tmax)
+# =============================================================================
+        t0=np.random.exponential(1/f)
+        t1=np.random.exponential(1/(kbar(z, k, k1, kb, ftype)*(M-no-nr)+e))
+        t2=np.random.exponential(1/(gammaz*z + e))
+        t3=np.random.exponential(1/kr)
+        tlist=[t0,t1,t2,t3]
+        tmin=np.min(tlist)
+        argmin = np.argmin(tlist)
+        if argmin==0: # AP occurrs
+            b = np.random.binomial(no, pr)
+            no = no - b
+            nr = nr + b
+            z = z + cz*b
+        if argmin == 1: # nu -> no
+            if nu > 0:
+                nu=nu-1
+                no=no+1
+        if argmin == 2: # z -> z-1
+            if z > 0:
+                z = z - 1
+        if argmin == 3: # rn -> no
+            if (nr > 0) and (nu < M):
+                nr = nr-1
+                nu = nu+1
+        nuhist.append(nu)
+        nohist.append(no)
+        nrhist.append(nr)
+        zhist.append(z)
+        tcurr += tmin
+        thist.append(tcurr)
+            
+    return thist, nuhist, nohist, nrhist, zhist
+
+###############################################################################
+#
+#                               Parameters
+#
+###############################################################################
+
+ftype='n' # feedback type: n-negative, p-positive
+
+f=10
+pr=0.1 #
+M=100 
+
 nu=0 # unoccupied states, nu+no+nr = M
 no=M # occupied states
 nr=0 #  repair states
-z=0 # neurotransmitters in cleft
 
-k=4 # refilling constant 1
-k1=2 # refilling constant 2
-kr=7 # repair rate
+k=2 # feedback strength constant
+k1=10 # negative feedback strength
+kr=1000 # repair rate, 15 for good plot
+kb=1
 
 gammaz=1 # neurotransmitter decay rate
 cz=1 # number of neurotransmitters per vesicle
+z=0 # neurotransmitters
 
-ttype='n'
-e=1e-9
-tcurr=0
-tmax=1000
+tmax=200
+# print(cz*kr/gammaz)
+# -----------------------------------------------------------------------------
+results = \
+    sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz,
+        cz, ftype, tmax)
 
-nuhist=[]
-nohist=[]
-nrhist=[]
-zhist=[]
-thist=[]
+thist = results[0]
+nuhist = results[1]
+nohist = results[2]
+nrhist = results[3]
+zhist = results[4]
 
-while tcurr < tmax:
-# =============================================================================
-#     print(tcurr)
-# =============================================================================
-    t0=np.random.exponential(1/f)
-    t1=np.random.exponential(1/(kbar(z, k, k1, ttype)*(M-nu)+e))
-    t2=np.random.exponential(1/(gammaz*z + e))
-    t3=np.random.exponential(1/kr)
-    tlist=[t0,t1,t2,t3]
-# =============================================================================
-#     print(tcurr, tlist)
-# =============================================================================
-    tmin=np.min(tlist)
-    argmin = np.argmin(tlist)
-    if argmin==0:
-        b = np.random.binomial(no, pr)
-        no = no - b
-        nr = nr + b
-        z = z + cz*b
-    if argmin == 1:
-        if nu > 0:
-            nu=nu-1
-            no=no+1
-    if argmin == 2:
-        if z > 0:
-            z = z - 1
-    if argmin == 3:
-        if (nr > 0) and (nu < M):
-            nr = nr-1
-            nu = nu+1
-    nuhist.append(nu)
-    nohist.append(no)
-    nrhist.append(nr)
-    zhist.append(z)
-    tcurr += tmin
-    thist.append(tcurr)
-# =============================================================================
-# 
-# fn = 'Bookman'
-# 
-# plt.rcParams['font.family'] = fn
-# =============================================================================
+fs = 10  # font size
 
-fig, ax = plt.subplots(4, 1)
+# =============================================================================
+# fig, ax = plt.subplots(3,1)
+# =============================================================================
+fig, ax = plt.subplots(4, 1)  # Adjust figure size if needed
+ax[0].set_title('f={}, pr={}, k={}, k1={}, kr={}, gammaz={}, cz={}, fb={}'.format(
+    f, pr, k,k1,kr,gammaz,cz, ftype))
 ax[0].plot(thist, nuhist, label='nu', color='#1f77b4')
-ax[0].set_ylabel('undocked\nvesicles')
-ax[0].set_xticks([])
+ax[0].set_ylabel('unoccupied\nvesicles', fontsize=fs)
+ax[0].tick_params(axis='both', which='major', labelsize=fs)
+ax[0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+
 ax[1].plot(thist, nohist, label='no', color='#ff7f0e')
-ax[1].set_ylabel('docked\nvesicles')
-ax[1].set_xticks([])
+ax[1].set_ylabel('occupied\nvesicles', fontsize=fs)
+ax[1].tick_params(axis='both', which='major', labelsize=fs)
+ax[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+
 ax[2].plot(thist, nrhist, label='nr', color='red')
-ax[2].set_ylabel('repair\nstate\nvesicles')
-ax[2].set_xticks([])
-ax[3].plot(thist, zhist, label='z', color='green')
-ax[3].set_ylabel('neurotrans-\nmitters')
-ax[3].set_xlabel('time')
+ax[2].set_ylabel('repair\nstate\nvesicles', fontsize=fs)
+ax[2].tick_params(axis='both', which='major', labelsize=fs)
+ax[2].set_xlabel('time (sec)', fontsize=fs)
+
+ax[3].plot(thist, zhist, color='green', 
+           label='m={}'.format(np.around(np.mean(zhist),3)))
+ax[3].set_ylabel('neurotrans-\nmitters', fontsize=fs)
+ax[3].set_xlabel('time (sec)', fontsize=fs)
+ax[3].tick_params(axis='both', which='major', labelsize=fs)
+ax[3].legend()
+
 plt.show()
 
+#%%
+
+fu=[]
+fo=[]
+fr=[]
+
+for j in range(20):
+    print(j)
+    k1list = np.linspace(0, 20, 100)
+
+    results = [sim(f,pr, M, nu, no, nr, z, k, k1list[i], kb, 
+                   kr, gammaz, cz, ftype, tmax) for i in range(len(k1list))]
+
+    #results[i][j], ith value of k1, jth return value of sim where 0 is thist, 1 is nuhist.
+    ffu = [ff(results[i][1]) for i in range(len(results))]
+    ffo = [ff(results[i][2]) for i in range(len(results))]
+    ffr = [ff(results[i][3]) for i in range(len(results))]
+
+    fu.append(ffu)
+    fo.append(ffo)
+    fr.append(ffr)
+
+fumean=np.mean(fu,0)
+fomean=np.mean(fo,0)
+frmean=np.mean(fr,0)
+
+fs2=15
+plt.title('f={}, pr={}, k={}, kr={}, gammaz={}, cz={}, fb={}'.format(
+    f, pr, k, kr,gammaz,cz, ftype))
+plt.plot(k1list, fumean, label='unoccupied')
+plt.plot(k1list, fomean, label='occupied')
+plt.plot(k1list, frmean, label='repair')
+plt.xlabel('Feedback strength, k1', fontsize = fs2)
+plt.ylabel('Fano factor', fontsize = fs2)
+plt.tick_params(axis='both', labelsize = fs2)
+plt.legend(fontsize = fs2-2)
+plt.show()
