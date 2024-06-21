@@ -14,35 +14,40 @@ import matplotlib.pyplot as plt
 # 
 # 
 #      nr -> nr - 1   with rate   kr
-#      nu -> nu + 1                       # DELETE
+#      nu -> nu + 1                       
 # 
 #      z -> z - 1     with rate   gammaz*z
 # =============================================================================
 
 def kbar(z, k, k1, kb, ftype):
-    
     if ftype=='n': # negative feedback
         return k/(1+k1*z)
     
     if ftype=='p': # positive feedback
-        return kb + (k-kb)*(k*k1*z/(1+k1*z))
+        return kb + (k-kb)*(k1*z/(1+k1*z))
     
-    if ftype=='f':
+    if ftype=='f': # fixed
         return k
     
 def ff(x):
     return np.var(x)/np.mean(x)
 
-
-def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
+def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, 
+        AP=False, fixed=False):
     
-    nuhist=[]
-    nohist=[]
-    nrhist=[]
-    zhist=[]
-    thist=[]
+    nuhist=[nu]
+    nohist=[no]
+    nrhist=[nr]
+    zhist=[z]
+    thist=[z]
     e=1e-9
     tcurr=0
+    
+    APhist=[]
+    rthist=[]
+    
+    if fixed == True:
+        rtime = 1/kr
     
     while tcurr < tmax:
 # =============================================================================
@@ -51,7 +56,10 @@ def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
         t0=np.random.exponential(1/f)
         t1=np.random.exponential(1/(kbar(z, k, k1, kb, ftype)*(M-no-nr)+e))
         t2=np.random.exponential(1/(gammaz*z + e))
-        t3=np.random.exponential(1/kr)
+        if fixed==False:
+            t3=np.random.exponential(1/kr)
+        else:
+            t3 = rtime
         tlist=[t0,t1,t2,t3]
         tmin=np.min(tlist)
         argmin = np.argmin(tlist)
@@ -60,6 +68,8 @@ def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
             no = no - b
             nr = nr + b
             z = z + cz*b
+            if AP == True:
+                APhist.append(tcurr+tmin)
         if argmin == 1: # nu -> no
             if nu > 0:
                 nu=nu-1
@@ -71,14 +81,24 @@ def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
             if (nr > 0) and (nu < M):
                 nr = nr-1
                 nu = nu+1
+                
         nuhist.append(nu)
         nohist.append(no)
         nrhist.append(nr)
         zhist.append(z)
+
         tcurr += tmin
         thist.append(tcurr)
-            
-    return thist, nuhist, nohist, nrhist, zhist
+        
+        if fixed==True:
+            rtime-=tmin
+            if rtime==0:
+                rtime = 1/kr
+                rthist.append(tcurr)
+    if AP==False:
+        return thist, nuhist, nohist, nrhist, zhist
+    if AP == True:
+        return thist, nuhist, nohist, nrhist, zhist, APhist, rthist
 
 ###############################################################################
 #
@@ -86,9 +106,9 @@ def sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
 #
 ###############################################################################
 
-ftype='n' # feedback type: n-negative, p-positive
+ftype='p' # feedback type: n-negative, p-positive
 
-f=10
+f=1
 pr=0.1 #
 M=100 
 
@@ -96,57 +116,70 @@ nu=0 # unoccupied states, nu+no+nr = M
 no=M # occupied states
 nr=0 #  repair states
 
-k=2 # feedback strength constant
-k1=10 # negative feedback strength
-kr=1000 # repair rate, 15 for good plot
-kb=1
+k=100 # feedback strength constant
+k1=100 # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
+kr=1000 # repair rate, 15 for good plot, rate of nr->nu
+kb=1 # base rate
 
-gammaz=1 # neurotransmitter decay rate
+gammaz=0.1 # neurotransmitter decay rate
 cz=1 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
-tmax=200
-# print(cz*kr/gammaz)
+tmax=100
 # -----------------------------------------------------------------------------
+###############################################################################
+#
+#                               Run test
+#
+###############################################################################
+
 results = \
     sim(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz,
-        cz, ftype, tmax)
+        cz, ftype, tmax, AP=True, fixed=False)
 
 thist = results[0]
 nuhist = results[1]
 nohist = results[2]
 nrhist = results[3]
 zhist = results[4]
-
+aphist=results[5]
+rthist=results[6]
+###############################################################################
+#
+#                               Plot
+#
+###############################################################################
 fs = 10  # font size
 
 # =============================================================================
 # fig, ax = plt.subplots(3,1)
 # =============================================================================
+
 fig, ax = plt.subplots(4, 1)  # Adjust figure size if needed
 ax[0].set_title('f={}, pr={}, k={}, k1={}, kr={}, gammaz={}, cz={}, fb={}'.format(
     f, pr, k,k1,kr,gammaz,cz, ftype))
-ax[0].plot(thist, nuhist, label='nu', color='#1f77b4')
+ax[0].step(thist, nuhist, label='nu', color='#1f77b4', where='post')
 ax[0].set_ylabel('unoccupied\nvesicles', fontsize=fs)
 ax[0].tick_params(axis='both', which='major', labelsize=fs)
 ax[0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
-ax[1].plot(thist, nohist, label='no', color='#ff7f0e')
+
+ax[1].step(thist, nohist, label='no', color='#ff7f0e', where='post')
 ax[1].set_ylabel('occupied\nvesicles', fontsize=fs)
 ax[1].tick_params(axis='both', which='major', labelsize=fs)
 ax[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+for ap in aphist:
+    ax[1].axvline(x=ap, color='k', alpha = 0.3)
 
-ax[2].plot(thist, nrhist, label='nr', color='red')
+ax[2].step(thist, nrhist, label='nr', color='red', where='post')
 ax[2].set_ylabel('repair\nstate\nvesicles', fontsize=fs)
 ax[2].tick_params(axis='both', which='major', labelsize=fs)
-ax[2].set_xlabel('time (sec)', fontsize=fs)
+ax[2].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
-ax[3].plot(thist, zhist, color='green', 
-           label='m={}'.format(np.around(np.mean(zhist),3)))
+ax[3].step(thist, zhist, color='green', where='post')
 ax[3].set_ylabel('neurotrans-\nmitters', fontsize=fs)
 ax[3].set_xlabel('time (sec)', fontsize=fs)
 ax[3].tick_params(axis='both', which='major', labelsize=fs)
-ax[3].legend()
 
 plt.show()
 
