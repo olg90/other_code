@@ -52,8 +52,9 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
             t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
             t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
             t3=exponential(1/(kr*r + 1e-6)) # repair a site
+            t4 = timer
             
-            eventtimes = [t0, t1, t2, t3]
+            eventtimes = [t0, t1, t2, t3, t4]
             argmin = np.argmin(eventtimes)
             tmin = np.min(eventtimes)
             
@@ -64,17 +65,26 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
                 z = z + cz*b
                 APlist.append(tcurr+tmin)
                 
-            elif argmin==1: # site is occuped
+            if argmin==1: # site is occuped
                 if n < M:
                     n=n+1
 
-            elif argmin == 2: # neurotransmitter is removed
+            if argmin == 2: # neurotransmitter is removed
                 if z > 0:
                     z=z-1
                     
-            else: # site is repaired
+            if argmin == 3: # site is repaired
                 if r > 0: 
                     r = r-1
+                    
+
+            timer -= tmin
+                    
+            if argmin == 3:
+                timer = delta_t
+                nlist.append(n)
+                rlist.append(r)
+                zlist.append(z)
                     
             nlist.append(n)
             rlist.append(r)
@@ -96,7 +106,7 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
         delta_t = 0.1 # longer than the typical autocorrelation time of the system
         # longer than the typical duration of the shortest reaction
         timer = delta_t
-        
+
         while tcurr < tmax:
             
             # Get the three event times
@@ -104,37 +114,39 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
             t1=exponential(1/(k*(M-n) + 1e-6)) # empty to occupied
             t2=exponential(1/(gammaz*z + 1e-6)) # remove 1 neurotransmitter
             t3 = timer
-            
+
             # Choose the smallest one and then make that event happen
-            eventtimes = [t0, t1, t2, t3]
-            argmin = np.argmin(eventtimes)
-            tmin = np.min(eventtimes)
-            
-            if argmin==0: # AP occurrs
+            if t0 < t1 and t0 < t2 and t0 < t3: # AP occurrs
                 b = binomial(n, pr)
                 n = n - b
                 z = z + cz*b
                 APlist.append(tcurr+t0)
-                
-            if argmin==1: # add a docked vesicle
+                tmin = t0
+                timer-=tmin
+
+            elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
                 if n < M:
                     n=n+1
-                    
-            if argmin==2: # remove a neurotransmitter
+                tmin = t1
+                timer-=tmin
+
+            elif t2<t0 and t2<t1 and t2<t3: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
-                    
-            timer -= tmin
-                    
-            if argmin == 3:
+                tmin = t2
+                timer-=tmin
+            else:
                 timer = delta_t
+                tmin=timer
                 nlist.append(n)
-                rlist.append(r)
+# =============================================================================
+#                 rlist.append(r)
+# =============================================================================
                 zlist.append(z)
             
             tcurr += tmin
             tlist.append(tcurr)
-        
+
         return tlist, nlist, rlist, zlist, APlist
 
 ###############################################################################
@@ -161,7 +173,6 @@ cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 tmax=200 # <-------------- TMAX
-
 
 
 # approx 100 x the slowest time
@@ -285,11 +296,10 @@ def get_ff_sim():
     ff_n_sim=get_FF(n_inf_ss)
     ff_z_sim=get_FF(z_inf_ss)
     
-    ff_n_eq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
     return ff_n_sim
 
 keq=5
-ntests=15
+ntests=20
 R=[]
 for i in range(ntests):
     print(i, ntests)
@@ -371,3 +381,4 @@ plt.show()
 # plt.legend(fontsize = fs2-2)
 # plt.show()
 # =============================================================================
+
