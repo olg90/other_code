@@ -2,10 +2,9 @@ import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial
-
 # =============================================================================
 #      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
-#                                                        (+):kb+(k-kb)( k1 z / (1+ k1 z))
+#                                             (+):kb+(k-kb)( k1 z / (1+ k1 z))
 # 
 # 
 #      n -> n - b   with rate   f
@@ -38,16 +37,21 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
         zlist=[z]
         rlist=[r]
         
-        tlist=[0]        
+        tlist=[0]
         APlist=[]
-        
+
         tcurr=0
+
+        delta_t = 0.1 # longer than the typical autocorrelation time of the system
+        # longer than the typical duration of the shortest reaction
+        timer = delta_t
+        
         while tcurr < tmax:
-            
+
             t0=exponential(1/f) # action potential
-            t1=exponential(1/(k*(M-n-r) + 1e-6)) # empty to occupied
-            t2=exponential(1/(gammaz*z + 1e-6)) # remove 1 neurotransmitter
-            t3=exponential(1/(kr*r+1e-6)) # repair to unoccupied
+            t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
+            t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
+            t3=exponential(1/(kr*r + 1e-6)) # repair a site
             
             eventtimes = [t0, t1, t2, t3]
             argmin = np.argmin(eventtimes)
@@ -60,15 +64,15 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
                 z = z + cz*b
                 APlist.append(tcurr+tmin)
                 
-            if argmin==1: # nu -> no
+            elif argmin==1: # site is occuped
                 if n < M:
                     n=n+1
-                    
-            if argmin == 2: # z -> z-1
+
+            elif argmin == 2: # neurotransmitter is removed
                 if z > 0:
                     z=z-1
                     
-            if argmin == 3: # nr -> nu, meaning nr -> nr-1 and nu->nu+1
+            else: # site is repaired
                 if r > 0: 
                     r = r-1
                     
@@ -87,15 +91,22 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
         zlist=[z]
         tlist=[0]        
         APlist=[]
-        
+
         tcurr=0
+        delta_t = 0.1 # longer than the typical autocorrelation time of the system
+        # longer than the typical duration of the shortest reaction
+        timer = delta_t
+        
         while tcurr < tmax:
             
+            # Get the three event times
             t0=exponential(1/f) # action potential
             t1=exponential(1/(k*(M-n) + 1e-6)) # empty to occupied
             t2=exponential(1/(gammaz*z + 1e-6)) # remove 1 neurotransmitter
+            t3 = timer
             
-            eventtimes = [t0, t1, t2]
+            # Choose the smallest one and then make that event happen
+            eventtimes = [t0, t1, t2, t3]
             argmin = np.argmin(eventtimes)
             tmin = np.min(eventtimes)
             
@@ -105,17 +116,21 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax):
                 z = z + cz*b
                 APlist.append(tcurr+t0)
                 
-            if argmin==1: # nu -> no
+            if argmin==1: # add a docked vesicle
                 if n < M:
                     n=n+1
                     
-            if argmin==2: # z -> z-1
+            if argmin==2: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
                     
-            nlist.append(n)
-            rlist.append(r)
-            zlist.append(z)
+            timer -= tmin
+                    
+            if argmin == 3:
+                timer = delta_t
+                nlist.append(n)
+                rlist.append(r)
+                zlist.append(z)
             
             tcurr += tmin
             tlist.append(tcurr)
@@ -145,7 +160,23 @@ gammaz=100 # neurotransmitter decay rate
 cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
-tmax=100 # <-------------- TMAX
+tmax=200 # <-------------- TMAX
+
+
+
+# approx 100 x the slowest time
+
+# run ntimes then average, CI std of output divide by sqrt(n)
+
+
+# =============================================================================
+# f = 10;
+# pr = 0.5;
+# M = 100;
+# keq = 5;
+# c = 100;
+# d = 100;
+# =============================================================================
 
 # -----------------------------------------------------------------------------
 ###############################################################################
@@ -158,18 +189,27 @@ tmax=100 # <-------------- TMAX
 # tlist, nlist, rlist, zlist, APlist = \
 #     simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)
 # =============================================================================
-    
-tlist, nlist, rlist, zlist, APlist = \
-    simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)    
-    
-
-ulist = M - np.array(nlist)-np.array(rlist)
-
-ffn = get_FF(nlist[int(0.2*len(nlist)):])
-ffr = get_FF(rlist[int(0.2*len(nlist)):])
-ffz = get_FF(zlist[int(0.2*len(nlist)):])
-ffu = get_FF(ulist[int(0.2*len(nlist)):])
-
+# =============================================================================
+#     
+# tlist, nlist, rlist, zlist, APlist = \
+#     simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)    
+#     
+# 
+# ulist = M - np.array(nlist)-np.array(rlist)
+# 
+# ratio = 0.2
+# 
+# nss = nlist[int(ratio*len(nlist)):]
+# rss = rlist[int(ratio*len(nlist)):]
+# zss = zlist[int(ratio*len(nlist)):]
+# uss = ulist[int(ratio*len(nlist)):]
+# 
+# ffn = get_FF(nss)
+# ffr = get_FF(rss)
+# ffz = get_FF(zss)
+# ffu = get_FF(uss)
+# 
+# =============================================================================
 # =============================================================================
 # print('ffo={}'.format(np.around(of,3)), 'ffz={}'.format(np.around(zf,3)), 'fb={}'.format(ftype))
 # =============================================================================
@@ -183,63 +223,82 @@ ffu = get_FF(ulist[int(0.2*len(nlist)):])
 # fig, ax = plt.subplots(3,1)
 # =============================================================================
 
-fs = 10  # font size
-
-fig, ax = plt.subplots(4, 1, figsize = (10,7))  # Adjust figure size if needed
-
-ax[0].step(tlist, nlist, color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffn,3)))
-ax[0].set_ylabel('occupied\nsite', fontsize=fs)
-ax[0].set_xticks([])
-d=10
-ax[0].set_ylim([-d, np.max(nlist)+d])
-ax[0].legend()
+# =============================================================================
+# fs = 10  # font size
+# 
+# fig, ax = plt.subplots(4, 1, figsize = (10,7))  # Adjust figure size if needed
+# 
+# ax[0].step(tlist, nlist, color='#ff7f0e', where='post',
+#            label='noff = {}'.format(np.around(ffn,3)))
+# ax[0].set_ylabel('occupied\nsite', fontsize=fs)
+# ax[0].set_xticks([])
+# d=10
+# ax[0].set_ylim([-d, np.max(nlist)+d])
+# ax[0].legend()
+# =============================================================================
 # =============================================================================
 # for ap in APlist:
 #     ax[0].axvline(x=ap, color='k', alpha = 0.3)
 # =============================================================================
 
-ax[1].step(tlist, ulist, color='#1f77b4', where='post', 
-           label='nuff = {}'.format(np.around(ffu,3)))
-ax[1].set_ylabel('unoccupied\nsite', fontsize=fs)
-ax[1].tick_params(axis='both', which='major', labelsize=fs)
-ax[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-ax[1].legend()
-
-ax[2].step(tlist, rlist, color='red', where='post', 
-           label='nrff = {}'.format(np.around(ffr,3)))
-ax[2].set_ylabel('repair\nsite', fontsize=fs)
-ax[2].tick_params(axis='both', which='major', labelsize=fs)
-ax[2].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-ax[2].legend()
-
-ax[3].step(tlist, zlist, color='green', where='post',
-           label='zff = {}'.format(np.around(ffz,3)))
-ax[3].set_ylabel('neurotrans-\nmitters', fontsize=fs)
-ax[3].set_xlabel('time (sec)', fontsize=fs)
-ax[3].tick_params(axis='both', which='major', labelsize=fs)
-ax[3].legend()
-
-plt.show()
-#%%
+# =============================================================================
+# ax[1].step(tlist, ulist, color='#1f77b4', where='post', 
+#            label='nuff = {}'.format(np.around(ffu,3)))
+# ax[1].set_ylabel('unoccupied\nsite', fontsize=fs)
+# ax[1].tick_params(axis='both', which='major', labelsize=fs)
+# ax[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+# ax[1].legend()
+# 
+# ax[2].step(tlist, rlist, color='red', where='post', 
+#            label='nrff = {}'.format(np.around(ffr,3)))
+# ax[2].set_ylabel('repair\nsite', fontsize=fs)
+# ax[2].tick_params(axis='both', which='major', labelsize=fs)
+# ax[2].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+# ax[2].legend()
+# 
+# ax[3].step(tlist, zlist, color='green', where='post',
+#            label='zff = {}'.format(np.around(ffz,3)))
+# ax[3].set_ylabel('neurotrans-\nmitters', fontsize=fs)
+# ax[3].set_xlabel('time (sec)', fontsize=fs)
+# ax[3].tick_params(axis='both', which='major', labelsize=fs)
+# ax[3].legend()
+# 
+# plt.show()
+# =============================================================================
 
 # How much do these curves deviate when I'm using deterministic repair times
 # and increasing the value of kr?
 
+def get_ff_sim():
+    ratio = 0.2
+    keq=5
+    # 1/keq = 1/k + 1/kr
+    # k = 1/(1/keq - 1/kr)
+    krinf = np.inf
+    kinf = 1/(1/keq-1/krinf)
+    tlist, n_inf_list, r_inf_list, z_inf_list, APlist = \
+        simulate_kr_inf(f, pr, M, n, r, z, kinf, k1, kb, krinf, gammaz, cz, ftype, tmax)
+    
+    n_inf_ss = n_inf_list[int(ratio*len(n_inf_list)):]
+    z_inf_ss = z_inf_list[int(ratio*len(z_inf_list)):]
+    
+    ff_n_sim=get_FF(n_inf_ss)
+    ff_z_sim=get_FF(z_inf_ss)
+    
+    ff_n_eq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
+    return ff_n_sim
+
 keq=5
-# 1/keq = 1/k + 1/kr
-# k = 1/(1/keq - 1/kr)
-krinf = np.inf
-kinf = 1/(1/keq-1/krinf)
-tlist, n_inf_list, r_inf_list, z_inf_list, APlist = \
-    simulate_kr_inf(f, pr, M, n, r, z, kinf, k1, kb, krinf, gammaz, cz, ftype, tmax)
+ntests=15
+R=[]
+for i in range(ntests):
+    print(i, ntests)
+    R.append(get_ff_sim())
 
-ff_no_sim=get_FF(n_inf_list[int(0.2*len(n_inf_list)):])
-ff_z_sim=get_FF(z_inf_list[int(0.2*len(z_inf_list)):])
+Rmean = np.mean(R)
+RCI = np.sqrt(np.var(R))/np.sqrt(ntests)
 
-ff_no_eq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
-print(ff_no_eq, ff_no_sim)
-
+ff_n_eq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
 #%%
 
 nruns=5
