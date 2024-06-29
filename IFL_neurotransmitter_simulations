@@ -264,18 +264,19 @@ M=100
 n=M # occupied states
 r=0 #  repair states
 
-k=10 # 10 # feedback strength constant # -------------- KEEP CONSTANT
-kn=50
-kp=12
+k=10 # 10 # feedback strength constant #
 k1=10
-k1n=15
+
+kn=178 # ----------- HERE
+k1n=1
+
+kp=11
 k1p=15 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
+
 kr=10 # 10,  repair rate, 15 for good plot, rate of nr->nu
 kb=7 #1 base rate
 
 gammaz=100
-gammazn=21
-gammazp=100 # neurotransmitter decay rate
 cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
@@ -284,22 +285,43 @@ tmax = 1 # <-------------- TMAX, set to 200 for the FF calculation
 
 ratio = 0.2
 q=[]
+means=[]
+zmean=[]
 ntimes=20
 for i in range(ntimes):
     print(i, ntimes)
     R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 200, delta_t)
-    Rns = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammazn, cz, 'n', 200, delta_t)
-    Rps = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammazp, cz, 'p', 200, delta_t)
     z0FF=get_FF(R0s[1][int(ratio*len(R0s[3])):]) # 1 n, 3 z
+    m0=np.mean(R0s[1][int(ratio*len(R0s[3])):])
+    z0=np.mean(R0s[3][int(ratio*len(R0s[3])):])
+    
+    Rns = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', 200, delta_t)
     znFF=get_FF(Rns[1][int(ratio*len(Rns[3])):]) # 1 n, 3 z
-    zpFF=get_FF(Rps[1][int(ratio*len(Rps[3])):]) # 1 n, 3 z
+    mn=np.mean(Rns[1][int(ratio*len(R0s[3])):])
+    zn=np.mean(Rns[3][int(ratio*len(R0s[3])):])
+    
+    Rps = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', 200, delta_t)
+    zpFF=get_FF(Rps[1][int(ratio*len(Rps[3])):]) # 1 n, 3 
+    mp=np.mean(Rps[1][int(ratio*len(R0s[3])):])
+    zp=np.mean(Rps[3][int(ratio*len(R0s[3])):])
+    
     q.append([z0FF, znFF, zpFF])
-    print(np.mean(q, 0))
+    means.append([m0, mn, mp])
+    zmean.append([z0, zn, zp])
+# =============================================================================
+#     print(np.mean(q, 0))
+# =============================================================================
+    print(np.mean(zmean, 0))
+    print(np.mean(means, 0))
 
 q=np.array(q)
 ffs = np.mean(q, 0)
 
 zmeaneq=f*cz*pr*k*M/(gammaz*(f*pr+k))
+means=np.array(means)
+means=np.mean(means, 0)
+
+print(zmeaneq, means)
 
 # =============================================================================
 # print(zmeaneq, np.mean(q,0))
@@ -310,17 +332,15 @@ zmeaneq=f*cz*pr*k*M/(gammaz*(f*pr+k))
 delta_t = 0.001
 tmaxt=100
 
-
-
-t0=6*int(1/delta_t)
+tinit=55 # 37, 39, 49
+t0=tinit*int(1/delta_t)
 t1=t0+int(1/delta_t)
 
-
-R0t = trajectories_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
-Rnt = trajectories_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammazn, cz, 'n', tmaxt, delta_t)
-Rpt = trajectories_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammazp, cz, 'p', tmaxt, delta_t)
-
-
+# =============================================================================
+# R0t = trajectories_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
+# Rnt = trajectories_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmaxt, delta_t)
+# Rpt = trajectories_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmaxt, delta_t)
+# =============================================================================
 
 #
 font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
@@ -332,7 +352,7 @@ bookman_prop = fm.FontProperties(fname=font_path)
 plt.rcParams['font.family'] = bookman_prop.get_name()
 #
 
-ffs = [6.351, 41, 5.439]
+ffs = [6.351, 15, 5.439]
 
 fs = 15  # font size
 fig, ax = plt.subplots(2,3, figsize=(18,4))
@@ -383,9 +403,12 @@ d=200
 ax[1,0].step(tplot, R0t[3][t0:t1], color='green', where='post', linewidth=3)
 ax[1,1].step(tplot, Rnt[3][t0:t1], color='green', where='post', linewidth=3)
 ax[1,2].step(tplot, Rpt[3][t0:t1], color='green', where='post', linewidth=3)
-ax[1,0].set_ylim([-d, 6000+d])
-ax[1,1].set_ylim([-d, 6000+d])
-ax[1,2].set_ylim([-d, 6000+d])
+
+mval=np.max([R0t[3][t0:t1], Rnt[3][t0:t1], Rpt[3][t0:t1]])
+
+ax[1,0].set_ylim([-d, mval+d])
+ax[1,1].set_ylim([-d, mval+d])
+ax[1,2].set_ylim([-d, mval+d])
 
 ax[1,1].set_xlabel('Time, (sec)', fontsize = 20)
 
