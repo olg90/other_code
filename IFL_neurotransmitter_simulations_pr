@@ -1,0 +1,512 @@
+import numpy as np
+from matplotlib.pyplot import plot as pt
+import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial
+# =============================================================================
+#      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
+#                                             (+):kb+(k-kb)( k1 z / (1+ k1 z))
+# 
+# 
+#      n -> n - b   with rate   f
+#      r -> r + b
+#      z -> z + cb
+# 
+# 
+#      r -> r - 1   with rate   kr * r
+#                   
+# 
+#      z -> z - 1     with rate   gammaz*z
+# ============================================================================= 
+
+def get_FF(x):
+    return np.var(x)/np.mean(x)
+
+def preg(z, pru, prn, prp, p1n, p1p, pb, ftype):
+    
+    if ftype == 'u':
+        return pru
+    if ftype=='n':
+        return prn/(1+p1n*z)
+    if ftype=='p':
+        return pb + (prp-pb)*p1p*z/(1+p1p*z)
+
+def simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
+        nlist=[n]
+        rlist=[r]
+        zlist=[z]
+        tlist=[0]        
+        APlist=[]
+
+        tcurr=0
+
+        timer = delta_t
+        while tcurr < tmax:
+            
+            # Get the three event times
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n) + 1e-6)) # add 1 occupied site
+            t2=exponential(1/(gammaz*z + 1e-6)) # remove 1 neurotransmitter
+
+            # Choose the smallest one and then make that event happen
+            if t0 < t1 and t0 < t2 and t0 < timer: # AP occurrs
+                b = binomial(n, preg(z, pru, prn, prp, p1n, p1p, pb, ftype))
+                n = n - b
+                z = z + cz*b
+                APlist.append(tcurr+t0)
+                tmin = t0
+                timer-=tmin
+                tcurr+=tmin
+
+            elif t1<t0 and t1<t2 and t1<timer: # add a docked vesicle
+                if n < M:
+                    n=n+1
+                tmin = t1
+                timer-=tmin
+                tcurr+=tmin
+
+            elif t2<t0 and t2<t1 and t2<timer: # remove a neurotransmitter
+                if z > 0:
+                    z=z-1
+                tmin = t2
+                timer-=tmin
+                tcurr+=tmin
+                
+            else:
+                tmin=timer
+                timer = delta_t
+                nlist.append(n)
+                rlist.append(r)
+                zlist.append(z)
+                tcurr += tmin
+                tlist.append(tcurr)
+
+        return tlist, nlist, rlist, zlist, APlist
+    
+###############################################################################
+#
+#                               Parameters
+#
+###############################################################################
+    
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+f=10
+M=100
+
+pru = 0.5 # prob
+
+prn = 0.8 # 0.8 previously # prob ------------------------------- Negative
+p1n = 15 #15 # fb strength
+
+prp = 0.625 # 0.63 # prob --------------------------------- Positive
+p1p = 5 #30 20 15 10 # fb strength
+pb = 0.4 # basal rate, %
+
+n=M # occupied states
+r=0 #  repair states
+
+k=10 # 10 
+gammaz=100
+cz=100 # number of neurotransmitters per vesicle
+z=0 # neurotransmitters
+
+delta_t = 0.001
+tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+
+ratio = 0.3
+q0 = []
+qn = []
+qp = []
+
+m0=[]
+mn=[]
+mp=[]
+
+u0=[]
+un=[]
+up=[]
+
+ntimes=20
+avg=[]
+for i in range(ntimes):
+    print(i, ntimes)
+    
+    R0s = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, delta_t)
+    nsim0=R0s[1][int(ratio*len(R0s[1])):]
+    zsim0=R0s[3][int(ratio*len(R0s[3])):]
+    z0FF=get_FF(nsim0) # 1 n, 3 z
+    m0.append(np.mean(zsim0))
+    q0.append(z0FF)
+    u0.append(np.mean(nsim0))
+
+    Rns = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, delta_t)
+    nsimn=Rns[1][int(ratio*len(Rns[1])):]
+    zsimn=Rns[3][int(ratio*len(Rns[3])):]
+    znFF=get_FF(nsimn) # 1 n, 3 z
+    mn.append(np.mean(zsimn))
+    qn.append(znFF)
+    un.append(np.mean(nsimn))
+    
+    Rps = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, delta_t)
+    nsimp=Rps[1][int(ratio*len(Rps[1])):]
+    zsimp=Rps[3][int(ratio*len(Rps[3])):]
+    zpFF=get_FF(nsimp) # 1 n, 3 z
+    mp.append(np.mean(zsimp))
+    qp.append(zpFF)
+    up.append(np.mean(nsimp))
+    
+    print([np.mean(m0), np.mean(mn), np.mean(mp)])
+    print([np.mean(u0), np.mean(un), np.mean(up)])
+
+ff0 = np.mean(q0)
+ffn = np.mean(qn)
+ffp = np.mean(qp)
+
+fffs=[0,0, 7.207552008907737]
+
+# zmean unregulated = 333.33333
+
+zmeaneq=f*cz*pru*k*M/(gammaz*(f*pru+k))
+
+ffs=[ff0, ffn, ffp]
+
+ms = [np.mean(m0), np.mean(mn), np.mean(mp)]
+print(ffs)
+
+ffeq = 1 + 2*k*(M-1) / (2*k+f*(2-pru)*pru)-k*M/(f*pru+k)
+
+# =============================================================================
+# print(zmeaneq, np.mean(q0), np.mean(qn), np.mean(qp))
+# =============================================================================
+print(zmeaneq, np.mean(m0), np.mean(mn), np.mean(mp))
+print('pru', 'prn', 'prp', 'p1n', 'p1p', 'pb')
+print(pru, prn, prp, p1n, p1p, pb)
+
+#%%
+
+tmax=100
+
+# =============================================================================
+# R0t = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, delta_t)
+# Rnt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, delta_t)
+# Rpt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, delta_t)
+# =============================================================================
+
+fs = 15  # font size
+
+
+#
+font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
+
+# Add the font to Matplotlib's font manager
+import matplotlib.font_manager as fm
+fm.fontManager.addfont(font_path)
+bookman_prop = fm.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = bookman_prop.get_name()
+#
+
+tinit=22 # 70
+t0=tinit*int(1/delta_t)
+t1=t0+int(1/delta_t)
+
+
+fs = 15  # font size
+fig, ax = plt.subplots(2,3, figsize=(18,4))
+
+ap0=R0t[-1][t0:10]
+ap1=Rnt[-1][t0:10]
+ap2=Rpt[-1][t0:10]
+
+ax[0,0].step(R0t[0][t0:t1], R0t[1][t0:t1], color='#ff7f0e', where='post',
+           label='noff = {}'.format(np.around(ffs[0],3)), linewidth=3)
+ax[0,1].step(Rnt[0][t0:t1], Rnt[1][t0:t1], color='#ff7f0e', where='post',
+           label='noff = {}'.format(np.around(ffs[1],3)), linewidth=3)
+ax[0,2].step(Rpt[0][t0:t1], Rpt[1][t0:t1], color='#ff7f0e', where='post',
+           label='noff = {}'.format(np.around(ffs[2],3)), linewidth=3)
+
+d=10
+ax[0,0].set_ylim([-d, 100+d])
+ax[0,1].set_ylim([-d, 100+d])
+ax[0,2].set_ylim([-d, 100+d])
+
+
+
+# =============================================================================
+# ax[0,0].set_xticks([])
+# ax[0,1].set_xticks([])
+# ax[0,2].set_xticks([])
+# ax[0,1].set_yticks([])
+# ax[0,2].set_yticks([])
+# ax[1,1].set_yticks([]) 
+# ax[1,2].set_yticks([]) 
+# =============================================================================
+
+fs2=15
+ax[0,0].tick_params(axis='y', labelsize=fs2)
+ax[1,0].tick_params(axis='both', labelsize=fs2)
+ax[1,1].tick_params(axis='x', labelsize=fs2)
+ax[1,2].tick_params(axis='x', labelsize=fs2)
+
+# =============================================================================
+# ax[0,0].
+# ax[0,1].
+# ax[0,2].
+# ax[1,0]. 
+# ax[1,1].
+# ax[1,2].
+# =============================================================================
+
+tplot = np.linspace(0,1,t1-t0)
+
+d=500
+
+mval = np.max([R0t[3][t0:t1],Rnt[3][t0:t1],Rpt[3][t0:t1]])
+
+ax[1,0].step(tplot, R0t[3][t0:t1], color='green', where='post', linewidth=3)
+ax[1,1].step(tplot, Rnt[3][t0:t1], color='green', where='post', linewidth=3)
+ax[1,2].step(tplot, Rpt[3][t0:t1], color='green', where='post', linewidth=3)
+ax[1,0].set_ylim([-d, mval+d])
+ax[1,1].set_ylim([-d, mval+d])
+ax[1,2].set_ylim([-d, mval+d])
+
+ax[1,1].set_xlabel('Time, (sec)', fontsize = 20)
+
+ax[0,0].set_title('No feedback', fontsize=20)
+ax[0,1].set_title('Negative feedback', fontsize=20)
+ax[0,2].set_title('Positive feedback', fontsize=20)
+
+        
+fig.tight_layout(rect=[0, 0, 1, 1])
+
+plt.show()
+
+#%%
+fs = 10  # font size
+
+fig, ax = plt.subplots(2, 1)  # Adjust figure size if needed
+
+ax[0].step(tlist, nlist, color='#ff7f0e', where='post',
+           label='noff = {}'.format(np.around(get_FF(nsim),3)))
+ax[0].set_ylabel('occupied\nsite', fontsize=fs)
+ax[0].set_xticks([])
+d=10
+ax[0].set_ylim([-d, np.max(nlist)+d])
+ax[0].legend(loc='upper right')
+
+ax[1].step(tlist, zlist, color='green', where='post',
+           label='zff = {}, m={},meq={}'.format(np.around(get_FF(zsim),3), 
+                                         np.around(np.mean(zsim),3),
+                                         np.around(zmeaneq)))
+ax[1].set_ylabel('neurotrans-\nmitters', fontsize=fs)
+ax[1].set_xlabel('time (sec)', fontsize=fs)
+ax[1].tick_params(axis='both', which='major', labelsize=fs)
+ax[1].legend(loc='upper right')
+
+plt.show()
+
+# =============================================================================
+# fig, ax = plt.subplots(4, 1, figsize = (9,7))  # Adjust figure size if needed
+# 
+# ax[0].step(tlist, nlist, color='#ff7f0e', where='post',
+#            label='noff = {}'.format(np.around(ffn,3)))
+# ax[0].set_ylabel('occupied\nsite', fontsize=fs)
+# ax[0].set_xticks([])
+# d=10
+# ax[0].set_ylim([-d, np.max(nlist)+d])
+# ax[0].legend(loc='upper right')
+# # ============================================s=================================
+# # for ap in APlist:
+# #     ax[0].axvline(x=ap, color='k', alpha = 0.3)
+# # =============================================================================
+# 
+# ax[1].step(tlist, ulist, color='#1f77b4', where='post', 
+#            label='nuff = {}'.format(np.around(ffu,3)))
+# ax[1].set_ylabel('unoccupied\nsite', fontsize=fs)
+# ax[1].tick_params(axis='both', which='major', labelsize=fs)
+# ax[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+# ax[1].legend(loc='upper right')
+# 
+# ax[2].step(tlist, rlist, color='red', where='post', 
+#            label='nrff = {}'.format(np.around(ffr,3)))
+# ax[2].set_ylabel('repair\nsite', fontsize=fs)
+# ax[2].tick_params(axis='both', which='major', labelsize=fs)
+# ax[2].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+# ax[2].legend(loc='upper right')
+# 
+# ax[3].step(tlist, zlist, color='green', where='post',
+#            label='zff = {}'.format(np.around(ffz,3)))
+# ax[3].set_ylabel('neurotrans-\nmitters', fontsize=fs)
+# ax[3].set_xlabel('time (sec)', fontsize=fs)
+# ax[3].tick_params(axis='both', which='major', labelsize=fs)
+# ax[3].legend(loc='upper right')
+# 
+# plt.show()
+# =============================================================================
+
+#%%
+# approx 100 x the slowest time
+
+# run ntimes then average, CI std of output divide by sqrt(n)
+
+
+# =============================================================================
+# f = 10;
+# pr = 0.5;
+# M = 100;
+# keq = 5;
+# c = 100;
+# d = 100;
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+###############################################################################
+#
+#                               Run test
+#
+###############################################################################
+
+# =============================================================================
+# tlist, nlist, rlist, zlist, APlist = \
+#     simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)
+# =============================================================================
+# =============================================================================
+#     
+# tlist, nlist, rlist, zlist, APlist = \
+#     simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)    
+#     
+# 
+# ulist = M - np.array(nlist)-np.array(rlist)
+# 
+# ratio = 0.2
+# 
+# nss = nlist[int(ratio*len(nlist)):]
+# rss = rlist[int(ratio*len(nlist)):]
+# zss = zlist[int(ratio*len(nlist)):]
+# uss = ulist[int(ratio*len(nlist)):]
+# 
+# ffn = get_FF(nss)
+# ffr = get_FF(rss)
+# ffz = get_FF(zss)
+# ffu = get_FF(uss)
+# 
+# =============================================================================
+# =============================================================================
+# print('ffo={}'.format(np.around(of,3)), 'ffz={}'.format(np.around(zf,3)), 'fb={}'.format(ftype))
+# =============================================================================
+###############################################################################
+#
+#                               Plot
+#
+###############################################################################
+
+# =============================================================================
+# fig, ax = plt.subplots(3,1)
+# =============================================================================
+
+
+
+# How much do these curves deviate when I'm using deterministic repair times
+# and increasing the value of kr?
+
+def get_ff_sim():
+    ratio = 0.2
+    keq=5
+    # 1/keq = 1/k + 1/kr
+    # k = 1/(1/keq - 1/kr)
+    krinf = np.inf
+    kinf = 1/(1/keq-1/krinf)
+    tlist, n_inf_list, r_inf_list, z_inf_list, APlist = \
+        simulate_kr_inf(f, pr, M, n, r, z, kinf, k1, kb, krinf, 
+                        gammaz, cz, ftype, tmax, delta_t)
+    
+    n_inf_ss = n_inf_list[int(ratio*len(n_inf_list)):]
+    z_inf_ss = z_inf_list[int(ratio*len(z_inf_list)):]
+    
+    ff_n_sim=get_FF(n_inf_ss)
+    ff_z_sim=get_FF(z_inf_ss)
+    
+    return ff_n_sim
+
+keq=5
+ntests=20
+R=[]
+for i in range(ntests):
+    print(i, ntests)
+    R.append(get_ff_sim())
+
+FFmean = np.mean(R)
+RCI = np.sqrt(np.var(R))/np.sqrt(ntests)
+
+ff_n_eq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
+print(FFmean, ff_n_eq)
+#%%
+
+nruns=5
+krlist = np.linspace(keq+0.01,1000,100)
+nomean = np.zeros((nruns, len(krlist)))
+zmean = np.zeros((nruns, len(krlist)))
+
+for i in range(nruns):
+    print(i, nruns)
+    for j in range(len(krlist)):
+        print(j, len(krlist))
+        result_j = simulate(f,pr, M, nu, no, nr, z, 1/(1/keq - 1/krlist[j]), 
+                       k1, kb, krlist[j], gammaz,
+                       cz, ftype, tmax)
+            
+        nomean[i,j]=get_FF(result_j[2])
+        zmean[i,j]=get_FF(result_j[4])
+
+    
+fo = np.mean(nomean, 0) / ff_no_sim
+fz = np.mean(zmean, 0) / ff_z_sim
+
+fs2=15
+plt.title('f={}, pr={}, k={}, kr={}, gammaz={}, cz={}, fb={}'.format(
+    f, pr, k, kr,gammaz,cz, ftype))
+plt.plot(krlist, fo, label='no')
+plt.plot(krlist, fz, label='z')
+plt.xlabel('Repair rate, kr', fontsize = fs2)
+plt.ylabel('Fano factor', fontsize = fs2)
+plt.tick_params(axis='both', labelsize = fs2)
+plt.legend(fontsize = fs2-2)
+plt.show()
+
+#%%
+# =============================================================================
+# fu=[]
+# fo=[]
+# fr=[]
+# 
+# for j in range(20):
+#     print(j)
+#     k1list = np.linspace(0, 20, 100)
+# 
+#     results = [simulate(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz,
+#         cz, ftype, tmax, AP=True, deterministic=False, zmean=zmean, zth=zth) 
+#                for i in range(len(k1list))]
+# 
+#     #results[i][j], ith value of k1, jth return value of simulate where 0 is tlist, 1 is nuhist.
+#     ffu = [get_FF(results[i][1]) for i in range(len(results))]
+#     ffo = [get_FF(results[i][2]) for i in range(len(results))]
+#     ffr = [get_FF(results[i][3]) for i in range(len(results))]
+# 
+#     fu.append(ffu)
+#     fo.append(ffo)
+#     fr.append(ffr)
+# 
+# fumean=np.mean(fu,0)
+# fomean=np.mean(fo,0)
+# frmean=np.mean(fr,0)
+# 
+# fs2=15
+# plt.title('f={}, pr={}, k={}, kr={}, gammaz={}, cz={}, fb={}'.format(
+#     f, pr, k, kr,gammaz,cz, ftype))
+# plt.plot(k1list, fumean, label='unoccupied')
+# plt.plot(k1list, fomean, label='occupied')
+# plt.plot(k1list, frmean, label='repair')
+# plt.xlabel('Feedback strength, k1', fontsize = fs2)
+# plt.ylabel('Fano factor', fontsize = fs2)
+# plt.tick_params(axis='both', labelsize = fs2)
+# plt.legend(fontsize = fs2-2)
+# plt.show()
+# =============================================================================
