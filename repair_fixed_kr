@@ -30,6 +30,8 @@ def kreg(z, k, k1, kb, ftype):
         return k
 
 def simulate(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
+    
+        ratio = 0.2 # set to 0 for running the whole plot
 
         nlist=[n]
         zlist=[z]
@@ -42,7 +44,7 @@ def simulate(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
 
         timer = delta_t
         kr_timer = 1/kr
-        
+
         while tcurr < tmax:
 
             t0=exponential(1/f) # action potential
@@ -84,20 +86,23 @@ def simulate(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
                 tmin=timer
                 kr_timer-=tmin
                 timer = delta_t
-                nlist.append(n)
-                rlist.append(r)
-                zlist.append(z)
-                tlist.append(tcurr)
-            
+                if tcurr > ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
             tcurr += tmin
             
         return tlist, nlist, rlist, zlist, APlist
     
 def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
+    
+        ratio = 0.2 # set to 0 for running the whole plot
+    
         nlist=[n]
         rlist=[r]
         zlist=[z]
-        tlist=[0]        
+        tlist=[0]
         APlist=[]
 
         tcurr=0
@@ -108,7 +113,7 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
         timer = delta_t
 
         while tcurr < tmax:
-            
+
             # Get the three event times
             t0=exponential(1/f) # action potential
             t1=exponential(1/(k*(M-n) + 1e-6)) # empty to occupied
@@ -116,7 +121,7 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
             t3 = timer
 
             # Choose the smallest one and then make that event happen
-            if t0 < t1 and t0 < t2 and t0 < t3: # AP occurrs
+            if t0<t1 and t0<t2 and t0<t3: # AP occurrs
                 b = binomial(n, pr)
                 n = n - b
                 z = z + cz*b
@@ -142,11 +147,13 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
             else:
                 tmin=timer
                 timer = delta_t
-                nlist.append(n)
-                rlist.append(r)
-                zlist.append(z)
-                tcurr+=tmin
-                tlist.append(tcurr)
+                if tcurr>ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
+                    
+            tcurr+=tmin
             
         return tlist, nlist, rlist, zlist, APlist
     
@@ -156,15 +163,13 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
 #
 ###############################################################################
 
-ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+ftype='n' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 pr=0.5 #
 M=100
 
 n=M # occupied states
 r=0 #  repair states
-
-k=10 # 10 # feedback strength constant #
 
 gammaz=100
 cz=100 # number of neurotransmitters per vesicle
@@ -174,6 +179,7 @@ delta_t = 0.001
 tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
+ratio=0.3
 
 nfflist=[]
 zfflist=[]
@@ -181,8 +187,8 @@ zfflist=[]
 niters=20
 for i in range(niters):
     print(i, niters)
-    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq+1/np.inf), 
-                         gammaz, cz, ftype, tmax, delta_t)
+    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+                         gammaz, cz, 'u', tmax, delta_t)
     ninf=Rinf[1]
     zinf=Rinf[3]
     nff=get_FF(ninf)
@@ -198,10 +204,13 @@ zmeanlist=[]
 nfflist=[]
 zfflist=[]
 
+# 1/keq = 1/k + 1/kr
+# k = 1/(1/keq-1/kr)
+
 krlist=np.linspace(keq+0.01,1000,100)
 for i, kr in enumerate(krlist):
     print(i, len(krlist))
-    R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr),kr, 
+    R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, 
                 gammaz, cz, 'u', tmax, delta_t)
     nlist=R[1]
     zlist=R[3]
@@ -213,16 +222,16 @@ for i, kr in enumerate(krlist):
     zmeanlist.append(zmean)
     nfflist.append(nff)
     zfflist.append(zff)
+    
 nffkr=np.mean(nfflist)
 zffkr=np.mean(zfflist)
 
-ffneq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
-print(ffneq, nffinf)
+nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
+print(nffeq, nffinf)
 #%%
 plt.plot(krlist, np.array(nfflist)/nffinf, label='n')
 plt.plot(krlist, np.array(zfflist)/zffinf, label='z')
 plt.legend()
-plt.xscale('log')
 plt.show()
 #%%
 ###############################################################################
