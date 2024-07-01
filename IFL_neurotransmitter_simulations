@@ -202,7 +202,7 @@ def trajectories_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tma
         nlist=[n]
         rlist=[r]
         zlist=[z]
-        tlist=[0]        
+        tlist=[0]
         APlist=[]
 
         tcurr=0
@@ -281,7 +281,7 @@ cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.01
-tmax = 1 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 
 ratio = 0.2
 q=[]
