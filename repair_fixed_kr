@@ -30,8 +30,6 @@ def kreg(z, k, k1, kb, ftype):
         return k
 
 def simulate(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
-    
-        ratio = 0.2 # set to 0 for running the whole plot
 
         nlist=[n]
         zlist=[z]
@@ -44,7 +42,9 @@ def simulate(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
 
         timer = delta_t
         kr_timer = 1/kr
-
+        
+        ratio = 0.3
+        
         while tcurr < tmax:
 
             t0=exponential(1/f) # action potential
@@ -52,57 +52,58 @@ def simulate(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
             t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
             t3 = kr_timer
             t4 = timer
-            
-            if t0 < t1 and t0 < t2 and t0 < t3 and t0 < t4: # AP occurrs
+
+            if t0<t1 and t0<t2 and t0<t3 and t0<t4: # AP occurrs
                 b = binomial(n, pr)
                 n = n - b
                 r = r + b
                 z = z + cz*b
-                APlist.append(tcurr+t0)
+                if tcurr>=ratio*tmax:
+                    APlist.append(tcurr+t0)
                 tmin = t0
                 timer-=tmin
                 kr_timer-=tmin
 
-            elif t1<t0 and t1<t2 and t1<t3 and t1 < t4: # add a docked vesicle
+            elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
                 if n < M:
                     n=n+1
                 tmin = t1
                 timer-=tmin
                 kr_timer-=tmin
 
-            elif t2<t0 and t2<t1 and t2<t3 and t2 < t4: # remove a neurotransmitter
+            elif t2<t0 and t2<t1 and t2<t3 and t2<t4: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
                 tmin = t2
                 timer-=tmin
                 kr_timer-=tmin
+                
             elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
                 if r>0:
                     r=r-1
                 tmin = t3
                 timer -= tmin
                 kr_timer=1/kr
+
             else:
                 tmin=timer
                 kr_timer-=tmin
                 timer = delta_t
-                if tcurr > ratio*tmax:
+                if tcurr>=ratio*tmax:
                     nlist.append(n)
                     rlist.append(r)
                     zlist.append(z)
                     tlist.append(tcurr)
+
             tcurr += tmin
-            
+
         return tlist, nlist, rlist, zlist, APlist
     
 def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
-    
-        ratio = 0.2 # set to 0 for running the whole plot
-    
         nlist=[n]
         rlist=[r]
         zlist=[z]
-        tlist=[0]
+        tlist=[0]        
         APlist=[]
 
         tcurr=0
@@ -111,9 +112,10 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
 #         # longer than the typical duration of the shortest reaction
 # =============================================================================
         timer = delta_t
+        ratio=0.3
 
         while tcurr < tmax:
-
+            
             # Get the three event times
             t0=exponential(1/f) # action potential
             t1=exponential(1/(k*(M-n) + 1e-6)) # empty to occupied
@@ -121,11 +123,12 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
             t3 = timer
 
             # Choose the smallest one and then make that event happen
-            if t0<t1 and t0<t2 and t0<t3: # AP occurrs
+            if t0 < t1 and t0 < t2 and t0 < t3: # AP occurrs
                 b = binomial(n, pr)
                 n = n - b
                 z = z + cz*b
-                APlist.append(tcurr+t0)
+                if tcurr>=ratio*tmax:
+                    APlist.append(tcurr+t0)
                 tmin = t0
                 timer-=tmin
                 tcurr+=tmin
@@ -147,12 +150,11 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
             else:
                 tmin=timer
                 timer = delta_t
-                if tcurr>ratio*tmax:
+                if tcurr>=ratio*tmax:
                     nlist.append(n)
                     rlist.append(r)
                     zlist.append(z)
                     tlist.append(tcurr)
-                    
             tcurr+=tmin
             
         return tlist, nlist, rlist, zlist, APlist
@@ -163,7 +165,7 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, gammaz, cz, ftype, tmax, delta_t):
 #
 ###############################################################################
 
-ftype='n' # feedback type: n-negative, p-positive, u-unregulated
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 pr=0.5 #
 M=100
@@ -171,29 +173,33 @@ M=100
 n=M # occupied states
 r=0 #  repair states
 
-gammaz=100
+k=10 # 10 # feedback strength constant #
+
+gammaz=100 # d
 cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
-ratio=0.3
 
 nfflist=[]
 zfflist=[]
 
 niters=20
 for i in range(niters):
+    
     print(i, niters)
+    
     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-                         gammaz, cz, 'u', tmax, delta_t)
+                         gammaz, cz, ftype, tmax, delta_t)
     ninf=Rinf[1]
-    zinf=Rinf[3]
     nff=get_FF(ninf)
-    zff=get_FF(zinf)
     nfflist.append(nff)
+    
+    zinf=Rinf[3]
+    zff=get_FF(zinf)
     zfflist.append(zff)
 
 nffinf=np.mean(nfflist)
@@ -204,9 +210,6 @@ zmeanlist=[]
 nfflist=[]
 zfflist=[]
 
-# 1/keq = 1/k + 1/kr
-# k = 1/(1/keq-1/kr)
-
 krlist=np.linspace(keq+0.01,1000,100)
 for i, kr in enumerate(krlist):
     print(i, len(krlist))
@@ -214,15 +217,14 @@ for i, kr in enumerate(krlist):
                 gammaz, cz, 'u', tmax, delta_t)
     nlist=R[1]
     zlist=R[3]
-    nmean=np.mean(nlist)
+    nmean=np.mean(nlist) # means
     zmean=np.mean(zlist)
-    nff = get_FF(nlist)
+    nff = get_FF(nlist) # FFs
     zff = get_FF(zlist)
-    nmeanlist.append(nmean)
+    nmeanlist.append(nmean) # append means
     zmeanlist.append(zmean)
-    nfflist.append(nff)
+    nfflist.append(nff) # append FFs
     zfflist.append(zff)
-    
 nffkr=np.mean(nfflist)
 zffkr=np.mean(zfflist)
 
