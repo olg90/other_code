@@ -6,14 +6,11 @@ from numpy.random import exponential, binomial
 #      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
 #                                             (+):kb+(k-kb)( k1 z / (1+ k1 z))
 # 
-# 
 #      n -> n - b   with rate   f
 #      r -> r + b
 #      z -> z + cb
 # 
-# 
 #      r -> r - 1   with rate   kr * r
-#                   
 # 
 #      z -> z - 1     with rate   gammaz*z
 # ============================================================================= 
@@ -39,6 +36,8 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t)
         APlist=[]
 
         tcurr=0
+        
+        ratio = 0.3
 
 # =============================================================================
 #         delta_t = 0.01 # longer than the typical autocorrelation time of the system
@@ -78,67 +77,20 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t)
                     r=r-1
                 tmin = t3
                 timer -= tmin
-                print('t', timer, t3)
             else:
                 timer = delta_t
                 tmin=timer
-                nlist.append(n)
-                rlist.append(r)
-                zlist.append(z)
-                tlist.append(tcurr)
+                if tcurr >= ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
             
             tcurr += tmin
             
         return tlist, nlist, rlist, zlist, APlist
     
-def trajectories(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t):
 
-        nlist=[n]
-        zlist=[z]
-        rlist=[r]
-
-        tlist=[0]
-        APlist=[]
-
-        tcurr=0
-
-        while tcurr < tmax:
-
-            t0=exponential(1/f) # action potential
-            t1=exponential(1/(kreg(z, k, k1, kb, ftype)*(M-n-r) + 1e-6)) # site gets occupied
-            t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
-            t3=exponential(1/(kr*r + 1e-6)) # repair a site
-            
-            if t0 < t1 and t0 < t2 and t0 < t3: # AP occurrs
-                b = binomial(n, pr)
-                n = n - b
-                r = r + b
-                z = z + cz*b
-                APlist.append(tcurr+t0)
-                tmin = t0
-
-            elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
-                if n < M:
-                    n=n+1
-                tmin = t1
-
-            elif t2<t0 and t2<t1 and t2<t3: # remove a neurotransmitter
-                if z > 0:
-                    z=z-1
-                tmin = t2
-                
-            else: # remove a repair vesicle
-                if r>0:
-                    r=r-1
-                tmin = t3
-
-            nlist.append(n)
-            rlist.append(r)
-            zlist.append(z)
-            tcurr += tmin
-            tlist.append(tcurr)
-
-        return tlist, nlist, rlist, zlist, APlist
     
 def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t):
         nlist=[n]
@@ -153,6 +105,7 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, d
 #         # longer than the typical duration of the shortest reaction
 # =============================================================================
         timer = delta_t
+        ratio=0.2
 
         while tcurr < tmax:
             
@@ -170,85 +123,33 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, d
                 APlist.append(tcurr+t0)
                 tmin = t0
                 timer-=tmin
-                tcurr+=tmin
+                
 
             elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
                 if n < M:
                     n=n+1
                 tmin = t1
                 timer-=tmin
-                tcurr+=tmin
 
             elif t2<t0 and t2<t1 and t2<t3: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
                 tmin = t2
                 timer-=tmin
-                tcurr+=tmin
                 
             else:
                 tmin=timer
                 timer = delta_t
-                nlist.append(n)
-                rlist.append(r)
-                zlist.append(z)
-                tcurr+=tmin
-                tlist.append(tcurr)
+                if tcurr>= ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
+                
+            tcurr+=tmin
             
         return tlist, nlist, rlist, zlist, APlist
-    
 
-def trajectories_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t):
-        nlist=[n]
-        rlist=[r]
-        zlist=[z]
-        tlist=[0]
-        APlist=[]
-
-        tcurr=0
-        timer = delta_t
-
-        while tcurr < tmax:
-            
-            # Get the three event times
-            t0=exponential(1/f) # action potential
-            t1=exponential(1/(kreg(z, k, k1, kb, ftype)*(M-n) + 1e-6)) # empty to occupied
-            t2=exponential(1/(gammaz*z + 1e-6)) # remove 1 neurotransmitter
-
-            # Choose the smallest one and then make that event happen
-            if t0 < t1 and t0 < t2 and t0 < timer: # AP occurrs
-                b = binomial(n, pr)
-                n = n - b
-                z = z + cz*b
-                APlist.append(tcurr+t0)
-                tmin = t0
-                timer-=tmin
-                tcurr+=tmin
-
-            elif t1<t0 and t1<t2 and t1 < timer: # add a docked vesicle
-                if n < M:
-                    n=n+1
-                tmin = t1
-                timer-=tmin
-                tcurr+=tmin
-                
-            elif t2<t0 and t2<t1 and t2<timer: # remove a neurotransmitter
-                if z > 0:
-                    z=z-1
-                tmin = t2
-                timer-=tmin
-                tcurr+=tmin
-                
-            else:
-                tmin=timer
-                timer = delta_t
-                nlist.append(n)
-                rlist.append(r)
-                zlist.append(z)
-                tcurr += tmin
-                tlist.append(tcurr)
-                
-        return tlist, nlist, rlist, zlist, APlist
 
 ###############################################################################
 #
@@ -256,7 +157,7 @@ def trajectories_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tma
 #
 ###############################################################################
 
-ftype='n' # feedback type: n-negative, p-positive, u-unregulated
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 pr=0.5 #
 M=100
@@ -283,36 +184,38 @@ z=0 # neurotransmitters
 delta_t = 0.01
 tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 
-ratio = 0.2
 q=[]
+qq=[]
 means=[]
 zmean=[]
 ntimes=20
 for i in range(ntimes):
     print(i, ntimes)
     R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 200, delta_t)
-    z0FF=get_FF(R0s[1][int(ratio*len(R0s[3])):]) # 1 n, 3 z
-    m0=np.mean(R0s[1][int(ratio*len(R0s[3])):])
-    z0=np.mean(R0s[3][int(ratio*len(R0s[3])):])
+    z0FF=get_FF(R0s[1]) # 1 n, 3 z
+    m0=np.mean(R0s[1])
+    z0=np.mean(R0s[3])
+    q0=get_FF(R0s[3])
     
     Rns = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', 200, delta_t)
-    znFF=get_FF(Rns[1][int(ratio*len(Rns[3])):]) # 1 n, 3 z
-    mn=np.mean(Rns[1][int(ratio*len(R0s[3])):])
-    zn=np.mean(Rns[3][int(ratio*len(R0s[3])):])
+    znFF=get_FF(Rns[1]) # 1 n, 3 z
+    mn=np.mean(Rns[1])
+    zn=np.mean(Rns[3])
+    qn = get_FF(Rns[3])
     
     Rps = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', 200, delta_t)
-    zpFF=get_FF(Rps[1][int(ratio*len(Rps[3])):]) # 1 n, 3 
-    mp=np.mean(Rps[1][int(ratio*len(R0s[3])):])
-    zp=np.mean(Rps[3][int(ratio*len(R0s[3])):])
+    zpFF=get_FF(Rps[1]) # 1 n, 3 
+    mp=np.mean(Rps[1])
+    zp=np.mean(Rps[3])
+    qp = get_FF(Rps[3])
     
     q.append([z0FF, znFF, zpFF])
+    qq.append([q0, qn, qp])
     means.append([m0, mn, mp])
     zmean.append([z0, zn, zp])
-# =============================================================================
-#     print(np.mean(q, 0))
-# =============================================================================
     print(np.mean(zmean, 0))
     print(np.mean(means, 0))
+    print(np.mean(qq, 0))
 
 q=np.array(q)
 ffs = np.mean(q, 0)
@@ -337,9 +240,9 @@ t0=tinit*int(1/delta_t)
 t1=t0+int(1/delta_t)
 
 # =============================================================================
-# R0t = trajectories_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
-# Rnt = trajectories_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmaxt, delta_t)
-# Rpt = trajectories_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmaxt, delta_t)
+# R0t = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
+# Rnt = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmaxt, delta_t)
+# Rpt = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmaxt, delta_t)
 # =============================================================================
 
 #
@@ -691,3 +594,75 @@ plt.show()
 # plt.legend(fontsize = fs2-2)
 # plt.show()
 # =============================================================================
+#%%
+
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+f=10
+pr=0.5 #
+M=100
+
+n=M # occupied states
+r=0 #  repair states
+
+k=10 # 10 # feedback strength constant #
+
+gammaz=100 # d
+cz=100 # number of neurotransmitters per vesicle
+z=0 # neurotransmitters
+
+delta_t = 0.001
+tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
+
+keq=5
+
+nfflist=[]
+zfflist=[]
+
+niters=20
+for i in range(niters):
+    
+    print(i, niters)
+    
+    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+                    0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
+    ninf=Rinf[1]
+    nff=get_FF(ninf)
+    nfflist.append(nff)
+    
+    zinf=Rinf[3]
+    zff=get_FF(zinf)
+    zfflist.append(zff)
+
+nffinf=np.mean(nfflist)
+zffinf=np.mean(zfflist)
+
+nmeanlist=[]
+zmeanlist=[]
+nfflist=[]
+zfflist=[]
+
+krlist=np.linspace(keq+0.01,1000,100)
+for i, kr in enumerate(krlist):
+    print(i, len(krlist))
+    R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, 
+                 ftype, tmax, delta_t)
+    nlist=R[1]
+    zlist=R[3]
+    nmean=np.mean(nlist) # means
+    zmean=np.mean(zlist)
+    nff = get_FF(nlist) # FFs
+    zff = get_FF(zlist)
+    nmeanlist.append(nmean) # append means
+    zmeanlist.append(zmean)
+    nfflist.append(nff) # append FFs
+    zfflist.append(zff)
+nffkr=np.mean(nfflist)
+zffkr=np.mean(zfflist)
+
+nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
+print(nffeq, nffinf)
+#%%
+plt.plot(krlist, np.array(nfflist)/nffinf, label='n')
+plt.plot(krlist, np.array(zfflist)/zffinf, label='z')
+plt.legend()
+plt.show()
