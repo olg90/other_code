@@ -66,7 +66,6 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t)
                     n=n+1
                 tmin = t1
                 timer-=tmin
-
             elif t2<t0 and t2<t1 and t2<t3 and t2 < t4: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
@@ -191,7 +190,7 @@ zmean=[]
 ntimes=20
 for i in range(ntimes):
     print(i, ntimes)
-    R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 200, delta_t)
+    R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 100, delta_t)
     z0FF=get_FF(R0s[1]) # 1 n, 3 z
     m0=np.mean(R0s[1])
     z0=np.mean(R0s[3])
@@ -611,58 +610,93 @@ cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.001
-tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
 
 nfflist=[]
 zfflist=[]
 
-niters=20
-for i in range(niters):
-    
-    print(i, niters)
-    
-    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-                    0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
-    ninf=Rinf[1]
-    nff=get_FF(ninf)
-    nfflist.append(nff)
-    
-    zinf=Rinf[3]
-    zff=get_FF(zinf)
-    zfflist.append(zff)
+# =============================================================================
+# niters=20
+# for i in range(niters):
+#     
+#     print(i, niters)
+#     
+#     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+#                     0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
+#     ninf=Rinf[1]
+#     nff=get_FF(ninf)
+#     nfflist.append(nff)
+#     
+#     zinf=Rinf[3]
+#     zff=get_FF(zinf)
+#     zfflist.append(zff)
+# 
+# nffinf=np.mean(nfflist)
+# zffinf=np.mean(zfflist)
+# 
+# =============================================================================
 
-nffinf=np.mean(nfflist)
-zffinf=np.mean(zfflist)
 
-nmeanlist=[]
-zmeanlist=[]
-nfflist=[]
-zfflist=[]
-
-krlist=np.linspace(keq+0.01,1000,100)
+# =============================================================================
+# krlist=np.linspace(keq+0.01,1000,100)
+# =============================================================================
+stepsize = 5
+nruns=20
+krlist=np.concatenate([[keq+0.05], np.arange(keq+stepsize, 100, stepsize)])
+nFF = []
+zFF= []
 for i, kr in enumerate(krlist):
-    print(i, len(krlist))
-    R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, 
-                 ftype, tmax, delta_t)
-    nlist=R[1]
-    zlist=R[3]
-    nmean=np.mean(nlist) # means
-    zmean=np.mean(zlist)
-    nff = get_FF(nlist) # FFs
-    zff = get_FF(zlist)
-    nmeanlist.append(nmean) # append means
-    zmeanlist.append(zmean)
-    nfflist.append(nff) # append FFs
-    zfflist.append(zff)
-nffkr=np.mean(nfflist)
-zffkr=np.mean(zfflist)
+    nmeanlist=[]
+    zmeanlist=[]
+    nfflist=[]
+    zfflist=[]
+    for j in range(nruns):
+        print(i, len(krlist), j, nruns)
+        R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, 
+                     ftype, tmax, delta_t)
+        nlist=R[1]
+        zlist=R[3]
+        nmean=np.mean(nlist) # means
+        zmean=np.mean(zlist)
+        nff = get_FF(nlist) # FFs
+        zff = get_FF(zlist)
+        nmeanlist.append(nmean) # append means
+        zmeanlist.append(zmean)
+        nfflist.append(nff) # append FFs
+        zfflist.append(zff)
+    nFF.append(np.mean(nfflist))
+    zFF.append(np.mean(zfflist))
+
 
 nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
-print(nffeq, nffinf)
 #%%
-plt.plot(krlist, np.array(nfflist)/nffinf, label='n')
-plt.plot(krlist, np.array(zfflist)/zffinf, label='z')
+plt.plot(krlist, np.array(nFF)/nffinf, label='n')
+plt.plot(krlist, np.array(zFF)/zffinf, label='z')
+
+def function1(keq, kr, f, pr, M):
+    numerator = (f * pr * (2 * keq * kr**2 - 
+                (keq**2 - keq * kr - kr**2) * (2 * f + keq * (-1 + M)) * pr - 
+                f * (2 * f * (keq - kr) + kr**2 + keq**2 * (-2 + M) - 
+                     keq * kr * (-2 + M)) * pr**2 + 
+                f**2 * (keq - kr) * pr**3))
+    
+    denominator = ((keq + f * pr) * (f * keq**2 * (-2 + pr) * pr - 
+                    f * kr * (-2 + pr) * pr * (kr + f * pr) + 
+                    keq * (2 * kr**2 - f * kr * (-2 + pr) * pr + f**2 * (-2 + pr) * pr**2)))
+    
+    correction_term = (1 - (keq * M) / (keq + f * pr) + 
+                       (2 * keq * (-1 + M)) / (2 * keq - f * (-2 + pr) * pr))
+    
+    return numerator / (denominator * correction_term)
+
+def function2(c, f, kr, pr, keq, M, d):
+    result = (-(((1 + c) * f**3 * kr**3 * (-2 + pr) * pr**3 * (kr + f * pr) - f**2 * keq * kr**2 * pr**2 * (2 * kr**2 * (3 + c - pr) + (-3 + c) * f * kr * (-2 + pr) * pr + (1 + 3 * c) * f**2 * (-2 + pr) * pr**2) + f * keq**2 * kr * pr * (-( (3 + c) * f**2 * kr * (-2 + pr) * pr**2) + 4 * c * f**3 * (-2 + pr) * pr**3 + kr**3 * (-6 + c * (-2 + pr) + pr) + f * kr**2 * pr * (3 * (-2 + pr) + c * (2 + pr))) + f * keq**4 * pr * (-2 * c * f**2 * (-2 + pr) * pr**2 + kr**2 * (2 - pr + c * (2 - 3 * pr + 2 * M * pr))) - keq**3 * (-4 * c * f**3 * kr * (-2 + pr) * pr**3 + 2 * c * f**4 * (-2 + pr) * pr**4 + 2 * kr**4 * (1 + c + c * (-1 + M) * pr) + f**2 * kr**2 * pr**2 * (3 * (-2 + pr) + c * (2 + pr)) + f * kr**3 * pr * (2 - pr + c * (2 - 3 * pr + 2 * M * pr))) - d**2 * (keq - kr) * (keq + f * pr) * ((1 + c) * f * kr * (-2 + pr) * pr * (kr + f * pr) + f * keq**2 * pr * (2 - pr + c * (2 - 3 * pr + 2 * M * pr)) + keq * (-( (1 + c) * f**2 * (-2 + pr) * pr**2) - 2 * kr**2 * (1 + c + c * (-1 + M) * pr) + f * kr * pr * (-2 + pr + c * (-2 + 3 * pr - 2 * M * pr)))) + d * (-((-1 + c) * f**2 * keq**4 * (-2 + pr) * pr**2) + (1 + c) * f**2 * kr**2 * (-2 + pr) * pr**2 * (kr + f * pr)**2 + f * keq**3 * pr * (2 * (-1 + c) * f * kr * (-2 + pr) * pr + 2 * f**2 * (-2 + pr) * pr**2 - kr**2 * (-4 + pr + c * pr)) + keq**2 * (-4 * f**3 * kr * (-2 + pr) * pr**3 + (1 + c) * f**4 * (-2 + pr) * pr**4 + f * kr**3 * pr * (-4 + pr + c * pr) - 2 * kr**4 * (1 + c + c * (-1 + M) * pr) + 2 * f**2 * kr**2 * pr**2 * (3 - pr + c * (3 + (-2 + M) * pr))) - f * keq * kr * pr * (kr + f * pr) * (-2 * f * kr * (-2 + pr) * pr + 2 * (1 + c) * f**2 * (-2 + pr) * pr**2 + kr**2 * (4 - pr + c * (4 - 3 * pr + 2 * M * pr))))) / (2 * (keq + f * pr) * ((d + kr) * (-d * keq + (d + keq) * kr) + f * (kr**2 + d * (-keq + kr)) * pr) * (f * keq**2 * (-2 + pr) * pr - f * kr * (-2 + pr) * pr * (kr + f * pr) + keq * (2 * kr**2 - f * kr * (-2 + pr) * pr + f**2 * (-2 + pr) * pr**2)))) / ((2 * f**2 * keq * (3 + c - pr) * pr**2 - (1 + c) * f**3 * (-2 + pr) * pr**3 - f * keq**2 * pr * (-6 + c * (-2 + pr) + pr) + 2 * keq**3 * (1 + c + c * (-1 + M) * pr) + d * (keq + f * pr) * (-( (1 + c) * f * (-2 + pr) * pr) + 2 * keq * (1 + c + c * (-1 + M) * pr))) / (2 * (keq + f * pr) * (d + keq + f * pr) * (2 * keq - f * (-2 + pr) * pr))))
+    return result
+
+krplot = np.linspace(keq+0.1, 100, 1000)
+plt.plot(krplot, function1(keq, krplot, f, pr, M))
+plt.plot(krplot, function2(cz, f, krplot, pr, keq, M, gammaz))
 plt.legend()
 plt.show()
