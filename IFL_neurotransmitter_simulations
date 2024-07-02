@@ -672,8 +672,7 @@ for i, kr in enumerate(krlist):
 
 nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
 #%%
-plt.plot(krlist, np.array(nFF)/nffinf, label='n')
-plt.plot(krlist, np.array(zFF)/zffinf, label='z')
+
 
 def function1(keq, kr, f, pr, M):
     numerator = (f * pr * (2 * keq * kr**2 - 
@@ -696,7 +695,13 @@ def function2(c, f, kr, pr, keq, M, d):
     return result
 
 krplot = np.linspace(keq+0.1, 100, 1000)
-plt.plot(krplot, function1(keq, krplot, f, pr, M))
-plt.plot(krplot, function2(cz, f, krplot, pr, keq, M, gammaz))
+plt.plot(krplot, function1(keq, krplot, f, pr, M), label='FFn/FFn_inf equation')
+plt.plot(krplot, function2(cz, f, krplot, pr, keq, M, gammaz), label='FFz/FFz_inf equation')
+
+plt.plot(krlist, np.array(nFF)/nffinf, label='FFn/FFn_inf simulation', marker='o', markersize=5)
+plt.plot(krlist, np.array(zFF)/zffinf, label='FFz/FFz_inf simulation', marker='o',markersize=5)
+
+plt.ylabel('Normalized fano factor')
+plt.xlabel('Repair rate')
 plt.legend()
 plt.show()
