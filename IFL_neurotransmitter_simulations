@@ -166,9 +166,9 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
 
         timer = delta_t
         kr_timer = 1/kr
-        
+
         ratio = 0.3
-        
+
         while tcurr < tmax:
 
             t0=exponential(1/f) # action potential
@@ -361,13 +361,11 @@ ax[0].set_xticks([])
 d=10
 ax[0].set_ylim([-d, np.max(nlist)+d])
 
-
 ax[1].step(tlist[t0:t1], ulist[t0:t1], color='#1f77b4', where='post', linewidth=3)
 ax[1].set_xticks([])
 
 ax[2].step(tlist[t0:t1], rlist[t0:t1], color='red', where='post', linewidth=3)
 ax[2].set_xticks([])
-
 
 ax[3].step(np.linspace(0,1, t1-t0), zlist[t0:t1], color='green', where='post', linewidth=3)
 ax[3].set_xlabel('Time (sec)')
@@ -404,7 +402,7 @@ for i in range(niters):
 
     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
                     0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
-    
+
     ninf=Rinf[1]
     nff=get_FF(ninf)
     nfflist.append(nff)
@@ -416,10 +414,12 @@ for i in range(niters):
 nffinf=np.mean(nfflist)
 zffinf=np.mean(zfflist)
 
-def function(ttype):
+krlist = np.linspace(keq+0.01, 1000, 20)
+
+def function(ttype, krlist):
 
     nruns=10
-    krlist = np.linspace(keq+0.01, 1000, 20)
+    
     nFF = []
     zFF= []
     nmeans = []
@@ -432,7 +432,8 @@ def function(ttype):
         for j in range(nruns):
             print(i, len(krlist), j, nruns)
             if ttype==0:
-                R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, 'u', tmax, delta_t)
+                R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, 
+                             kr, gammaz, cz, 'u', tmax, delta_t)
 
             if ttype==1:
                 R = simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr),
@@ -445,18 +446,24 @@ def function(ttype):
         zFF.append(np.mean(zfflist))
         nmeans.append(np.mean(nmeanlist))
         zmeans.append(np.mean(zmeanlist))
+        
+        
+    nmeans = np.array(nmeans)
+    zmeans = np.array(zmeans)
+    nFF = np.array(nFF)
+    zFF = np.array(zFF)
 
     return nmeans, zmeans, nFF, zFF
 
-nmeans, zmeans, nFF, zFF = function(0)
-dnmeans, dzmeans, dnFF, dzFF = function(1)
-    
+nmeans, zmeans, nFF, zFF = function(0, krlist)
+dnmeans, dzmeans, dnFF, dzFF = function(1, krlist)
+
 nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
 #%%
 plt.plot(krlist, nmeans, label='n')
 plt.plot(krlist, dnmeans, label='dn')
 plt.plot(krlist, zmeans, label='z')
-plt.plot(krlist, dzmeans,label='df')
+plt.plot(krlist, dzmeans ,label='dz')
 plt.legend()
 plt.show()
 
