@@ -266,27 +266,28 @@ q=[]
 qq=[]
 means=[]
 zmean=[]
+
 ntimes=20
 for i in range(ntimes):
     print(i, ntimes)
-    R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 100, delta_t)
+    R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 200, delta_t)
     z0FF=get_FF(R0s[1]) # 1 n, 3 z
     m0=np.mean(R0s[1])
     z0=np.mean(R0s[3])
     q0=get_FF(R0s[3])
-    
+
     Rns = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', 200, delta_t)
     znFF=get_FF(Rns[1]) # 1 n, 3 z
     mn=np.mean(Rns[1])
     zn=np.mean(Rns[3])
     qn = get_FF(Rns[3])
-    
+
     Rps = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', 200, delta_t)
     zpFF=get_FF(Rps[1]) # 1 n, 3 
     mp=np.mean(Rps[1])
     zp=np.mean(Rps[3])
     qp = get_FF(Rps[3])
-    
+
     q.append([z0FF, znFF, zpFF])
     qq.append([q0, qn, qp])
     means.append([m0, mn, mp])
@@ -446,8 +447,7 @@ def function(ttype, krlist):
         zFF.append(np.mean(zfflist))
         nmeans.append(np.mean(nmeanlist))
         zmeans.append(np.mean(zmeanlist))
-        
-        
+
     nmeans = np.array(nmeans)
     zmeans = np.array(zmeans)
     nFF = np.array(nFF)
