@@ -86,8 +86,9 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t)
                     tlist.append(tcurr)
             
             tcurr += tmin
-            
-        return tlist, nlist, rlist, zlist, APlist
+        #      0         1      2    3       4            5               6            7 8
+        return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
+            np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
     
 
     
@@ -147,7 +148,10 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, d
                 
             tcurr+=tmin
             
-        return tlist, nlist, rlist, zlist, APlist
+        #      0         1      2    3       4            5               6            7 8
+        return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
+            np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
+    
 
 def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
 
@@ -217,7 +221,10 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
 
             tcurr += tmin
 
-        return tlist, nlist, rlist, zlist, APlist
+        #      0         1      2    3       4            5               6            7 8
+        return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
+            np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
+    
     
 
 ###############################################################################
@@ -304,6 +311,163 @@ print(zmeaneq, means)
 # print('kn kp k1n, k1p kb')
 # print(kn, kp, k1n, k1p, kb)
 # =============================================================================
+#%%
+## Test 2:  Vertical plot with four plots ------------------------------------
+
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+f=10
+pr=0.5 #
+M=100
+k=10 # 10 # feedback strength constant #
+gammaz=100
+cz=100 # number of neurotransmitters per vesicle
+
+n=M # occupied states
+r=0 #  repair states
+z=0 # neurotransmitters
+
+k1=0
+kn=0 # ----------- HERE
+k1n=0
+kp=0
+k1p=0 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
+kb=0 #1 base rate
+
+delta_t = 0.001
+tmax = 10 # <-------------- TMAX, set to 200 for the FF calculation
+
+tlist, nlist, rlist, zlist, APlist = simulate(f, pr, M, n, r, z, k, k1, kb, 
+                                              kr, gammaz, cz, 'u', tmax, delta_t)
+ulist = M-np.array(nlist)-np.array(rlist)
+
+#
+font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
+
+# Add the font to Matplotlib's font manager
+import matplotlib.font_manager as fm
+fm.fontManager.addfont(font_path)
+bookman_prop = fm.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = bookman_prop.get_name()
+plt.rcParams['font.size'] = 20  # Set font size to 15
+
+fig, ax = plt.subplots(4, 1, figsize = (9,7))  # Adjust figure size if needed
+
+tinit=1 # 37, 39, 49
+t0=tinit*int(1/delta_t)
+t1=t0+int(1/delta_t)
+
+ax[0].step(tlist[t0:t1], nlist[t0:t1], color='#ff7f0e', where='post', linewidth=3)
+ax[0].set_xticks([])
+d=10
+ax[0].set_ylim([-d, np.max(nlist)+d])
+
+
+ax[1].step(tlist[t0:t1], ulist[t0:t1], color='#1f77b4', where='post', linewidth=3)
+ax[1].set_xticks([])
+
+ax[2].step(tlist[t0:t1], rlist[t0:t1], color='red', where='post', linewidth=3)
+ax[2].set_xticks([])
+
+
+ax[3].step(np.linspace(0,1, t1-t0), zlist[t0:t1], color='green', where='post', linewidth=3)
+ax[3].set_xlabel('Time (sec)')
+
+plt.show()
+
+#%%
+
+# Test 3 : keq
+
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+f=10
+pr=0.5 #
+M=100
+k=10 # 10 # feedback strength constant #
+gammaz=100 # d
+cz=100 # number of neurotransmitters per vesicle
+keq=5
+
+n=M # occupied states
+r=0 #  repair states
+z=0 # neurotransmitters
+
+delta_t = 0.001
+tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
+
+nfflist=[]
+zfflist=[]
+
+niters=20
+for i in range(niters):
+
+    print(i, niters)
+
+    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+                    0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
+    
+    ninf=Rinf[1]
+    nff=get_FF(ninf)
+    nfflist.append(nff)
+
+    zinf=Rinf[3]
+    zff=get_FF(zinf)
+    zfflist.append(zff)
+
+nffinf=np.mean(nfflist)
+zffinf=np.mean(zfflist)
+
+def function(ttype):
+
+    nruns=10
+    krlist = np.linspace(keq+0.01, 1000, 20)
+    nFF = []
+    zFF= []
+    nmeans = []
+    zmeans = []
+    for i, kr in enumerate(krlist):
+        nmeanlist=[]
+        zmeanlist=[]
+        nfflist=[]
+        zfflist=[]
+        for j in range(nruns):
+            print(i, len(krlist), j, nruns)
+            if ttype==0:
+                R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, 'u', tmax, delta_t)
+
+            if ttype==1:
+                R = simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr),
+                                           kr, gammaz, cz, ftype, tmax, delta_t)
+            nmeanlist.append(R[5]) # append means
+            zmeanlist.append(R[6])
+            nfflist.append(R[7]) # append FFs
+            zfflist.append(R[8])
+        nFF.append(np.mean(nfflist))
+        zFF.append(np.mean(zfflist))
+        nmeans.append(np.mean(nmeanlist))
+        zmeans.append(np.mean(zmeanlist))
+
+    return nmeans, zmeans, nFF, zFF
+
+nmeans, zmeans, nFF, zFF = function(0)
+dnmeans, dzmeans, dnFF, dzFF = function(1)
+    
+nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
+#%%
+plt.plot(krlist, nmeans, label='n')
+plt.plot(krlist, dnmeans, label='dn')
+plt.plot(krlist, zmeans, label='z')
+plt.plot(krlist, dzmeans,label='df')
+plt.legend()
+plt.show()
+
+#%%
+plt.plot(krlist, np.array(nFF)/nffinf, label='FFn/FFn_inf', marker='o', markersize=5)
+plt.plot(krlist, np.array(zFF)/zffinf, label='FFz/FFz_inf', marker='o',markersize=5)
+
+plt.ylabel('Normalized fano factor')
+plt.xlabel('Repair rate')
+plt.legend()
+plt.show()
 #%%
 delta_t = 0.001
 tmaxt=100
@@ -397,68 +561,7 @@ fig.tight_layout(rect=[0, 0, 1, 1])
 
 plt.show()
 
-#%%
-## Test 2:  Vertical plot with four plots ------------------------------------
 
-ftype='u' # feedback type: n-negative, p-positive, u-unregulated
-f=10
-pr=0.5 #
-M=100
-k=10 # 10 # feedback strength constant #
-kr=40 # 10,  repair rate, 15 for good plot, rate of nr->nu
-gammaz=100
-cz=100 # number of neurotransmitters per vesicle
-
-n=M # occupied states
-r=0 #  repair states
-z=0 # neurotransmitters
-
-k1=0
-kn=0 # ----------- HERE
-k1n=0
-kp=0
-k1p=0 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
-kb=0 #1 base rate
-
-delta_t = 0.001
-tmax = 10 # <-------------- TMAX, set to 200 for the FF calculation
-
-tlist, nlist, rlist, zlist, APlist = simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmax, delta_t)
-ulist = M-np.array(nlist)-np.array(rlist)
-
-#
-font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
-
-# Add the font to Matplotlib's font manager
-import matplotlib.font_manager as fm
-fm.fontManager.addfont(font_path)
-bookman_prop = fm.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = bookman_prop.get_name()
-plt.rcParams['font.size'] = 20  # Set font size to 15
-
-fig, ax = plt.subplots(4, 1, figsize = (9,7))  # Adjust figure size if needed
-
-tinit=1 # 37, 39, 49
-t0=tinit*int(1/delta_t)
-t1=t0+int(1/delta_t)
-
-ax[0].step(tlist[t0:t1], nlist[t0:t1], color='#ff7f0e', where='post', linewidth=3)
-ax[0].set_xticks([])
-d=10
-ax[0].set_ylim([-d, np.max(nlist)+d])
-
-
-ax[1].step(tlist[t0:t1], ulist[t0:t1], color='#1f77b4', where='post', linewidth=3)
-ax[1].set_xticks([])
-
-ax[2].step(tlist[t0:t1], rlist[t0:t1], color='red', where='post', linewidth=3)
-ax[2].set_xticks([])
-
-
-ax[3].step(np.linspace(0,1, t1-t0), zlist[t0:t1], color='green', where='post', linewidth=3)
-ax[3].set_xlabel('Time (sec)')
-
-plt.show()
 
 
 #%%
@@ -694,108 +797,3 @@ plt.show()
 # plt.legend(fontsize = fs2-2)
 # plt.show()
 # =============================================================================
-#%%
-
-ftype='u' # feedback type: n-negative, p-positive, u-unregulated
-f=10
-pr=0.5 #
-M=100
-
-n=M # occupied states
-r=0 #  repair states
-
-k=10 # 10 # feedback strength constant #
-
-gammaz=100 # d
-cz=100 # number of neurotransmitters per vesicle
-z=0 # neurotransmitters
-
-delta_t = 0.001
-tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
-
-keq=5
-
-# =============================================================================
-# nfflist=[]
-# zfflist=[]
-# 
-# niters=20
-# for i in range(niters):
-#     
-#     print(i, niters)
-#     
-#     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-#                     0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
-#     ninf=Rinf[1]
-#     nff=get_FF(ninf)
-#     nfflist.append(nff)
-#     
-#     zinf=Rinf[3]
-#     zff=get_FF(zinf)
-#     zfflist.append(zff)
-# 
-# nffinf=np.mean(nfflist)
-# zffinf=np.mean(zfflist)
-# 
-# =============================================================================
-
-
-# =============================================================================
-# krlist=np.linspace(keq+0.01,1000,100)
-# =============================================================================
-
-
-# =============================================================================
-# stepsize = 5
-# krlist=np.concatenate([[keq+0.05], np.arange(keq+stepsize, 100, stepsize)])
-# =============================================================================
-nruns=10
-krlist = np.linspace(keq+0.01, 1000, 20)
-nFF = []
-zFF= []
-nmeans = []
-zmeans = []
-for i, kr in enumerate(krlist):
-    nmeanlist=[]
-    zmeanlist=[]
-    nfflist=[]
-    zfflist=[]
-    for j in range(nruns):
-        print(i, len(krlist), j, nruns)
-# =============================================================================
-#         R = simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr),
-#                                    kr, gammaz, cz, ftype, tmax, delta_t)
-# =============================================================================
-        R = simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, 'u', tmax, delta_t)
-        nlist=R[1]
-        zlist=R[3]
-        nmean=np.mean(nlist) # means
-        zmean=np.mean(zlist)
-        nff = get_FF(nlist) # FFs
-        zff = get_FF(zlist)
-        nmeanlist.append(nmean) # append means
-        zmeanlist.append(zmean)
-        nfflist.append(nff) # append FFs
-        zfflist.append(zff)
-    nFF.append(np.mean(nfflist))
-    zFF.append(np.mean(zfflist))
-    nmeans.append(np.mean(nmeanlist))
-    zmeans.append(np.mean(zmeanlist))
-
-nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
-#%%
-plt.plot(zmeansfixed, label='zf')
-plt.plot(nmeansfixed, label='nf')
-plt.plot(nmeans, label='n') 
-plt.plot(zmeans,label='z')
-plt.legend()
-plt.show()
-
-#%%
-plt.plot(krlist, np.array(nFF)/nffinf, label='FFn/FFn_inf', marker='o', markersize=5)
-plt.plot(krlist, np.array(zFF)/zffinf, label='FFz/FFz_inf', marker='o',markersize=5)
-
-plt.ylabel('Normalized fano factor')
-plt.xlabel('Repair rate')
-plt.legend()
-plt.show()
