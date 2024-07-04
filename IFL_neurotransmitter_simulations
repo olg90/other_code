@@ -308,14 +308,7 @@ def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, d
 
         return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
             np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
-#%%
-###############################################################################
-#
-#                               Parameters
-#
-###############################################################################
-
-# Test 1 : 
+#%% Test 1 : 
 
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
@@ -394,8 +387,7 @@ print(zmeaneq, means)
 # print('kn kp k1n, k1p kb')
 # print(kn, kp, k1n, k1p, kb)
 # =============================================================================
-#%%
-## Test 2:  Vertical plot with four plots ------------------------------------
+#%% Test 2:  Vertical plot with four plots
 
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
@@ -455,7 +447,7 @@ ax[3].set_xlabel('Time (sec)')
 
 plt.show()
 
-#%%
+#%% Test 3 : keq, checking the means
 
 # Test 3 : keq, checking the means
 
@@ -571,9 +563,7 @@ nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* p
 # plt.legend()
 # plt.show()
 # =============================================================================
-#%%
-
-# Test 4 : Plotting the nFF, zFF
+#%% Test 4 : Plotting the nFF, zFF
 
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
@@ -589,7 +579,7 @@ r=0 #  repair states
 z=0 # neurotransmitters
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
 
 nfflist=[]
 zfflist=[]
@@ -658,33 +648,61 @@ def function(ttype, krlist):
 # =============================================================================
 dnmeans, dzmeans, dnFF, dzFF = function(1, krlist)
 
+font_path = 'C:/Windows/Fonts/BOOKOS.TTF'
+import matplotlib.font_manager as fm
+fm.fontManager.addfont(font_path)
+bookman_prop = fm.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = bookman_prop.get_name()
+plt.rcParams['font.size'] = 15  # Set font size to 15
+
 plt.plot(krlist, dnFF/nffinf, label='FFn/FFn_inf', marker='o', markersize=5)
 plt.plot(krlist, dzFF/zffinf, label='FFz/FFz_inf', marker='o',markersize=5)
-
+fs=15
 plt.ylabel('Normalized fano factor')
 plt.xlabel('Repair rate')
 plt.legend()
-plt.show()
+plt.xscale('log')
 
+plt.show()
 
 # =============================================================================
 # nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
 # =============================================================================
-#%%
+#%% Test 5 : 2x3 plot feedback
 
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+f=10
+pr=0.5 #
+M=100
+
+n=M # occupied states
+r=0 #  repair states
+
+k=10 # 10 # feedback strength constant #
+k1=10
+
+kn=178 # ----------- HERE
+k1n=1
+
+kp=11
+k1p=15 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
+
+kr=10 # 10,  repair rate, 15 for good plot, rate of nr->nu
+kb=7 #1 base rate
+
+gammaz=100
+cz=100 # number of neurotransmitters per vesicle
+z=0 # neurotransmitters
 
 delta_t = 0.001
-tmaxt=100
-
+tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 tinit=55 # 37, 39, 49
 t0=tinit*int(1/delta_t)
 t1=t0+int(1/delta_t)
 
-# =============================================================================
-# R0t = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
-# Rnt = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmaxt, delta_t)
-# Rpt = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmaxt, delta_t)
-# =============================================================================
+R0t = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
+Rnt = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmaxt, delta_t)
+Rpt = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmaxt, delta_t)
 
 #
 font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
@@ -701,9 +719,9 @@ ffs = [6.351, 15, 5.439]
 fs = 15  # font size
 fig, ax = plt.subplots(2,3, figsize=(18,4))
 
-ap0=R0t[-1][t0:10]
-ap1=Rnt[-1][t0:10]
-ap2=Rpt[-1][t0:10]
+ap0=R0t[4][t0:10]
+ap1=Rnt[4][t0:10]
+ap2=Rpt[4][t0:10]
 
 ax[0,0].step(R0t[0][t0:t1], R0t[1][t0:t1], color='#ff7f0e', where='post',
            label='noff = {}'.format(np.around(ffs[0],3)), linewidth=3)
@@ -786,7 +804,6 @@ ax[0].set_xticks([])
 
 for i in range(6):
     ax[i].tick_params(axis='both', labelsize=fs)
-
 
 d=10
 ax[0].set_ylim([-d, np.max(R0t[1])+d])
