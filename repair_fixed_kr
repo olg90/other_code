@@ -172,15 +172,23 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
 
         timer = delta_t
         kr_timer = 1/kr
-        
+
         ratio = 0.3
+
+        blist = []
+        krtimerslist=[]
         
         while tcurr < tmax:
+            
+            print(tcurr, krtimerslist)
 
             t0=exponential(1/f) # action potential
             t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
             t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
-            t3 = kr_timer
+            if len(krtimerslist)>0:
+                t3 = krtimerslist[0]-tcurr
+            else:
+                t3=np.inf
             t4 = timer
 
             if t0<t1 and t0<t2 and t0<t3 and t0<t4: # AP occurrs
@@ -192,43 +200,45 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
                     APlist.append(tcurr+t0)
                 tmin = t0
                 timer-=tmin
-                kr_timer-=tmin
+                if b>0:
+                    blist.append(b)
+                    krtimerslist.append(tcurr+tmin+kr_timer)
+                    
 
             elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
                 if n < M:
                     n=n+1
                 tmin = t1
                 timer-=tmin
-                kr_timer-=tmin
+                
 
             elif t2<t0 and t2<t1 and t2<t3 and t2<t4: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
                 tmin = t2
                 timer-=tmin
-                kr_timer-=tmin
-                
+
             elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
                 if r>0:
-                    r=r-1
+                    r=r-blist.pop(0)
+                    krtimerslist.pop(0)
                 tmin = t3
                 timer -= tmin
-                kr_timer=1/kr
+                
 
             else:
                 tmin=timer
-                kr_timer-=tmin
                 timer = delta_t
                 if tcurr>=ratio*tmax:
                     nlist.append(n)
                     rlist.append(r)
                     zlist.append(z)
                     tlist.append(tcurr)
-
+            
             tcurr += tmin
 
         return tlist, nlist, rlist, zlist, APlist
-    
+
 ###############################################################################
 #
 #                               Parameters
@@ -263,7 +273,7 @@ for i in range(niters):
     print(i, niters)
     
     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-                    0, 0, 0, gammaz, cz, ftype, tmax, delta_t)
+                    gammaz, cz, 'u', tmax, delta_t)
     ninf=Rinf[1]
     nff=get_FF(ninf)
     nfflist.append(nff)
