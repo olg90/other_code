@@ -95,10 +95,10 @@ M=100
 
 pru = 0.5 # prob
 
-prn = 0.8 # 0.8 previously # prob ------------------------------- Negative
+prn = 0.75 # 0.8 previously # prob ------------------------------- Negative
 p1n = 0.002 #15 # fb strength
 
-prp = 0.8 # 0.63 # prob --------------------------------- Positive
+prp = 0.75 # 0.63 # prob --------------------------------- Positive
 p1p = 0.01 #30 20 15 10 # fb strength
 pb = 0.1 # basal rate, %
 
