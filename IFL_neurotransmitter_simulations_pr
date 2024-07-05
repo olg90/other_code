@@ -90,30 +90,31 @@ def simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, f
 ###############################################################################
     
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
-f=20
+f=100
 M=100
 
-pru = 0.2 # prob
+pru = 0.5 # prob
 
-prn = 0.5 # 0.8 previously # prob ------------------------------- Negative
-p1n = 15 #15 # fb strength
+prn = 0.8 # 0.8 previously # prob ------------------------------- Negative
+p1n = 0.002 #15 # fb strength
 
-prp = 0.3 # 0.63 # prob --------------------------------- Positive
-p1p = 5 #30 20 15 10 # fb strength
-pb = 0.2 # basal rate, %
+prp = 0.8 # 0.63 # prob --------------------------------- Positive
+p1p = 0.01 #30 20 15 10 # fb strength
+pb = 0.1 # basal rate, %
 
 n=M # occupied states
 r=0 #  repair states
 
 k=10 # 10 
 gammaz=100
-cz=100 # number of neurotransmitters per vesicle
+cz=50 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.001
 tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 
 ratio = 0.3
+
 q0 = []
 qn = []
 qp = []
@@ -137,30 +138,27 @@ for i in range(ntimes):
     print(i, ntimes)
     
     R0s = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, delta_t)
-    nsim0=R0s[1][int(ratio*len(R0s[1])):]
-    zsim0=R0s[3][int(ratio*len(R0s[3])):]
-    n0FF=get_FF(nsim0) # 1 n, 3 z
-    m0.append(np.mean(zsim0))
-    q0.append(n0FF)
+    nsim0=R0s[1]
+    zsim0=R0s[3]
     u0.append(np.mean(nsim0))
+    m0.append(np.mean(zsim0))
+    q0.append(get_FF(nsim0))
     h0.append(get_FF(zsim0))
 
     Rns = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, delta_t)
-    nsimn=Rns[1][int(ratio*len(Rns[1])):]
-    zsimn=Rns[3][int(ratio*len(Rns[3])):]
-    nnFF=get_FF(nsimn) # 1 n, 3 z
-    mn.append(np.mean(zsimn))
-    qn.append(nnFF)
+    nsimn=Rns[1]
+    zsimn=Rns[3]
     un.append(np.mean(nsimn))
+    mn.append(np.mean(zsimn))
+    qn.append(get_FF(nsimn))
     hn.append(get_FF(zsimn))
     
     Rps = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, delta_t)
-    nsimp=Rps[1][int(ratio*len(Rps[1])):]
-    zsimp=Rps[3][int(ratio*len(Rps[3])):]
-    npFF=get_FF(nsimp) # 1 n, 3 z
-    mp.append(np.mean(zsimp))
-    qp.append(npFF)
+    nsimp=Rps[1]
+    zsimp=Rps[3]
     up.append(np.mean(nsimp))
+    mp.append(np.mean(zsimp))
+    qp.append(get_FF(nsimp))
     hp.append(get_FF(zsimp))
     
     print('n', [np.mean(u0), np.mean(un), np.mean(up)])
@@ -181,7 +179,6 @@ zmeaneq=f*cz*pru*k*M/(gammaz*(f*pru+k))
 ffs=[ff0, ffn, ffp]
 
 ms = [np.mean(m0), np.mean(mn), np.mean(mp)]
-print(ffs)
 
 ffeq = 1 + 2*k*(M-1) / (2*k+f*(2-pru)*pru)-k*M/(f*pru+k)
 
