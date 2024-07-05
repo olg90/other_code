@@ -308,33 +308,30 @@ def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, d
 
         return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
             np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
-#%% Test 1 : 
+#%% Test 1 : Feedback tests
+
 
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 pr=0.5 #
 M=100
-
-n=M # occupied states
-r=0 #  repair states
-
 k=10 # 10 # feedback strength constant #
-k1=10
+kr=10 # 10,  repair rate, 15 for good plot, rate of nr->nu
+gammaz=100
+cz=50 # number of neurotransmitters per vesicle
 
 kn=178 # ----------- HERE
-k1n=1
+k1n=3 # 10 up to 15
 
-kp=11
-k1p=15 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
+kp=25 # 
+kb=7 # 1 base rate
+k1p=0.001 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
 
-kr=10 # 10,  repair rate, 15 for good plot, rate of nr->nu
-kb=7 #1 base rate
-
-gammaz=100
-cz=100 # number of neurotransmitters per vesicle
+n=M # occupied states
+r=0 # repair states
 z=0 # neurotransmitters
 
-delta_t = 0.01
+delta_t = 0.001
 tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 
 q=[]
@@ -342,22 +339,29 @@ qq=[]
 means=[]
 zmean=[]
 
+zmeaneq=f*cz*pr*k*M/(gammaz*(f*pr+k))
+print(zmeaneq)
+
+x=np.linspace(0,1000,1000)
+pt(x, kreg(x, k=kp, k1=k1p, kb=kb, ftype='p'))
+plt.axvline(x=zmeaneq)
+
 ntimes=20
 for i in range(ntimes):
     print(i, ntimes)
-    R0s = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', 200, delta_t)
+    R0s = simulate_kr_inf(f, pr, M, n, r, z, k, 0, 0, kr, gammaz, cz, 'u', tmax, delta_t)
     z0FF=get_FF(R0s[1]) # 1 n, 3 z
     m0=np.mean(R0s[1])
     z0=np.mean(R0s[3])
     q0=get_FF(R0s[3])
 
-    Rns = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', 200, delta_t)
+    Rns = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmax, delta_t)
     znFF=get_FF(Rns[1]) # 1 n, 3 z
     mn=np.mean(Rns[1])
     zn=np.mean(Rns[3])
     qn = get_FF(Rns[3])
 
-    Rps = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', 200, delta_t)
+    Rps = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmax, delta_t)
     zpFF=get_FF(Rps[1]) # 1 n, 3 
     mp=np.mean(Rps[1])
     zp=np.mean(Rps[3])
@@ -367,9 +371,10 @@ for i in range(ntimes):
     qq.append([q0, qn, qp])
     means.append([m0, mn, mp])
     zmean.append([z0, zn, zp])
-    print(np.mean(zmean, 0))
-    print(np.mean(means, 0))
-    print(np.mean(qq, 0))
+    print('z', np.mean(zmean, 0))
+    print('n', np.mean(means, 0))
+    print('FFz', np.mean(qq, 0))
+    print('FFz', np.mean(q, 0))
 
 q=np.array(q)
 ffs = np.mean(q, 0)
@@ -380,7 +385,9 @@ means=np.mean(means, 0)
 zmeans = np.array(zmean)
 zmeans = np.mean(zmeans, 0)
 
-print(zmeaneq, means)
+# =============================================================================
+# print(zmeaneq, zmeans)
+# =============================================================================
 
 # =============================================================================
 # print(zmeaneq, np.mean(q,0))
@@ -674,36 +681,42 @@ ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 pr=0.5 #
 M=100
-
-n=M # occupied states
-r=0 #  repair states
-
 k=10 # 10 # feedback strength constant #
-k1=10
+gammaz=100
+cz=50 # number of neurotransmitters per vesicle
 
 kn=178 # ----------- HERE
-k1n=1
+k1n=3 # 10 up to 15
 
-kp=11
-k1p=15 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
+kp=25 # 
+kb=7 # 1 base rate
+k1p=0.001 # 10  # negative feedback strength, (-) speed of k-> 0, (+) speed of kb->k
 
-kr=10 # 10,  repair rate, 15 for good plot, rate of nr->nu
-kb=7 #1 base rate
-
-gammaz=100
-cz=100 # number of neurotransmitters per vesicle
+n=M # occupied states
+r=0 # repair states
 z=0 # neurotransmitters
 
 delta_t = 0.001
 tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
-tinit=55 # 37, 39, 49
+
+tinit=33 # 37, 39, 49
 t0=tinit*int(1/delta_t)
 t1=t0+int(1/delta_t)
 
-R0t = simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, 'u', tmaxt, delta_t)
-Rnt = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, kr, gammaz, cz, 'n', tmaxt, delta_t)
-Rpt = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, kr, gammaz, cz, 'p', tmaxt, delta_t)
+tinit1=27 # 37, 39, 49
+t01=tinit1*int(1/delta_t)
+t11=t01+int(1/delta_t)
 
+tinit0=55 # 37, 39, 49
+t00=tinit0*int(1/delta_t)
+t10=t00+int(1/delta_t)
+
+# =============================================================================
+# R0t = simulate_kr_inf(f, pr, M, n, r, z, k, 0, 0, 0, gammaz, cz, 'u', tmax, delta_t)
+# Rnt = simulate_kr_inf(f, pr, M, n, r, z, kn, k1n, kb, 0, gammaz, cz, 'n', tmax, delta_t)
+# Rpt = simulate_kr_inf(f, pr, M, n, r, z, kp, k1p, kb, 0, gammaz, cz, 'p', tmax, delta_t)
+# 
+# =============================================================================
 #
 font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
 
@@ -723,12 +736,17 @@ ap0=R0t[4][t0:10]
 ap1=Rnt[4][t0:10]
 ap2=Rpt[4][t0:10]
 
-ax[0,0].step(R0t[0][t0:t1], R0t[1][t0:t1], color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffs[0],3)), linewidth=3)
-ax[0,1].step(Rnt[0][t0:t1], Rnt[1][t0:t1], color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffs[1],3)), linewidth=3)
-ax[0,2].step(Rpt[0][t0:t1], Rpt[1][t0:t1], color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffs[2],3)), linewidth=3)
+cs=['#1f77b4', '#ff7f0e']
+
+ax[0,0].step(R0t[0][t01:t11], R0t[1][t01:t11], where='post',
+           label='noff = {}'.format(np.around(ffs[0],3)), linewidth=3,
+           color=cs[0])
+ax[0,1].step(Rnt[0][t0:t1], Rnt[1][t0:t1], where='post',
+           label='noff = {}'.format(np.around(ffs[1],3)), linewidth=3, 
+           color=cs[0])
+ax[0,2].step(Rpt[0][t00:t10], Rpt[1][t00:t10], where='post',
+           label='noff = {}'.format(np.around(ffs[2],3)), linewidth=3, 
+           color=cs[0])
 
 d=10
 ax[0,0].set_ylim([-d, 100+d])
@@ -762,13 +780,12 @@ tplot = np.linspace(0,1,t1-t0)
 
 d=200
 
-ax[1,0].step(tplot, R0t[3][t0:t1], color='green', where='post', linewidth=3)
-ax[1,1].step(tplot, Rnt[3][t0:t1], color='green', where='post', linewidth=3)
-ax[1,2].step(tplot, Rpt[3][t0:t1], color='green', where='post', linewidth=3)
+ax[1,0].step(tplot, R0t[3][t01:t11], color=cs[1], where='post', linewidth=3)
+ax[1,1].step(tplot, Rnt[3][t0:t1], color=cs[1], where='post', linewidth=3)
+ax[1,2].step(tplot, Rpt[3][t00:t10], color=cs[1], where='post', linewidth=3)
 
 mval=np.max([R0t[3][t0:t1], Rnt[3][t0:t1], Rpt[3][t0:t1]])
 
-ax[1,0].set_ylim([-d, mval+d])
 ax[1,1].set_ylim([-d, mval+d])
 ax[1,2].set_ylim([-d, mval+d])
 
@@ -782,9 +799,6 @@ ax[0,2].set_title('Positive feedback', fontsize=20)
 fig.tight_layout(rect=[0, 0, 1, 1])
 
 plt.show()
-
-
-
 
 #%%
 fs = 15  # font size
