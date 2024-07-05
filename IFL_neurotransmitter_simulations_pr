@@ -40,6 +40,8 @@ def simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, f
         tcurr=0
 
         timer = delta_t
+        ratio=0.2
+        
         while tcurr < tmax:
             
             # Get the three event times
@@ -55,30 +57,29 @@ def simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, f
                 APlist.append(tcurr+t0)
                 tmin = t0
                 timer-=tmin
-                tcurr+=tmin
 
             elif t1<t0 and t1<t2 and t1<timer: # add a docked vesicle
                 if n < M:
                     n=n+1
                 tmin = t1
                 timer-=tmin
-                tcurr+=tmin
 
             elif t2<t0 and t2<t1 and t2<timer: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
                 tmin = t2
                 timer-=tmin
-                tcurr+=tmin
                 
             else:
                 tmin=timer
                 timer = delta_t
-                nlist.append(n)
-                rlist.append(r)
-                zlist.append(z)
-                tcurr += tmin
-                tlist.append(tcurr)
+                if tcurr>=ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
+            tcurr += tmin
+                
 
         return tlist, nlist, rlist, zlist, APlist
     
@@ -89,17 +90,17 @@ def simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, f
 ###############################################################################
     
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
-f=10
+f=20
 M=100
 
-pru = 0.5 # prob
+pru = 0.2 # prob
 
-prn = 0.8 # 0.8 previously # prob ------------------------------- Negative
+prn = 0.5 # 0.8 previously # prob ------------------------------- Negative
 p1n = 15 #15 # fb strength
 
-prp = 0.625 # 0.63 # prob --------------------------------- Positive
+prp = 0.3 # 0.63 # prob --------------------------------- Positive
 p1p = 5 #30 20 15 10 # fb strength
-pb = 0.4 # basal rate, %
+pb = 0.2 # basal rate, %
 
 n=M # occupied states
 r=0 #  repair states
@@ -110,12 +111,16 @@ cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 
 ratio = 0.3
 q0 = []
 qn = []
 qp = []
+
+h0=[]
+hn=[]
+hp=[]
 
 m0=[]
 mn=[]
@@ -125,6 +130,7 @@ u0=[]
 un=[]
 up=[]
 
+
 ntimes=20
 avg=[]
 for i in range(ntimes):
@@ -133,29 +139,34 @@ for i in range(ntimes):
     R0s = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, delta_t)
     nsim0=R0s[1][int(ratio*len(R0s[1])):]
     zsim0=R0s[3][int(ratio*len(R0s[3])):]
-    z0FF=get_FF(nsim0) # 1 n, 3 z
+    n0FF=get_FF(nsim0) # 1 n, 3 z
     m0.append(np.mean(zsim0))
-    q0.append(z0FF)
+    q0.append(n0FF)
     u0.append(np.mean(nsim0))
+    h0.append(get_FF(zsim0))
 
     Rns = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, delta_t)
     nsimn=Rns[1][int(ratio*len(Rns[1])):]
     zsimn=Rns[3][int(ratio*len(Rns[3])):]
-    znFF=get_FF(nsimn) # 1 n, 3 z
+    nnFF=get_FF(nsimn) # 1 n, 3 z
     mn.append(np.mean(zsimn))
-    qn.append(znFF)
+    qn.append(nnFF)
     un.append(np.mean(nsimn))
+    hn.append(get_FF(zsimn))
     
     Rps = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, delta_t)
     nsimp=Rps[1][int(ratio*len(Rps[1])):]
     zsimp=Rps[3][int(ratio*len(Rps[3])):]
-    zpFF=get_FF(nsimp) # 1 n, 3 z
+    npFF=get_FF(nsimp) # 1 n, 3 z
     mp.append(np.mean(zsimp))
-    qp.append(zpFF)
+    qp.append(npFF)
     up.append(np.mean(nsimp))
+    hp.append(get_FF(zsimp))
     
-    print([np.mean(m0), np.mean(mn), np.mean(mp)])
-    print([np.mean(u0), np.mean(un), np.mean(up)])
+    print('n', [np.mean(u0), np.mean(un), np.mean(up)])
+    print('z', [np.mean(m0), np.mean(mn), np.mean(mp)])
+    print('zf', [np.mean(h0), np.mean(hn), np.mean(hp)])
+    print('nf', [np.mean(q0), np.mean(qn), np.mean(qp)])
 
 ff0 = np.mean(q0)
 ffn = np.mean(qn)
