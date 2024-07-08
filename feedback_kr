@@ -89,9 +89,7 @@ def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t)
         #      0         1      2    3       4            5               6            7 8
         return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
             np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
-    
 
-    
 def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t):
         nlist=[]
         rlist=[]
@@ -124,7 +122,6 @@ def simulate_kr_inf(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, d
                 tmin = t0
                 timer-=tmin
                 
-
             elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
                 if n < M:
                     n=n+1
@@ -225,7 +222,6 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
         return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
             np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
     
-
 def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
 
         nlist=[n]
@@ -273,14 +269,12 @@ def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, d
                     blist.append(b)
                     krtimerslist.append(tcurr+tmin+kr_timer)
                     
-
             elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
                 if n < M:
                     n=n+1
                 tmin = t1
                 timer-=tmin
                 
-
             elif t2<t0 and t2<t1 and t2<t3 and t2<t4: # remove a neurotransmitter
                 if z > 0:
                     z=z-1
@@ -294,7 +288,6 @@ def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, d
                 tmin = t3
                 timer -= tmin
                 
-
             else:
                 tmin=timer
                 timer = delta_t
@@ -371,8 +364,8 @@ for i in range(ntimes):
     qq.append([q0, qn, qp])
     means.append([m0, mn, mp])
     zmean.append([z0, zn, zp])
-    print('z', np.mean(zmean, 0))
     print('n', np.mean(means, 0))
+    print('z', np.mean(zmean, 0))
     print('FFz', np.mean(qq, 0))
     print('FFz', np.mean(q, 0))
 
