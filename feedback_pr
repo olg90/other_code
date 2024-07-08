@@ -194,13 +194,12 @@ print(pru, prn, prp, p1n, p1p, pb)
 tmax=100
 
 # =============================================================================
-# R0t = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, delta_t)
-# Rnt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, delta_t)
-# Rpt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, delta_t)
+# R0t = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, 0.0001)
+# Rnt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, 0.0001)
+# Rpt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, 0.0001)
 # =============================================================================
 
 fs = 15  # font size
-
 
 #
 font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
@@ -212,10 +211,17 @@ bookman_prop = fm.FontProperties(fname=font_path)
 plt.rcParams['font.family'] = bookman_prop.get_name()
 #
 
-tinit=22 # 70
-t0=tinit*int(1/delta_t)
-t1=t0+int(1/delta_t)
+tinit0=13 # 70
+t00=tinit0*int(1/delta_t/2)
+t10=t00+int(1/delta_t/2)
 
+tinit1=33 # 70
+t01=tinit1*int(1/delta_t/2)
+t11=t01+int(1/delta_t/2)
+
+tinit=20 # 70
+t0=tinit*int(1/delta_t/2)
+t1=t0+int(1/delta_t/2)
 
 fs = 15  # font size
 fig, ax = plt.subplots(2,3, figsize=(18,4))
@@ -224,29 +230,28 @@ ap0=R0t[-1][t0:10]
 ap1=Rnt[-1][t0:10]
 ap2=Rpt[-1][t0:10]
 
-ax[0,0].step(R0t[0][t0:t1], R0t[1][t0:t1], color='#ff7f0e', where='post',
+ax[0,0].step(R0t[0][t01:t11], R0t[1][t01:t11], color='#ff7f0e', where='post',
            label='noff = {}'.format(np.around(ffs[0],3)), linewidth=3)
-ax[0,1].step(Rnt[0][t0:t1], Rnt[1][t0:t1], color='#ff7f0e', where='post',
+ax[0,1].step(Rnt[0][t00:t10], Rnt[1][t00:t10], color='#ff7f0e', where='post',
            label='noff = {}'.format(np.around(ffs[1],3)), linewidth=3)
 ax[0,2].step(Rpt[0][t0:t1], Rpt[1][t0:t1], color='#ff7f0e', where='post',
            label='noff = {}'.format(np.around(ffs[2],3)), linewidth=3)
 
+mval = np.max([R0t[1][t01:t11],Rnt[1][t00:t10],Rpt[1][t0:t1]])
 d=10
-ax[0,0].set_ylim([-d, 100+d])
-ax[0,1].set_ylim([-d, 100+d])
-ax[0,2].set_ylim([-d, 100+d])
+ax[0,0].set_ylim([-d, mval+d])
+ax[0,1].set_ylim([-d, mval+d])
+ax[0,2].set_ylim([-d, mval+d])
 
 
 
-# =============================================================================
-# ax[0,0].set_xticks([])
-# ax[0,1].set_xticks([])
-# ax[0,2].set_xticks([])
-# ax[0,1].set_yticks([])
-# ax[0,2].set_yticks([])
-# ax[1,1].set_yticks([]) 
-# ax[1,2].set_yticks([]) 
-# =============================================================================
+ax[0,0].set_xticks([])
+ax[0,1].set_xticks([])
+ax[0,2].set_xticks([])
+ax[0,1].set_yticks([])
+ax[0,2].set_yticks([])
+ax[1,1].set_yticks([]) 
+ax[1,2].set_yticks([]) 
 
 fs2=15
 ax[0,0].tick_params(axis='y', labelsize=fs2)
@@ -265,12 +270,12 @@ ax[1,2].tick_params(axis='x', labelsize=fs2)
 
 tplot = np.linspace(0,1,t1-t0)
 
-d=500
+d=10
 
-mval = np.max([R0t[3][t0:t1],Rnt[3][t0:t1],Rpt[3][t0:t1]])
+mval = np.max([R0t[3][t01:t11],Rnt[3][t00:t10],Rpt[3][t0:t1]])
 
-ax[1,0].step(tplot, R0t[3][t0:t1], color='green', where='post', linewidth=3)
-ax[1,1].step(tplot, Rnt[3][t0:t1], color='green', where='post', linewidth=3)
+ax[1,0].step(tplot, R0t[3][t01:t11], color='green', where='post', linewidth=3)
+ax[1,1].step(tplot, Rnt[3][t00:t10], color='green', where='post', linewidth=3)
 ax[1,2].step(tplot, Rpt[3][t0:t1], color='green', where='post', linewidth=3)
 ax[1,0].set_ylim([-d, mval+d])
 ax[1,1].set_ylim([-d, mval+d])
