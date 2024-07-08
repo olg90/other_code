@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial
+
 # =============================================================================
 #      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
 #                                             (+):kb+(k-kb)( k1 z / (1+ k1 z))
@@ -30,8 +31,6 @@ def kreg(z, k, k1, kb, ftype):
         return k
     
 def simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax, delta_t):
-    
-        
 
         nlist=[]
         zlist=[]
@@ -354,7 +353,7 @@ cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.001
-tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
 
@@ -379,8 +378,8 @@ for i in range(niters):
 nffinf=np.mean(nfflist)
 zffinf=np.mean(zfflist)
 
-nruns=10
-krlist = np.linspace(keq+0.01, 1000, 20)
+nruns=20
+krlist = np.linspace(keq+0.01, 1000, 10)
 nFF = []
 zFF= []
 nmeans = []
@@ -423,8 +422,6 @@ plt.xlabel('Repair rate')
 plt.legend()
 plt.show()
 
-
-
 font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
 
 # Add the font to Matplotlib's font manager
@@ -438,7 +435,6 @@ krplot = np.linspace(keq+0.01, 200, 1000)
 pt(krplot, f1(f, pr, keq, krplot, M))
 pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
 plt.xscale('log')
-
 
 #%% Test 2
 
