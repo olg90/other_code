@@ -90,17 +90,20 @@ def simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, f
 ###############################################################################
     
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
-f=100
+f=10
 M=100
 
 pru = 0.5 # prob
 
-prn = 0.75 # 0.8 previously # prob ------------------------------- Negative
-p1n = 0.002 #15 # fb strength
+prn = 0.5 # 0.5, previously # prob ------------------------------- Negative
+p1n = 0.001 #15 # fb strength
 
-prp = 0.75 # 0.63 # prob --------------------------------- Positive
-p1p = 0.01 #30 20 15 10 # fb strength
-pb = 0.1 # basal rate, %
+prp = 1 # 0.63 # prob --------------------------------- Positive
+p1p = 0.001 #30 20 15 10 # fb strength
+pb = 0.5 # 0.5, basal rate, %
+
+x=np.linspace(0,100,1000)
+plt.plot(x, preg(x, pru, prn, prp, p1n, p1p, pb, 'p'))
 
 n=M # occupied states
 r=0 #  repair states
@@ -194,9 +197,9 @@ print(pru, prn, prp, p1n, p1p, pb)
 tmax=100
 
 # =============================================================================
-# R0t = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, 0.0001)
-# Rnt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, 0.0001)
-# Rpt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, 0.0001)
+# R0t = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'u', tmax, 0.001)
+# Rnt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'n', tmax, 0.001)
+# Rpt = simulate_kr_inf(f, pru, prn, prp, p1n, p1p, pb, M, n, r, z, k, gammaz, cz, 'p', tmax, 0.001)
 # =============================================================================
 
 fs = 15  # font size
@@ -211,17 +214,17 @@ bookman_prop = fm.FontProperties(fname=font_path)
 plt.rcParams['font.family'] = bookman_prop.get_name()
 #
 
-tinit0=13 # 70
-t00=tinit0*int(1/delta_t/2)
-t10=t00+int(1/delta_t/2)
+tinit1=56 # 70
+t01=tinit1*int(1/delta_t)
+t11=t01+int(1/delta_t)
 
-tinit1=33 # 70
-t01=tinit1*int(1/delta_t/2)
-t11=t01+int(1/delta_t/2)
+tinit0=42 # 70
+t00=tinit0*int(1/delta_t)
+t10=t00+int(1/delta_t)
 
-tinit=20 # 70
-t0=tinit*int(1/delta_t/2)
-t1=t0+int(1/delta_t/2)
+tinit=28 # 70
+t0=tinit*int(1/delta_t)
+t1=t0+int(1/delta_t)
 
 fs = 15  # font size
 fig, ax = plt.subplots(2,3, figsize=(18,4))
