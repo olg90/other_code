@@ -1,8 +1,8 @@
 import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
-from numpy.random import exponential, binomial
-from collections import deque
+from numpy.random import exponential, binomial, gamma
+from numpy import sort
 
 # =============================================================================
 #      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
@@ -242,15 +242,11 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
         kr_timer = 1/kr
 
         ratio = 0.3
-        blist = deque()
-        krtimerslist = deque()
-
+        
+        blist = []
+        krtimerslist=[]
+        
         while tcurr < tmax:
-
-# =============================================================================
-#             print(tcurr, krtimerslist)
-# =============================================================================
-
             t0=exponential(1/f) # action potential
             t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
             t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
@@ -287,8 +283,8 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
 
             elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
                 if r>0:
-                    r=r-blist.popleft()
-                    krtimerslist.popleft()
+                    r=r-blist.pop(0)
+                    krtimerslist.pop(0)
                 tmin = t3
                 timer -= tmin
                 
@@ -333,6 +329,78 @@ def f2(f,pr,keq,kr,M,d,c):
              2*keq**3*(1 + c + c*(-1 + M)*pr) + d*(keq + f*pr)*(-((1 + c)*f*(-2 + pr)*pr) + 2*keq*(1 + c + c*(-1 + M)*pr)))))
     return result
 
+def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, CV, ftype, tmax, delta_t):
+
+        nlist=[]
+        zlist=[]
+        rlist=[]
+
+        tlist=[]
+        APlist=[]
+
+        tcurr=0
+        ratio = 0.3
+
+        gamma(1/CV**2, CV**2/kr) # repair a site
+
+        gamma_timers_list=[]
+
+        timer = delta_t
+        
+        while tcurr < tmax:
+            
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
+            t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
+            if len(gamma_timers_list)>0:
+                t3 = np.min(gamma_timers_list)-tcurr
+            else:
+                t3=np.inf
+            t4 = timer
+            if t0 < t1 and t0 < t2 and t0 < t3 and t0 < t4: # AP occurrs
+                b = binomial(n, pr)
+                n = n - b
+                r = r + b
+                z = z + cz*b
+                APlist.append(tcurr+t0)
+                tmin = t0
+                timer-=tmin
+                if b>0:
+                    gamma_timers = [tcurr+tmin+gamma(1/CV**2, CV**2/kr) for i in range(b)]
+                    gamma_timers_list+=gamma_timers
+                    
+
+            elif t1<t0 and t1<t2 and t1<t3 and t1 < t4: # add a docked vesicle
+                if n < M:
+                    n=n+1
+                tmin = t1 
+                timer-=tmin
+            elif t2<t0 and t2<t1 and t2<t3 and t2 < t4: # remove a neurotransmitter
+                if z > 0:
+                    z=z-1
+                tmin = t2
+                timer-=tmin
+            elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
+                if r>0:
+                    r=r-1
+                    argmin=np.argmin(gamma_timers_list)
+                    gamma_timers_list.pop(argmin)
+                tmin = t3
+                timer -= tmin
+            else:
+                timer = delta_t
+                tmin=timer
+                if tcurr >= ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
+            
+            tcurr += tmin
+        #      0         1      2    3       4            5               6            7 8
+        return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
+            np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
+
 ###############################################################################
 #
 #                               Parameters
@@ -354,35 +422,36 @@ cz=100 # number of neurotransmitters per vesicle
 z=0 # neurotransmitters
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
 
-# =============================================================================
-# nfflist=[]
-# zfflist=[]
-# 
-# niters=20
-# for i in range(niters):
-#     
-#     print(i, niters)
-#     
-#     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-#                     gammaz, cz, 'u', tmax, delta_t)
-#     ninf=Rinf[1]
-#     nff=get_FF(ninf)
-#     nfflist.append(nff)
-#     
-#     zinf=Rinf[3]
-#     zff=get_FF(zinf)
-#     zfflist.append(zff)
-# 
-# nffinf=np.mean(nfflist)
-# zffinf=np.mean(zfflist)
-# =============================================================================
+CV=1
 
-nruns=50
-krlist = np.linspace(keq+0.01, 1000, 10)
+nfflist=[]
+zfflist=[]
+
+niters=50
+for i in range(niters):
+    
+    print(i, niters)
+    
+    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+                    gammaz, cz, 'u', tmax, delta_t)
+    ninf=Rinf[1]
+    nff=get_FF(ninf)
+    nfflist.append(nff)
+    
+    zinf=Rinf[3]
+    zff=get_FF(zinf)
+    zfflist.append(zff)
+
+nffinf=np.mean(nfflist)
+zffinf=np.mean(zfflist)
+
+nsamples=10
+naverages=3
+krlist = np.linspace(keq+0.01, 1000, nsamples)
 nFF = []
 zFF= []
 nmeans = []
@@ -392,14 +461,18 @@ for i, kr in enumerate(krlist):
     zmeanlist=[]
     nfflist=[]
     zfflist=[]
-    for j in range(nruns):
-        print(i, len(krlist), j, nruns)
+    for j in range(naverages):
+        print(i, len(krlist), j, naverages)
 # =============================================================================
 #         R = simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr),
 #                                    kr, gammaz, cz, ftype, tmax, delta_t)
 # =============================================================================
         R=simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, 
                  gammaz, cz, ftype, tmax, delta_t)
+# =============================================================================
+#         R=simulate_gamma(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, CV, ftype, tmax, delta_t)
+# =============================================================================
+        
         nlist=R[1]
         zlist=R[3]
         nmean=np.mean(nlist) # means
@@ -425,19 +498,21 @@ plt.xlabel('Repair rate')
 plt.legend()
 plt.show()
 
-font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
-
-# Add the font to Matplotlib's font manager
-import matplotlib.font_manager as fm
-fm.fontManager.addfont(font_path)
-bookman_prop = fm.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = bookman_prop.get_name()
-plt.rcParams['font.size'] = 15  # Set font size to 15
-
-krplot = np.linspace(keq+0.01, 200, 1000)
-pt(krplot, f1(f, pr, keq, krplot, M))
-pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
-plt.xscale('log')
+# =============================================================================
+# font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
+# 
+# # Add the font to Matplotlib's font manager
+# import matplotlib.font_manager as fm
+# fm.fontManager.addfont(font_path)
+# bookman_prop = fm.FontProperties(fname=font_path)
+# plt.rcParams['font.family'] = bookman_prop.get_name()
+# plt.rcParams['font.size'] = 15  # Set font size to 15
+# 
+# krplot = np.linspace(keq+0.01, 200, 1000)
+# pt(krplot, f1(f, pr, keq, krplot, M))
+# pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
+# plt.xscale('log')
+# =============================================================================
 
 #%% Test 2
 
