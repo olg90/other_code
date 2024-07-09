@@ -1,7 +1,8 @@
 import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
-from numpy.random import exponential, binomial
+from numpy.random import exponential, binomial, gamma
+from collections import deque
 # =============================================================================
 #      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
 #                                             (+):kb+(k-kb)( k1 z / (1+ k1 z))
@@ -301,6 +302,85 @@ def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, d
 
         return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
             np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
+            
+def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
+
+        nlist=[n]
+        zlist=[z]
+        rlist=[r]
+
+        tlist=[0]
+        APlist=[]
+
+        tcurr=0
+
+        timer = delta_t
+        kr_timer = 1/kr
+
+        ratio = 0.3
+        blist = deque()
+        krtimerslist = deque()
+
+        while tcurr < tmax:
+
+# =============================================================================
+#             print(tcurr, krtimerslist)
+# =============================================================================
+
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
+            t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
+            t3=gamma(1/CV**2, CV**2/kr)
+            if len(krtimerslist)>0:
+                t3 = krtimerslist[0]-tcurr
+            else:
+                t3=np.inf
+            t4 = timer
+
+            if t0<t1 and t0<t2 and t0<t3 and t0<t4: # AP occurrs
+                b = binomial(n, pr)
+                n = n - b
+                r = r + b
+                z = z + cz*b
+                if tcurr>=ratio*tmax:
+                    APlist.append(tcurr+t0)
+                tmin = t0
+                timer-=tmin
+                if b>0:
+                    blist.append(b)
+                    krtimerslist.append(tcurr+tmin+kr_timer)
+                    
+            elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
+                if n < M:
+                    n=n+1
+                tmin = t1
+                timer-=tmin
+
+            elif t2<t0 and t2<t1 and t2<t3 and t2<t4: # remove a neurotransmitter
+                if z > 0:
+                    z=z-1
+                tmin = t2
+                timer-=tmin
+
+            elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
+                if r>0:
+                    r=r-blist.popleft()
+                    krtimerslist.popleft()
+                tmin = t3
+                timer -= tmin
+
+            else:
+                tmin=timer
+                timer = delta_t
+                if tcurr>=ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
+            
+            tcurr += tmin
+
+        return tlist, nlist, rlist, zlist, APlist
 #%% Test 1 : Feedback tests
 
 
@@ -788,240 +868,9 @@ ax[0,0].set_title('No feedback', fontsize=20)
 ax[0,1].set_title('Negative feedback', fontsize=20)
 ax[0,2].set_title('Positive feedback', fontsize=20)
 
-        
 fig.tight_layout(rect=[0, 0, 1, 1])
 
 plt.show()
+#%% Test 6 : Gamma distributed
 
-#%%
-fs = 15  # font size
-fig, ax = plt.subplots(6,1, figsize=(6,16))
-ax[0].set_title('f')
-
-ax[0].step(R0t[0][t0:t1], R0t[1][t0:t1], color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffs[0],3)))
-ax[2].step(Rnt[0][t0:t1], Rnt[1][t0:t1], color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffs[1],3)))
-ax[4].step(Rpt[0][t0:t1], Rpt[1][t0:t1], color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(ffs[2],3)))
-ax[0].set_ylim([-5, 105])
-ax[2].set_ylim([-5, 105])
-ax[4].set_ylim([-5, 105])
-ax[0].set_xticks([])
-
-for i in range(6):
-    ax[i].tick_params(axis='both', labelsize=fs)
-
-d=10
-ax[0].set_ylim([-d, np.max(R0t[1])+d])
-
-ax[1].step(R0t[0][t0:t1], R0t[3][t0:t1], color='green', where='post')
-ax[3].step(Rnt[0][t0:t1], Rnt[3][t0:t1], color='green', where='post')
-ax[5].step(Rpt[0][t0:t1], Rpt[3][t0:t1], color='green', where='post')
-
-ax[0].legend(loc='upper right')
-ax[2].legend(loc='upper right')
-ax[4].legend(loc='upper right')
-
-for i in range(6):
-    if i != 5:
-        ax[i].set_xticks([])
-        
-plt.tight_layout()
-
-plt.show()
-
-#%%
-fs = 10  # font size
-
-fig, ax = plt.subplots(2, 1)  # Adjust figure size if needed
-
-ax[0].step(tlist, nlist, color='#ff7f0e', where='post',
-           label='noff = {}'.format(np.around(get_FF(nsim),3)))
-ax[0].set_ylabel('occupied\nsite', fontsize=fs)
-ax[0].set_xticks([])
-d=10
-ax[0].set_ylim([-d, np.max(nlist)+d])
-ax[0].legend(loc='upper right')
-
-ax[1].step(tlist, zlist, color='green', where='post',
-           label='zff = {}, m={},meq={}'.format(np.around(get_FF(zsim),3), 
-                                         np.around(np.mean(zsim),3),
-                                         np.around(zmeaneq)))
-ax[1].set_ylabel('neurotrans-\nmitters', fontsize=fs)
-ax[1].set_xlabel('time (sec)', fontsize=fs)
-ax[1].tick_params(axis='both', which='major', labelsize=fs)
-ax[1].legend(loc='upper right')
-
-plt.show()
-
-
-
-#%%
-# approx 100 x the slowest time
-
-# run ntimes then average, CI std of output divide by sqrt(n)
-
-
-# =============================================================================
-# f = 10;
-# pr = 0.5;
-# M = 100;
-# keq = 5;
-# c = 100;
-# d = 100;
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-###############################################################################
-#
-#                               Run test
-#
-###############################################################################
-
-# =============================================================================
-# tlist, nlist, rlist, zlist, APlist = \
-#     simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)
-# =============================================================================
-# =============================================================================
-#     
-# tlist, nlist, rlist, zlist, APlist = \
-#     simulate(f, pr, M, n, r, z, k, k1, kb, kr, gammaz, cz, ftype, tmax)    
-#     
-# 
-# ulist = M - np.array(nlist)-np.array(rlist)
-# 
-# ratio = 0.2
-# 
-# nss = nlist[int(ratio*len(nlist)):]
-# rss = rlist[int(ratio*len(nlist)):]
-# zss = zlist[int(ratio*len(nlist)):]
-# uss = ulist[int(ratio*len(nlist)):]
-# 
-# ffn = get_FF(nss)
-# ffr = get_FF(rss)
-# ffz = get_FF(zss)
-# ffu = get_FF(uss)
-# 
-# =============================================================================
-# =============================================================================
-# print('ffo={}'.format(np.around(of,3)), 'ffz={}'.format(np.around(zf,3)), 'fb={}'.format(ftype))
-# =============================================================================
-###############################################################################
-#
-#                               Plot
-#
-###############################################################################
-
-# =============================================================================
-# fig, ax = plt.subplots(3,1)
-# =============================================================================
-
-
-
-# How much do these curves deviate when I'm using deterministic repair times
-# and increasing the value of kr?
-
-def get_ff_sim():
-    ratio = 0.2
-    keq=5
-    # 1/keq = 1/k + 1/kr
-    # k = 1/(1/keq - 1/kr)
-    krinf = np.inf
-    kinf = 1/(1/keq-1/krinf)
-    tlist, n_inf_list, r_inf_list, z_inf_list, APlist = \
-        simulate_kr_inf(f, pr, M, n, r, z, kinf, k1, kb, krinf, 
-                        gammaz, cz, ftype, tmax, delta_t)
-    
-    n_inf_ss = n_inf_list[int(ratio*len(n_inf_list)):]
-    z_inf_ss = z_inf_list[int(ratio*len(z_inf_list)):]
-    
-    ff_n_sim=get_FF(n_inf_ss)
-    ff_z_sim=get_FF(z_inf_ss)
-    
-    return ff_n_sim
-
-keq=5
-ntests=20
-R=[]
-for i in range(ntests):
-    print(i, ntests)
-    R.append(get_ff_sim())
-
-FFmean = np.mean(R)
-RCI = np.sqrt(np.var(R))/np.sqrt(ntests)
-
-ff_n_eq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
-print(FFmean, ff_n_eq)
-#%%
-
-nruns=5
-krlist = np.linspace(keq+0.01,1000,100)
-nomean = np.zeros((nruns, len(krlist)))
-zmean = np.zeros((nruns, len(krlist)))
-
-for i in range(nruns):
-    print(i, nruns)
-    for j in range(len(krlist)):
-        print(j, len(krlist))
-        result_j = simulate(f,pr, M, nu, no, nr, z, 1/(1/keq - 1/krlist[j]), 
-                       k1, kb, krlist[j], gammaz,
-                       cz, ftype, tmax)
-            
-        nomean[i,j]=get_FF(result_j[2])
-        zmean[i,j]=get_FF(result_j[4])
-
-    
-fo = np.mean(nomean, 0) / ff_no_sim
-fz = np.mean(zmean, 0) / ff_z_sim
-
-fs2=15
-plt.title('f={}, pr={}, k={}, kr={}, gammaz={}, cz={}, fb={}'.format(
-    f, pr, k, kr,gammaz,cz, ftype))
-plt.plot(krlist, fo, label='no')
-plt.plot(krlist, fz, label='z')
-plt.xlabel('Repair rate, kr', fontsize = fs2)
-plt.ylabel('Fano factor', fontsize = fs2)
-plt.tick_params(axis='both', labelsize = fs2)
-plt.legend(fontsize = fs2-2)
-plt.show()
-
-#%%
-# =============================================================================
-# fu=[]
-# fo=[]
-# fr=[]
-# 
-# for j in range(20):
-#     print(j)
-#     k1list = np.linspace(0, 20, 100)
-# 
-#     results = [simulate(f,pr, M, nu, no, nr, z, k, k1, kb, kr, gammaz,
-#         cz, ftype, tmax, AP=True, deterministic=False, zmean=zmean, zth=zth) 
-#                for i in range(len(k1list))]
-# 
-#     #results[i][j], ith value of k1, jth return value of simulate where 0 is tlist, 1 is nuhist.
-#     ffu = [get_FF(results[i][1]) for i in range(len(results))]
-#     ffo = [get_FF(results[i][2]) for i in range(len(results))]
-#     ffr = [get_FF(results[i][3]) for i in range(len(results))]
-# 
-#     fu.append(ffu)
-#     fo.append(ffo)
-#     fr.append(ffr)
-# 
-# fumean=np.mean(fu,0)
-# fomean=np.mean(fo,0)
-# frmean=np.mean(fr,0)
-# 
-# fs2=15
-# plt.title('f={}, pr={}, k={}, kr={}, gammaz={}, cz={}, fb={}'.format(
-#     f, pr, k, kr,gammaz,cz, ftype))
-# plt.plot(k1list, fumean, label='unoccupied')
-# plt.plot(k1list, fomean, label='occupied')
-# plt.plot(k1list, frmean, label='repair')
-# plt.xlabel('Feedback strength, k1', fontsize = fs2)
-# plt.ylabel('Fano factor', fontsize = fs2)
-# plt.tick_params(axis='both', labelsize = fs2)
-# plt.legend(fontsize = fs2-2)
-# plt.show()
-# =============================================================================
+gamma(1/CV**2, CV**2/kr)
