@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial
+from collections import deque
 
 # =============================================================================
 #      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
@@ -241,11 +242,11 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
         kr_timer = 1/kr
 
         ratio = 0.3
-        blist = []
-        krtimerslist=[]
-        
+        blist = deque()
+        krtimerslist = deque()
+
         while tcurr < tmax:
-            
+
 # =============================================================================
 #             print(tcurr, krtimerslist)
 # =============================================================================
@@ -286,8 +287,8 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
 
             elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
                 if r>0:
-                    r=r-blist.pop(0)
-                    krtimerslist.pop(0)
+                    r=r-blist.popleft()
+                    krtimerslist.popleft()
                 tmin = t3
                 timer -= tmin
                 
@@ -357,28 +358,30 @@ tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
 
-nfflist=[]
-zfflist=[]
+# =============================================================================
+# nfflist=[]
+# zfflist=[]
+# 
+# niters=20
+# for i in range(niters):
+#     
+#     print(i, niters)
+#     
+#     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+#                     gammaz, cz, 'u', tmax, delta_t)
+#     ninf=Rinf[1]
+#     nff=get_FF(ninf)
+#     nfflist.append(nff)
+#     
+#     zinf=Rinf[3]
+#     zff=get_FF(zinf)
+#     zfflist.append(zff)
+# 
+# nffinf=np.mean(nfflist)
+# zffinf=np.mean(zfflist)
+# =============================================================================
 
-niters=20
-for i in range(niters):
-    
-    print(i, niters)
-    
-    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-                    gammaz, cz, 'u', tmax, delta_t)
-    ninf=Rinf[1]
-    nff=get_FF(ninf)
-    nfflist.append(nff)
-    
-    zinf=Rinf[3]
-    zff=get_FF(zinf)
-    zfflist.append(zff)
-
-nffinf=np.mean(nfflist)
-zffinf=np.mean(zfflist)
-
-nruns=20
+nruns=50
 krlist = np.linspace(keq+0.01, 1000, 10)
 nFF = []
 zFF= []
