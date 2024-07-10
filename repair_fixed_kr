@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
-from numpy.random import exponential, binomial
+from numpy.random import exponential, binomial, gamma
 from collections import deque
 
 # =============================================================================
@@ -306,6 +306,84 @@ def simulate_deterministic(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, de
 
         return tlist, nlist, rlist, zlist, APlist
     
+def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, CV, ftype, tmax, delta_t):
+
+        nlist=[n]
+        zlist=[z]
+        rlist=[r]
+
+        tlist=[0]
+        APlist=[]
+
+        tcurr=0
+
+        timer = delta_t
+        kr_timer = 1/kr
+
+        ratio = 0.3
+        krtimerslist = []
+
+        while tcurr < tmax:
+
+# =============================================================================
+#             print(tcurr, krtimerslist)
+# =============================================================================
+
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
+            t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
+            if len(krtimerslist)>0:
+                t3 = np.min(krtimerslist)-tcurr
+            else:
+                t3=np.inf
+            t4 = timer
+
+            if t0<t1 and t0<t2 and t0<t3 and t0<t4: # AP occurrs
+                b = binomial(n, pr)
+                n = n - b
+                r = r + b
+                z = z + cz*b
+                if tcurr>=ratio*tmax:
+                    APlist.append(tcurr+t0)
+                tmin = t0
+                timer-=tmin
+                if b>0:
+                    new_gammas = [gamma(1/CV**2, CV**2/kr)+tmin+kr_timer for i in range(b)]
+                    krtimerslist += new_gammas
+                    
+            elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
+                if n < M:
+                    n=n+1
+                tmin = t1
+                timer-=tmin
+
+            elif t2<t0 and t2<t1 and t2<t3 and t2<t4: # remove a neurotransmitter
+                if z > 0:
+                    z=z-1
+                tmin = t2
+                timer-=tmin
+
+            elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a repair vesicle
+                if r>0:
+                    minkrtimerarg=np.argmin(krtimerslist)
+                    r=r-1
+                    krtimerslist.pop(minkrtimerarg)
+                tmin = t3
+                timer -= tmin
+
+            else:
+                tmin=timer
+                timer = delta_t
+                if tcurr>=ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
+            
+            tcurr += tmin
+
+        return tlist, nlist, rlist, zlist, APlist
+    
 def f1(f,pr,keq,kr,M):
     result = (f*pr*(2*keq*kr**2 - (keq**2 - keq*kr - kr**2)*(2*f + keq*(-1 + M))*pr - \
     f*(2*f*(keq - kr) + kr**2 + keq**2*(-2 + M) - keq*kr*(-2 + M))*pr**2 + f**2*(keq - kr)*pr**3))/\
@@ -362,7 +440,7 @@ keq=5
 # nfflist=[]
 # zfflist=[]
 # 
-# niters=20
+# niters=50
 # for i in range(niters):
 #     
 #     print(i, niters)
@@ -381,8 +459,8 @@ keq=5
 # zffinf=np.mean(zfflist)
 # =============================================================================
 
-nruns=50
-krlist = np.linspace(keq+0.01, 1000, 10)
+nruns=20
+krlist = np.linspace(keq+0.01, 100, 10)
 nFF = []
 zFF= []
 nmeans = []
@@ -438,31 +516,3 @@ krplot = np.linspace(keq+0.01, 200, 1000)
 pt(krplot, f1(f, pr, keq, krplot, M))
 pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
 plt.xscale('log')
-
-#%% Test 2
-
-ftype='u' # feedback type: n-negative, p-positive, u-unregulated
-f=10
-pr=0.5 #
-M=100
-
-n=M # occupied states
-r=0 #  repair states
-
-k=10 # 10 # feedback strength constant #
-kr=10
-
-gammaz=100 # d
-cz=100 # number of neurotransmitters per vesicle
-z=0 # neurotransmitters
-
-delta_t = 0.001
-tmax = 1 # <-------------- TMAX, set to 200 for the FF calculation
-
-keq=5
-
-R=simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, 
-         gammaz, cz, ftype, tmax, delta_t)
-
-plt.plot(R[0], R[1])
-plt.plot(R[0], R[2])
