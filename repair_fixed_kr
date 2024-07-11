@@ -490,6 +490,8 @@ for i, kr in enumerate(krlist):
 
 nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
 
+
+
 plt.plot(krlist, np.array(nFF)/nffinf, label='FFn/FFn_inf', marker='o', markersize=5)
 plt.plot(krlist, np.array(zFF)/zffinf, label='FFz/FFz_inf', marker='o',markersize=5)
 plt.plot([], [],  '', label = 'CV={}'.format(CV))
