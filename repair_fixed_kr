@@ -318,17 +318,12 @@ def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, CV, ftype, tmax, delta_
         tcurr=0
 
         timer = delta_t
-        kr_timer = 1/kr
 
         ratio = 0.3
         krtimerslist = []
 
         while tcurr < tmax:
-
-# =============================================================================
-#             print(tcurr, krtimerslist)
-# =============================================================================
-
+            
             t0=exponential(1/f) # action potential
             t1=exponential(1/(k*(M-n-r) + 1e-6)) # site gets occupied
             t2=exponential(1/(gammaz*z + 1e-6)) # remove neurotransmitter
@@ -337,7 +332,7 @@ def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, CV, ftype, tmax, delta_
             else:
                 t3=np.inf
             t4 = timer
-
+            
             if t0<t1 and t0<t2 and t0<t3 and t0<t4: # AP occurrs
                 b = binomial(n, pr)
                 n = n - b
@@ -348,7 +343,7 @@ def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, CV, ftype, tmax, delta_
                 tmin = t0
                 timer-=tmin
                 if b>0:
-                    new_gammas = [gamma(1/CV**2, CV**2/kr)+tmin+kr_timer for i in range(b)]
+                    new_gammas = [gamma(1/CV**2, CV**2/kr)+tmin+tcurr for i in range(b)]
                     krtimerslist += new_gammas
                     
             elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
@@ -416,51 +411,48 @@ def f2(f,pr,keq,kr,M,d,c):
 #                               Parameters
 #
 ###############################################################################
-#%% Test 1
 ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 pr=0.5 #
 M=100
-
-n=M # occupied states
-r=0 #  repair states
-
 k=10 # 10 # feedback strength constant #
 
 gammaz=100 # d
 cz=100 # number of neurotransmitters per vesicle
-z=0 # neurotransmitters
-
-delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 
 keq=5
+CV=0.1
 
-# =============================================================================
-# nfflist=[]
-# zfflist=[]
-# 
-# niters=50
-# for i in range(niters):
-#     
-#     print(i, niters)
-#     
-#     Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
-#                     gammaz, cz, 'u', tmax, delta_t)
-#     ninf=Rinf[1]
-#     nff=get_FF(ninf)
-#     nfflist.append(nff)
-#     
-#     zinf=Rinf[3]
-#     zff=get_FF(zinf)
-#     zfflist.append(zff)
-# 
-# nffinf=np.mean(nfflist)
-# zffinf=np.mean(zfflist)
-# =============================================================================
+delta_t = 0.001
+tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
 
-nruns=20
-krlist = np.linspace(keq+0.01, 100, 10)
+n=M # occupied states
+r=0 #  repair states
+z=0 # neurotransmitters
+
+nfflist=[]
+zfflist=[]
+
+niters=50
+for i in range(niters):
+    
+    print(i, niters)
+    
+    Rinf=simulate_kr_inf(f, pr, M, n, r, z, 1/(1/keq-1/np.inf), 
+                    gammaz, cz, 'u', tmax, delta_t)
+    ninf=Rinf[1]
+    nff=get_FF(ninf)
+    nfflist.append(nff)
+    
+    zinf=Rinf[3]
+    zff=get_FF(zinf)
+    zfflist.append(zff)
+
+nffinf=np.mean(nfflist)
+zffinf=np.mean(zfflist)
+
+naverages=1
+krlist = np.concatenate([np.array([keq+0.01]),np.arange(10,100,5)])
 nFF = []
 zFF= []
 nmeans = []
@@ -470,14 +462,17 @@ for i, kr in enumerate(krlist):
     zmeanlist=[]
     nfflist=[]
     zfflist=[]
-    for j in range(nruns):
-        print(i, len(krlist), j, nruns)
+    for j in range(naverages):
+        print(i, len(krlist), j, naverages)
 # =============================================================================
-#         R = simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr),
-#                                    kr, gammaz, cz, ftype, tmax, delta_t)
+#         R=simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, ftype, tmax, delta_t)
 # =============================================================================
-        R=simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, 
-                 gammaz, cz, ftype, tmax, delta_t)
+# =============================================================================
+# =============================================================================
+# #         R=simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, ftype, tmax, delta_t)
+# =============================================================================
+# =============================================================================
+        R=simulate_gamma(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, CV, ftype, tmax, delta_t)
         nlist=R[1]
         zlist=R[3]
         nmean=np.mean(nlist) # means
@@ -497,22 +492,25 @@ nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* p
 
 plt.plot(krlist, np.array(nFF)/nffinf, label='FFn/FFn_inf', marker='o', markersize=5)
 plt.plot(krlist, np.array(zFF)/zffinf, label='FFz/FFz_inf', marker='o',markersize=5)
+plt.plot([], [],  '', label = 'CV={}'.format(CV))
 
 plt.ylabel('Normalized fano factor')
 plt.xlabel('Repair rate')
 plt.legend()
 plt.show()
 
-font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
-
-# Add the font to Matplotlib's font manager
-import matplotlib.font_manager as fm
-fm.fontManager.addfont(font_path)
-bookman_prop = fm.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = bookman_prop.get_name()
-plt.rcParams['font.size'] = 15  # Set font size to 15
-
-krplot = np.linspace(keq+0.01, 200, 1000)
-pt(krplot, f1(f, pr, keq, krplot, M))
-pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
-plt.xscale('log')
+# =============================================================================
+# font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
+# 
+# # Add the font to Matplotlib's font manager
+# import matplotlib.font_manager as fm
+# fm.fontManager.addfont(font_path)
+# bookman_prop = fm.FontProperties(fname=font_path)
+# plt.rcParams['font.family'] = bookman_prop.get_name()
+# plt.rcParams['font.size'] = 15  # Set font size to 15
+# 
+# krplot = np.linspace(keq+0.01, 200, 1000)
+# pt(krplot, f1(f, pr, keq, krplot, M))
+# pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
+# plt.xscale('log')
+# =============================================================================
