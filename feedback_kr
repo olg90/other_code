@@ -303,7 +303,7 @@ def simulate_deterministic2(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, d
         return tlist, nlist, rlist, zlist, APlist, np.mean(nlist), np.mean(zlist),\
             np.var(nlist)/np.mean(nlist), np.var(zlist)/np.mean(zlist)
             
-def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, ftype, tmax, delta_t):
+def simulate_gamma(f, pr, M, n, r, z, k, kr, gammaz, cz, CV, ftype, tmax, delta_t):
 
         nlist=[n]
         zlist=[z]
