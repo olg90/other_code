@@ -1,3 +1,4 @@
+
 import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
@@ -424,7 +425,7 @@ keq=5
 CV=0.1
 
 delta_t = 0.001
-tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 
 n=M # occupied states
 r=0 #  repair states
@@ -451,8 +452,8 @@ for i in range(niters):
 nffinf=np.mean(nfflist)
 zffinf=np.mean(zfflist)
 
-naverages=1
-krlist = np.concatenate([np.array([keq+0.01]),np.arange(10,100,5)])
+naverages=20
+krlist = np.concatenate([np.array([keq+0.01]),np.linspace(10,200,5)])
 nFF = []
 zFF= []
 nmeans = []
@@ -464,15 +465,13 @@ for i, kr in enumerate(krlist):
     zfflist=[]
     for j in range(naverages):
         print(i, len(krlist), j, naverages)
+        R=simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, ftype, tmax, delta_t)
 # =============================================================================
-#         R=simulate(f, pr, M, n, r, z, 1/(1/keq-1/kr), 0, 0, kr, gammaz, cz, ftype, tmax, delta_t)
-# =============================================================================
-# =============================================================================
-# =============================================================================
-# #         R=simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, ftype, tmax, delta_t)
+#         R=simulate_deterministic(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, ftype, tmax, delta_t)
 # =============================================================================
 # =============================================================================
-        R=simulate_gamma(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, CV, ftype, tmax, delta_t)
+#         R=simulate_gamma(f, pr, M, n, r, z, 1/(1/keq-1/kr), kr, gammaz, cz, CV, ftype, tmax, delta_t)
+# =============================================================================
         nlist=R[1]
         zlist=R[3]
         nmean=np.mean(nlist) # means
@@ -489,17 +488,39 @@ for i, kr in enumerate(krlist):
     zmeans.append(np.mean(zmeanlist))
 
 nffeq=(1 - (keq *M)/(keq + f* pr) + (2 *keq* (-1 + M))/(2* keq - f *(-2 + pr)* pr))
+#%%
 
+font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
+# Add the font to Matplotlib's font manager
+import matplotlib.font_manager as fm
+fm.fontManager.addfont(font_path)
+bookman_prop = fm.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = bookman_prop.get_name()
+plt.rcParams['font.size'] = 15  # Set font size to 15
 
+krlist2=np.linspace(keq+0.05, 100, 1000)
 
-plt.plot(krlist, np.array(nFF)/nffinf, label='FFn/FFn_inf', marker='o', markersize=5)
-plt.plot(krlist, np.array(zFF)/zffinf, label='FFz/FFz_inf', marker='o',markersize=5)
+plt.plot(krlist2, f1(f, pr, keq, krlist2, M), color='#1f77b4', linewidth=3, 
+         label='Occupied vesicles')
+plt.plot(krlist2, f2(f, pr, keq, krlist2, M, gammaz, cz), color='#ff7f0e', 
+         linewidth=3, label='Neurotransmitters')
+
+plt.plot(krlist, np.array(nFF)/nffinf, marker='o', markersize=5,
+         color='b', linestyle='--', )
+plt.plot(krlist, np.array(zFF)/zffinf, marker='o',markersize=5,
+         color='orange', linestyle='--')
 plt.plot([], [],  '', label = 'CV={}'.format(CV))
 
 plt.ylabel('Normalized fano factor')
 plt.xlabel('Repair rate')
 plt.legend()
+plt.xscale('log')
 plt.show()
+
+
+#%%
+
+
 
 # =============================================================================
 # font_path = 'C:/Windows/Fonts/BOOKOS.TTF'  # Adjust the path according to your system
@@ -515,4 +536,172 @@ plt.show()
 # pt(krplot, f1(f, pr, keq, krplot, M))
 # pt(krplot, f2(f, pr, keq, krplot, M, gammaz, cz))
 # plt.xscale('log')
+# =============================================================================
+#%%
+import os
+
+os.chdir(r'C:\Users\Oliver\Desktop\PhD\Research\Neuron\Repair vesicles')
+
+np.save('z01', [krlist, np.array(nFF)/nffinf, np.array(zFF)/zffinf])
+
+#%%
+
+
+# =============================================================================
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import matplotlib.colors as mcolors
+# 
+# # Load data
+# kvals, n1, z1 = np.load('z1.npy')
+# _, n5, z5 = np.load('z05.npy')
+# _, n01, z01 = np.load('z01.npy')
+# 
+# # Prepare data
+# nvals = [n1, n5, n01]
+# zvals = [z1, z5, z01]
+# names = ['1', '0.5', '0.1']
+# 
+# # Colors for nvals (orange) and zvals (blue)
+# base_colors = ['orange', 'blue']
+# 
+# # Function to create lighter and darker shades
+# def adjust_shade(color, factor):
+#     rgba = mcolors.to_rgba(color)
+#     if factor < 1:
+#         return [c * factor for c in rgba[:3]] + [rgba[3]]  # Darker shade
+#     else:
+#         return [1 - (1 - c) * (2 - factor) for c in rgba[:3]] + [rgba[3]]  # Lighter shade
+# 
+# # Set the figure size
+# plt.figure(figsize=(6, 6))
+# 
+# # Plot main subplot
+# for i in range(len(nvals)):
+#     if i == 0:
+#         factor = 0.6  # Dark shade
+#         linestyle = '-'
+#     elif i == 1:
+#         factor = 1.0  # Base shade
+#         linestyle = '--'
+#     elif i == 2:
+#         factor = 1.4  # Light shade
+#         linestyle = ':'
+#     
+#     orange_shade = adjust_shade(base_colors[0], factor)
+#     
+#     plt.plot(kvals, nvals[i], label='CV={}'.format(names[i]), color=orange_shade, linestyle=linestyle)
+# 
+# # Set titles and legends for main subplot
+# plt.title('Occupied docking sites')
+# plt.xlabel('Repair rate')
+# plt.ylabel('Normalized Fano factor')
+# plt.xlim([0, 100])
+# 
+# # Manually create inset subplot
+# left, bottom, width, height = 0.4, 0.4, 0.4, 0.4
+# ax_inset = plt.axes([left, bottom, width, height])
+# 
+# for i in range(len(zvals)):
+#     if i == 0:
+#         factor = 0.6  # Dark shade
+#         linestyle = '-'
+#     elif i == 1:
+#         factor = 1.0  # Base shade
+#         linestyle = '--'
+#     elif i == 2:
+#         factor = 1.4  # Light shade
+#         linestyle = ':'
+#     
+#     blue_shade = adjust_shade(base_colors[1], factor)
+#     
+#     ax_inset.plot(kvals, zvals[i], label='CV={}'.format(names[i]), color=blue_shade, linestyle=linestyle)
+# 
+# # Set title, labels, and legends for inset subplot
+# ax_inset.set_title('Neurotransmitters')
+# ax_inset.set_xlabel('Repair rate')
+# ax_inset.set_ylabel('Normalized Fano factor')
+# ax_inset.set_xlim([0, 100])
+# ax_inset.legend()
+# 
+# plt.show()
+# 
+# =============================================================================
+# =============================================================================
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import matplotlib.colors as mcolors
+# 
+# # Load data
+# kvals, n1, z1 = np.load('z1.npy')
+# _, n5, z5 = np.load('z05.npy')
+# _, n01, z01 = np.load('z01.npy')
+# 
+# # Prepare data
+# nvals = [n1, n5, n01]
+# zvals = [z1, z5, z01]
+# names = ['1', '0.5', '0.1']
+# 
+# # Colors for nvals (orange) and zvals (blue)
+# base_colors = ['orange', 'blue']
+# 
+# # Function to create lighter and darker shades
+# def adjust_shade(color, factor):
+#     rgba = mcolors.to_rgba(color)
+#     if factor < 1:
+#         return [c * factor for c in rgba[:3]] + [rgba[3]]  # Darker shade
+#     else:
+#         return [1 - (1 - c) * (2 - factor) for c in rgba[:3]] + [rgba[3]]  # Lighter shade
+# 
+# # Set the figure size
+# fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+# 
+# # Plot for occupied docking sites (axs[0])
+# for i in range(len(nvals)):
+#     if i == 0:
+#         factor = 0.6  # Dark shade
+#         linestyle = '-'
+#     elif i == 1:
+#         factor = 1.0  # Base shade
+#         linestyle = '--'
+#     elif i == 2:
+#         factor = 1.4  # Light shade
+#         linestyle = ':'
+#     
+#     orange_shade = adjust_shade(base_colors[0], factor)
+#     
+#     axs[0].plot(kvals, nvals[i], label='CV={}'.format(names[i]), color=orange_shade, linestyle=linestyle)
+# 
+# # Set titles and legends for the first plot
+# axs[0].set_title('Occupied docking sites')
+# axs[0].set_xlabel('Repair rate')
+# axs[0].set_ylabel('Normalized Fano Factor')
+# axs[0].set_xlim([0, 100])
+# axs[0].legend()
+# 
+# # Plot for neurotransmitters (axs[1])
+# for i in range(len(zvals)):
+#     if i == 0:
+#         factor = 0.6  # Dark shade
+#         linestyle = '-'
+#     elif i == 1:
+#         factor = 1.0  # Base shade
+#         linestyle = '--'
+#     elif i == 2:
+#         factor = 1.4  # Light shade
+#         linestyle = ':'
+#     
+#     blue_shade = adjust_shade(base_colors[1], factor)
+#     
+#     axs[1].plot(kvals, zvals[i], label='CV={}'.format(names[i]), color=blue_shade, linestyle=linestyle)
+# 
+# # Set titles and legends for the second plot
+# axs[1].set_title('Neurotransmitters')
+# axs[1].set_xlabel('Repair rate')
+# axs[1].set_xlim([0, 100])
+# axs[1].legend(fontsize =20)
+# 
+# plt.tight_layout()
+# plt.show()
+# 
 # =============================================================================
