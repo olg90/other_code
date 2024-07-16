@@ -1,0 +1,95 @@
+import numpy as np
+from matplotlib.pyplot import plot as pt
+import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial, gamma
+def simulate(n, R, C, f, pr, M, k, rin, rout, Rmax, tmax, delta_t):
+
+        nlist=[]
+        Rlist=[]
+        Clist=[]
+
+        tlist=[]
+        APlist=[]
+
+        tcurr=0
+        
+        start_ratio = 0
+
+        timer = delta_t
+        
+        e= 1e-6
+        
+        while tcurr < tmax:
+
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/rR)
+            t2=exponential(1/(k*R*(M-n)+e)) # site gets occupied
+            t3=exponential(1/(rC*C+e))
+            t4 = timer
+            
+            if t0 < t1 and t0 < t2 and t0 < t3 and t0<t4: # AP occurrs
+                b = binomial(n, pr)
+                n = n - b
+                C = C + b
+                APlist.append(tcurr+t0)
+                tmin = t0
+                timer-=tmin
+
+            elif t1<t0 and t1<t2 and t1<t3 and t1 < t4: # add a docked vesicle
+                R=R+1
+                tmin = t1
+                timer-=tmin
+
+            elif t2<t0 and t2<t1 and t2<t3 and t2 < t4: # add a docked vesicle
+                R=R-1
+                n=n+1
+                tmin = t2
+                timer-=tmin
+                
+            elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a neurotransmitter
+                R=R+1
+                C=C-1
+                tmin = t3
+                timer-=tmin
+            else:
+                timer = delta_t
+                tmin=timer
+                if tcurr >= start_ratio*tmax:
+                    nlist.append(n)
+                    Rlist.append(R)
+                    Clist.append(C)
+                    tlist.append(tcurr)
+            
+            tcurr += tmin
+        return tlist, nlist, Rlist, Clist, APlist
+    
+f=100
+pr=0.1 #
+M=100
+k=1 # 10 # feedback strength constant #
+
+n=M # occupied states
+R=10 # 
+C=0 # 
+
+rR=0.001
+rC=10
+Rmax=100
+
+delta_t = 0.001
+tmax = 3 # <-------------- TMAX, set to 200 for the FF calculation
+
+res = simulate(n, R, C, f, pr, M, k, rR, rC, Rmax, tmax, delta_t)
+fig, ax = plt.subplots(3,1)
+ax[0].step(res[0], res[1], where='post')
+ax[1].step(res[0], res[2],where='post')
+ax[2].step(res[0], res[3],where='post')
+
+ax[0].set_xticks([])
+ax[1].set_xticks([])
+
+ax[0].set_ylabel('vesicles')
+ax[1].set_ylabel('reserves')
+ax[2].set_ylabel('counter')
+
+plt.show()
