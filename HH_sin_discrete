@@ -54,7 +54,7 @@ def pinf(V):
     return (1 + np.exp(-(V + 23) / 6))**(-1)
 
 def minf(V): 
-    return (1 + np.exp(-(V + 38) / 7))**(-1)
+    return (1 + np.exp(-(V + 39.35) / 7))**(-1)
 def hinf(V): 
     return (1 + np.exp((V + 65) / 6))**(-1)
 
@@ -143,13 +143,24 @@ C_m = 12e-12  # membrane capacitance (uF/cm^2)
 # glk = 2e-9  # Leakage conductance
 # =============================================================================
 
+# =============================================================================
+# # (2.) Low threshold potassium conductance matches AP's better+constant current
+# gA = 0e-9 # fast activating K+ conductance
+# gLT = 60e-9 # Low threshold K+ conductance #
+# gHT = 150e-9  # High threshold K+ conductance
+# gNa = 1000e-9    # Fast activating sodium conductance
+# gh = 10e-9  # Hyperpolarization-conductance
+# glk = 2e-9  # Leakage conductance
+# =============================================================================
+
 # (2.) Low threshold potassium conductance matches AP's better+constant current
 gA = 0e-9 # fast activating K+ conductance
-gLT = 60e-9 # Low threshold K+ conductance # 
+gLT = 50e-9 # Low threshold K+ conductance # X
 gHT = 150e-9  # High threshold K+ conductance
 gNa = 1000e-9    # Fast activating sodium conductance
-gh = 10e-9  # Hyperpolarization-conductance
+gh = 100e-9  # Hyperpolarization-conductance # X
 glk = 2e-9  # Leakage conductance
+
 
 #------------------------------------------------------------------------------
 
@@ -203,16 +214,17 @@ r = np.zeros(len(t))
 
 # Set initial conditions
 V[0] = V0
-a[0] = a0
+
+a[0] = a0 # Fast transient K+ current
 b[0] = b0
 c[0] = c0
-w[0] = w0
+w[0] = w0 # Low threshold K+ current
 z[0] = z0
-n[0] = n0
+n[0] = n0 # High threshold K+ current
 p[0] = p0
-m[0] = m0
+m[0] = m0 # Fast sodium current
 h[0] = h0
-r[0] = r0
+r[0] = r0 # Leak current
 
 ###############################################################################
 #
@@ -243,7 +255,7 @@ for i in range(1, len(data)):
     i_h = gh * r[i-1] * (V[i-1] - Vh)  # something weird
     i_lk = glk * (V[i-1] - Vlk)
     i_E = G[i-1]* V[i-1]
-    i_ext = 0 * I_ext(i-1, I_ext_data)+0.1e-9
+    i_ext = 0 * I_ext(i-1, I_ext_data)-0.05e-9
 
     dVdt = -(1 / C_m) * (i_A + i_LT + i_HT + i_NA + i_h + i_lk + i_E - i_ext)
     V[i] = V[i-1] + dVdt * dt
@@ -279,12 +291,20 @@ for i in range(1, len(data)):
 #                             Plot simulations
 #
 ###############################################################################
+# =============================================================================
+# plt.figure(figsize=(24,4))
+# plt.title('Hodgkin-Huxley-type model', fontsize=fs)
+# plt.xlabel('time (ms)', fontsize=fs)
+# plt.ylabel('membrane Potential (mV)', fontsize=fs)
+# plt.plot(t, data[:, 0], label=enames[dataname], color='#ff7f0e')
+# plt.plot(t, V, label='siulations V(t)', color='#1f77b4')
+# plt.tick_params(axis='both', labelsize=fs)
+# plt.grid(True, alpha=0.3)
+# plt.legend(fontsize=fs, loc='upper right')
+# =============================================================================
 
 fs = 10
 plt.subplot(3,1,1)
-# =============================================================================
-# plt.title('Hodgkin-Huxley-type model - chirp input from 2.5 Hz to 2kHz', fontsize=fs)
-# =============================================================================
 plt.title('Hodgkin-Huxley-type model', fontsize=fs)
 plt.xlabel('time (ms)', fontsize=fs)
 plt.ylabel('membrane Potential (mV)', fontsize=fs)
@@ -312,3 +332,10 @@ plt.ylabel('current')
 plt.xlabel('time (ms)')
 plt.legend()
 plt.show()
+
+plt.subplots_adjust(top=0.964,
+bottom=0.061,
+left=0.045,
+right=0.992,
+hspace=0.233,
+wspace=0.2)
