@@ -117,8 +117,16 @@ def I_ext(i, I_ext_data):
 ###############################################################################
 
 # Change the file directories to where you put the data
-excel_dir = r'C:\Users\Oliver\Desktop\German group current data\excel_files'
-txt_dir = r'C:\Users\Oliver\Desktop\German group current data\txt_files'
+
+# UD Directory
+txt_dir = r'C:\Users\olgud\OneDrive\Desktop\PhD\3-Research\Neuron\current_project\German group current data\txt_files'
+excel_dir = r'C:\Users\olgud\OneDrive\Desktop\PhD\3-Research\Neuron\current_project\German group current data\excel_files'
+
+# Home directory
+# =============================================================================
+# excel_dir = r'C:\Users\Oliver\Desktop\German group current data\excel_files'
+# txt_dir = r'C:\Users\Oliver\Desktop\German group current data\txt_files'
+# =============================================================================
 
 # Read in the data
 dataname=0 # This is the file number in the directory, 0 is the 1st file, 1 is the 2nd file, etc...
