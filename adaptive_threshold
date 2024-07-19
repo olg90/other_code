@@ -49,16 +49,13 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, cvth, vthb, tmax, delta_t)
                     tlist.append(tcurr)
                     
             if v>=vth:
-                print('post', v, vth)
                 v=0
                 vth+=cvth
                 postlist.append(tcurr)
 
             # Update the continuous dynamics
             v=v*exp(-tmin/tauv)
-            print(1, vth, exp(-tmin/tauvth))
             vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
-            print(2, vth, vth*exp(-tmin/tauvth))
             tcurr += tmin
             
 
@@ -72,15 +69,15 @@ k=10 # 10 # feedback strength constant #
 c=0.01
 cvth=1
 tauv=1
-tauvth=0.1
+tauvth=1
 vthb=1
 
 n=M # occupied states
 v=0
-vth=6
+vth=vthb
 
 delta_t = 0.001
-tmax = 1 # <-------------- TMAX, set to 200
+tmax = 10 # <-------------- TMAX, set to 200
 
 res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, cvth, vthb, tmax, delta_t)
 fig, ax = plt.subplots(2,1)
