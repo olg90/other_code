@@ -62,7 +62,7 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, cvth, vthb, tmax, delta_t)
                 
         return tlist, nlist, vlist, vthlist, prelist, postlist
     
-f=2
+f=10
 pr=0.5 #
 M=100
 k=10 # 10 # feedback strength constant #
@@ -77,7 +77,7 @@ v=0
 vth=vthb
 
 delta_t = 0.001
-tmax = 10 # <-------------- TMAX, set to 200
+tmax = 1 # <-------------- TMAX, set to 200
 
 res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, cvth, vthb, tmax, delta_t)
 fig, ax = plt.subplots(2,1)
