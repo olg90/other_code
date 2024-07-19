@@ -2,96 +2,100 @@ import numpy as np
 from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
-def simulate(n, R, C, f, pr, M, k, rin, rout, Rmax, tmax, delta_t):
+from numpy import exp
+def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, cvth, vthb, tmax, delta_t):
 
         nlist=[]
-        Rlist=[]
-        Clist=[]
-
+        vlist=[]
+        vthlist=[]
         tlist=[]
-        APlist=[]
-
+        prelist=[]
+        postlist=[]
+    
         tcurr=0
         
-        ratio = 0.3
+        ratio = 0
 
         timer = delta_t
         
         e= 1e-6
-        
+
         while tcurr < tmax:
 
             t0=exponential(1/f) # action potential
-            t1=exponential(1/rin)
-            t2=exponential(1/(k*(Rmax-R)*(M-n) + e)) # site gets occupied
-            t3=exponential(1/(rout*C+e))
-            t4 = timer
-            
-            if t0 < t1 and t0 < t2 and t0 < t3 and t0<t4: # AP occurrs
+            t1=exponential(1/(k*(M-n) + e)) # site gets occupied
+            t2 = timer
+
+            if t0 < t1 and t0 < t2: # AP occurrs
                 b = binomial(n, pr)
-                n = n - b
-                C = C + b
-                APlist.append(tcurr+t0)
+                n-=b
+                v+=c*b
+                prelist.append(tcurr)
                 tmin = t0
                 timer-=tmin
-
-            elif t1<t0 and t1<t2 and t1<t3 and t1 < t4: # add a docked vesicle
-                if R < Rmax:
-                    R=R+1
-                    tmin = t1
-                    timer-=tmin
-
-            elif t2<t0 and t2<t1 and t2<t3 and t2 < t4: # add a docked vesicle
-                if n < M and R > 0:
-                    R=R-1
-                    n=n+1
-                tmin = t2
+                    
+            elif t1<t0 and t1<t2: # add a docked vesicle
+                n+=1
+                tmin = t1
                 timer-=tmin
-            elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # remove a neurotransmitter
-                if R<Rmax:
-                    R=R+1
-                    C=C-1
-                    tmin = t3
-                    timer-=tmin
+
             else:
                 timer = delta_t
                 tmin=timer
                 if tcurr >= ratio*tmax:
                     nlist.append(n)
-                    Rlist.append(R)
-                    Clist.append(C)
+                    vlist.append(v)
+                    vthlist.append(vth)
                     tlist.append(tcurr)
-            
+                    
+            if v>=vth:
+                print('post', v, vth)
+                v=0
+                vth+=cvth
+                postlist.append(tcurr)
+
+            # Update the continuous dynamics
+            v=v*exp(-tmin/tauv)
+            print(1, vth, exp(-tmin/tauvth))
+            vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
+            print(2, vth, vth*exp(-tmin/tauvth))
             tcurr += tmin
-        return tlist, nlist, Rlist, Clist, APlist
+            
+
+                
+        return tlist, nlist, vlist, vthlist, prelist, postlist
     
-f=10
+f=2
 pr=0.5 #
 M=100
 k=10 # 10 # feedback strength constant #
+c=0.01
+cvth=1
+tauv=1
+tauvth=0.1
+vthb=1
 
 n=M # occupied states
-R=0 # 
-C=0 # 
+v=0
+vth=6
 
-rin=1
-rout=1
-Rmax=100
+delta_t = 0.001
+tmax = 1 # <-------------- TMAX, set to 200
 
-delta_t = 0.01
-tmax = 10 # <-------------- TMAX, set to 200 for the FF calculation
+res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, cvth, vthb, tmax, delta_t)
+fig, ax = plt.subplots(2,1)
+ax[0].plot(res[0], res[2], label='v')
+ax[0].plot(res[0], res[3], label='vth')
+ax[1].plot(res[0], res[1])
 
-res = simulate(n, R, C, f, pr, M, k, rin, rout, Rmax, tmax, delta_t)
-fig, ax = plt.subplots(3,1)
-ax[0].plot(res[0], res[1])
-ax[1].plot(res[0], res[2])
-ax[2].plot(res[0], res[3])
+for z in res[4]:
+    ax[0].axvline(x=z, color='k', alpha = 0.1)
 
 ax[0].set_xticks([])
-ax[1].set_xticks([])
 
-ax[0].set_ylabel('vesicles')
-ax[1].set_ylabel('reserves')
-ax[2].set_ylabel('counter')
+ax[0].set_ylabel('membrane potential')
+ax[1].set_ylabel('vesicles')
+
+ax[0].legend()
 
 plt.show()
