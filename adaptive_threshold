@@ -5,92 +5,85 @@ from numpy.random import exponential, binomial, gamma
 from numpy import exp
 def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t):
 
-        nlist=[]
-        vlist=[]
-        vthlist=[]
-        tlist=[]
-        prelist=[]
-        postlist=[]
-    
-        tcurr=0
-        
-        ratio = 0.3
+    nlist=[]
+    vlist=[]
+    vthlist=[]
+    tlist=[]
+    prelist=[]
+    postlist=[]
 
-        timer = delta_t
-        
-        e= 1e-6
+    tcurr=0
+    ratio = 0
+    timer = delta_t
+    while tcurr < tmax:
+        t0=exponential(1/f) # action potential
+        t1=exponential(1/(k*(M-n) + 1e-6)) # site gets occupied
+        t2 = timer
 
-        while tcurr < tmax:
-
-            t0=exponential(1/f) # action potential
-            t1=exponential(1/(k*(M-n) + e)) # site gets occupied
-            t2 = timer
-
-            if t0 < t1 and t0 < t2: # AP occurrs
-                b = binomial(n, pr)
-                n-=b
-                v+=c*b
-                prelist.append(tcurr)
-                tmin = t0
-                timer-=tmin
-                    
-            elif t1<t0 and t1<t2: # add a docked vesicle
+        if t0 < t1 and t0 < t2: # AP occurrs
+            b = binomial(n, pr)
+            n-=b
+            v+=c*b
+            tmin = t0
+            timer-=tmin
+            prelist.append(tcurr+tmin)
+                
+        elif t1<t0 and t1<t2: # add a docked vesicle
+            if n < M:
                 n+=1
-                tmin = t1
-                timer-=tmin
+            tmin = t1
+            timer-=tmin
 
-            else:
-                timer = delta_t
-                tmin=timer
-                if tcurr >= ratio*tmax:
-                    nlist.append(n)
-                    vlist.append(v)
-                    vthlist.append(vth)
-                    tlist.append(tcurr)
-                    
-            if v>=vth:
-                v=0
-# =============================================================================
-#                 vth+=cvth
-# =============================================================================
-                vth=vth0
-                postlist.append(tcurr)
+        else:
+            tmin=t2
+            timer = delta_t
+            if tcurr >= ratio*tmax:
+                nlist.append(n)
+                vlist.append(v)
+                vthlist.append(vth)
+                tlist.append(tcurr)
+                
+        tcurr += tmin
+        if v>=vth:
+            v=0
+            vth=vth0
+            postlist.append(tcurr)
 
-            # Update the continuous dynamics
-            v=v*exp(-tmin/tauv)
-            vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
-            tcurr += tmin
-
-        Tlist = np.diff(postlist)
-        Tmean = np.mean(Tlist)
-        FFn=np.var(nlist)/np.mean(nlist)
-        FFv=np.var(Tlist)/Tmean
+        # Update the continuous dynamics
+        v=v*exp(-tmin/tauv)
+        vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
         
-        
-        return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, FFn, FFv
 
-f=10
+    Tlist = np.diff(postlist)
+    Tmean = np.mean(Tlist)
+    FFn=np.var(nlist)/np.mean(nlist)
+    FFv=np.var(Tlist)/Tmean
+    
+    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, FFn, FFv
+
+f=100
 pr=0.2 #
 M=100
 k=10 # 10 # 10 # feedback strength constant #
 c=0.001
-tauv=10
+tauv=5
 tauvth=tauv
 
 
 n=M # occupied states
 v=0
-vth0=0.3
+vth0=0.2
 vthb=0.2
 vth=vth0
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX
+tmax = 100 # <-------------- TMAX
 
+# Calculate test
 Tsim=[]
 FFnsim=[]
 FFvsim=[]
-nsim=20
+nsim=100
 for i in range(nsim):
     print(i, nsim)
     _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
@@ -98,18 +91,38 @@ for i in range(nsim):
     Tsim.append(T)
     FFnsim.append(FFn)
     FFvsim.append(FFv)
-    
 Tsim=np.mean(Tsim)
 FFnsim=np.mean(FFnsim)
 FFvsim=np.mean(FFvsim)
+
+# =============================================================================
+# res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t)
+# Tsim=res[6]
+# FFnsim=res[7]
+# FFvsim=res[8]
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(res[0], res[2], label='v')
+# ax[0].plot(res[0], res[3], label='vth')
+# ax[1].plot(res[0], res[1])
+# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
+# for z in res[4]:
+#     ax[0].axvline(x=z, color='k', alpha = 0.1)
+# for z in res[5]:
+#     ax[0].axvline(x=z, color='red', alpha = 0.5)
+# ax[0].set_xticks([])
+# ax[0].set_ylabel('membrane potential')
+# ax[1].set_ylabel('vesicles')
+# ax[0].legend()
+# plt.show()
+# =============================================================================
+
 Teq = tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
 FFneq=((k + f*pr)*(-((k**2*M**2)/(k + f*pr)**2) + (k*M*(2*k*M - f*(-2 + pr)*pr))/((k + f*pr)*(2*k - f*(-2 + pr)*pr))))/(k*M)
 FFveq=(c*(2*k**3*(1 + (-1 + M)*pr)*tauv - f**2*(-2 + pr)*pr**2*(1 \
       + f*pr*tauv) + k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
       f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
       f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
-
-check=(c*f*k*M*pr*tauv)/((k + f*pr)*vthb)
+check=(c *f *k *M *pr* tauv)/(k + f *pr) - vthb/vth0>0
 print('check', check)
 print('T eq sim')
 print(Teq, Tsim)
@@ -117,20 +130,3 @@ print('FFn eq sim')
 print(FFneq, FFnsim)
 print('FFv eq sim')
 print(FFveq, FFvsim)
-
-# =============================================================================
-# res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t)
-# Tmean=np.mean(np.diff(res[5]))
-# fig, ax = plt.subplots(2,1)
-# ax[0].plot(res[0], res[2], label='v')
-# ax[0].plot(res[0], res[3], label='vth')
-# ax[1].plot(res[0], res[1])
-# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tmean, 3)))
-# for z in res[4]:
-#     ax[0].axvline(x=z, color='k', alpha = 0.1)
-# ax[0].set_xticks([])
-# ax[0].set_ylabel('membrane potential')
-# ax[1].set_ylabel('vesicles')
-# ax[0].legend()
-# plt.show()
-# =============================================================================
