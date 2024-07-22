@@ -67,6 +67,11 @@ def tmeanopen(f, c, pr, k, M, tauv, vth):
 def tmeanadapt(f, c, pr, k, M, tauv, vth):
     return tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
 
+def FFvadapt(f,c,pr,k,M,tauv,vth):
+    return (c*(2*k**3*(1 + (-1 + M)*pr)*tauv - f**2*(-2 + pr)*pr**2*(1 \
+          + f*pr*tauv) + k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
+          f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
+          f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
 
 f=100
 pr=0.2 #
@@ -108,15 +113,15 @@ for j, f in enumerate(fslist):
     FFvsim=np.mean(FFvsim)
     tvals.append(Tsim)
     FFvs.append(FFvsim)
-    
+#%%
+plt.subplot(2,1,1)
 plt.plot(fslist, tvals, label='Tsim')
-plt.plot(fslist, FFvs, label='FFvsim')
-
-
-# =============================================================================
-# plt.plot(fslist, tmeanopen(fslist, c, pr, k, M, tauv, vth))
-# =============================================================================
 plt.plot(fslist, tmeanadapt(fslist, c, pr, k, M, tauv, vth), label='Teq')
+plt.legend()
+plt.subplot(2,1,2)
+plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
+plt.plot(fslist, FFvs, label='FFvsim')
+plt.xlabel('input frequency')
 plt.legend()
 plt.show()
 
