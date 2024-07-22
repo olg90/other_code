@@ -79,21 +79,55 @@ vth=vth0
 delta_t = 0.001
 tmax = 100 # <-------------- TMAX
 
-# Calculate test
-Tsim=[]
-FFnsim=[]
-FFvsim=[]
-nsim=100
-for i in range(nsim):
-    print(i, nsim)
-    _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
-                        vth, tauv, tauvth, vthb, tmax, delta_t)
-    Tsim.append(T)
-    FFnsim.append(FFn)
-    FFvsim.append(FFv)
-Tsim=np.mean(Tsim)
-FFnsim=np.mean(FFnsim)
-FFvsim=np.mean(FFvsim)
+tvals=[]
+FFvs=[]
+nfs=100
+fslist=np.linspace(1,100,nfs)
+for j, f in enumerate(fslist):
+    # Calculate test
+    Tsim=[]
+    FFnsim=[]
+    FFvsim=[]
+    nsim=10
+    for i in range(nsim):
+        print(j, nfs, i, nsim)
+        _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
+                            vth, tauv, tauvth, vthb, tmax, delta_t)
+        Tsim.append(T)
+        FFnsim.append(FFn)
+        FFvsim.append(FFv)
+    Tsim=np.mean(Tsim)
+    FFnsim=np.mean(FFnsim)
+    FFvsim=np.mean(FFvsim)
+    tvals.append(Tsim)
+    FFvs.append(FFvsim)
+    
+plt.plot(fslist, tvals)
+plt.plot(fslist, FFvs)
+
+def tmeanopen(f, c, pr, k, M, tauv, vth):
+    return tauv*np.log(1/(1-vth/(c*f*k*pr*M*tauv/(f*pr+k))))
+
+plt.plot(fslist, tmeanopen(fslist, c, pr, k, M, tauv, vth))
+    
+
+# =============================================================================
+# # Calculate test
+# Tsim=[]
+# FFnsim=[]
+# FFvsim=[]
+# nsim=100
+# for i in range(nsim):
+#     print(i, nsim)
+#     _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
+#                         vth, tauv, tauvth, vthb, tmax, delta_t)
+#     Tsim.append(T)
+#     FFnsim.append(FFn)
+#     FFvsim.append(FFv)
+# Tsim=np.mean(Tsim)
+# FFnsim=np.mean(FFnsim)
+# FFvsim=np.mean(FFvsim)
+# =============================================================================
 
 # =============================================================================
 # res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t)
