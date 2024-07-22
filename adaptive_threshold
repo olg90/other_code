@@ -3,7 +3,7 @@ from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
 from numpy import exp
-def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t):
+def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t):
 
     nlist=[]
     vlist=[]
@@ -104,7 +104,7 @@ for j, f in enumerate(fslist):
     for i in range(nsim):
         print(j, nfs, i, nsim)
         _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
-                            vth, tauv, tauvth, vthb, tmax, delta_t)
+                        vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
         Tsim.append(T)
         FFnsim.append(FFn)
         FFvsim.append(FFv)
