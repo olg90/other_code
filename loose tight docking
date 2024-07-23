@@ -73,12 +73,22 @@ def simulate(n, v, L, f, pr, M, kL, kd, ku, c, vth, tauv, tmax, delta_t):
     Tmean = np.mean(Tlist)
     FFn=np.var(nlist)/np.mean(nlist)
     FFv=np.var(Tlist)/Tmean
-    
-    return tlist, nlist, vlist, Llist, prelist, postlist, Tmean, FFn, FFv
+    FFL=np.var(Llist)/np.mean(Llist)
+
+    return tlist, nlist, vlist, Llist, prelist, postlist, Tmean, FFn, FFv, FFL
 
 def tmean(f,c,M,pr,kd,ku, tauv,vth):
-    return tauv*np.log((c*f*ku*M*pr*tauv)/(c*f*ku*M*pr*tauv - kd*vth - ku*vth))
-
+    return tauv*np.log((c*f*kL*M*pr*(ku + f*pr)*tauv)/(c*f*kL*M*pr*(ku + f*pr)*tauv - (kL*(kd + ku) + f*(kd + kL)*pr)*vth))
+def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
+    if name=='n':
+        return ((kd + kL + ku)*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)/(2.*ku*(kd + ku)*(kd + kL + ku))
+    if name=='L':
+        return ((kd + kL + ku)*(kd**2 + ku**2) - 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(-kL + ku))*M)/(2.*kd*(kd + ku)*(kd + kL + ku))
+    if name == 'v':
+        return (c*(2*ku*(kd + ku) + (kd**2 - 2*kd*ku - ku**2)*pr + (2*kd*(kd**2 + (kd + kL)*ku)*M*pr)/(kd + kL + ku) + \
+               (2*f*pr*tauv*(kd**3 + kd**2*kL + kd**2*ku + kd*ku**2 + kL*ku**2 + ku**3 + 2*kd**3*M + 2*kd**2*ku*M + 2*kd*kL*ku*M - 2*kd*ku**2*M -\
+               2*kL*ku**2*M - 2*ku**3*M + (kd + kL + ku)*(kL*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)*tauv + \
+               2*kL*(kd - ku)*ku*(kd + ku)*(kd + kL + ku)*M*tauv**2))/((kd + kL + ku)*(1 + kL*tauv)*(1 + (kd + ku)*tauv))))/(4.*ku*(kd + ku))
 f=100
 pr=0.3 #
 M=100
@@ -119,38 +129,49 @@ if check == False:
 
 tvals=[]
 FFvs=[]
-nfs=100
+FFns=[]
+FFLs=[]
+nfs=10
 fslist=np.linspace(1,100,nfs)
 for j, f in enumerate(fslist):
     # Calculate test
     Tsim=[]
     FFnsim=[]
     FFvsim=[]
-    nsim=20
-    for i in range(nsim):
-        print(j, nfs, i, nsim)
-        _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, L, f, pr, M, 
+    FFLsim=[]
+    navgs=1
+    for i in range(navgs):
+        print(j, nfs, i, navgs)
+        _, _, _, _, _, _, T, FFn, FFv, FFL = simulate(n, v, L, f, pr, M, 
                             kL, kd, ku, c, vth, tauv, tmax, delta_t)
         Tsim.append(T)
         FFnsim.append(FFn)
         FFvsim.append(FFv)
-    Tsim=np.mean(Tsim)
-    FFnsim=np.mean(FFnsim)
-    FFvsim=np.mean(FFvsim)
-    tvals.append(Tsim)
-    FFvs.append(FFvsim)
-plt.subplot(2,1,1)
+        FFLsim.append(FFL)
+    tvals.append(np.mean(Tsim))
+    FFvs.append(np.mean(FFvsim))    
+    FFns.append(np.mean(FFnsim))
+    FFLs.append(np.mean(FFLsim))
+plt.subplot(4,1,1)
 plt.plot(fslist, tvals, label='Tsim')
 plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, tauv, vth), label='Teq')
 plt.legend()
-plt.subplot(2,1,2)
 # =============================================================================
-# plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
+# plt.subplot(4,1,2)
+# plt.plot(fslist, FF('v', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqv')
+# plt.plot(fslist, FFvs, label='FFvsim')
+# plt.legend()
+# plt.show()
+# plt.subplot(4,1,3)
+# plt.plot(fslist, FF('n', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqn')
+# plt.plot(fslist, FFns, label='FFnsim')
+# plt.legend()
+# plt.subplot(4,1,4)
+# plt.plot(fslist, FF('L', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqL')
+# plt.plot(fslist, FFLs, label='FFLsim')
+# plt.legend()
+# plt.xlabel('input frequency')
 # =============================================================================
-plt.plot(fslist, FFvs, label='FFvsim')
-plt.xlabel('input frequency')
-plt.legend()
-plt.show()
 
 # =============================================================================
 # # Calculate test
@@ -207,3 +228,4 @@ plt.show()
 # print('FFv eq sim')
 # print(FFveq, FFvsim)
 # =============================================================================
+
