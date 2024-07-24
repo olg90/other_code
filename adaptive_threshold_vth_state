@@ -1,0 +1,135 @@
+import numpy as np
+from matplotlib.pyplot import plot as pt
+import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial, gamma
+from numpy import exp
+def simulate(n, v, f, pr, M, k, c, gammavth, vthb, tauv, vth, vth0, tmax, delta_t):
+
+        nlist=[]
+        vlist=[]
+        vthlist=[]
+        tlist=[]
+        prelist=[]
+        postlist=[]
+    
+        tcurr=0
+        
+        ratio = 0
+
+        timer = delta_t
+        
+        e= 1e-6
+
+        while tcurr < tmax:
+
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n) + e)) # site gets occupied
+            t2=exponential(1/(gammavth*(vth-vthb) + e))
+            t3=timer
+
+            if t0 < t1 and t0 < t2 and t0<t3: # AP occurrs
+                b = binomial(n, pr)
+                n-=b
+                v+=c*b
+                prelist.append(tcurr)
+                tmin = t0
+                timer-=tmin
+                    
+            elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
+                n+=1
+                tmin = t1
+                timer-=tmin
+                
+            elif t2<t0 and t2<t1 and t2<t3: # add a docked vesicle
+                vth-=1
+                tmin = t3
+                timer-=tmin
+
+            else:
+                tmin=t3
+                timer = delta_t
+                if tcurr >= ratio*tmax:
+                    nlist.append(n)
+                    vlist.append(v)
+                    vthlist.append(vth)
+                    tlist.append(tcurr)
+                    
+            if v>=vth:
+                v=0
+                vth=vth0
+                postlist.append(tcurr)
+
+            # Update the continuous dynamics
+# =============================================================================
+#             v=v*exp(-tmin/tauv)
+# =============================================================================
+            tcurr += tmin
+
+        Tmean = np.mean(np.diff(postlist))
+        return tlist, vlist, nlist, vthlist, prelist, postlist, Tmean
+
+f=10
+pr=0.2 #
+M=100
+k=10 # 10 # 10 # feedback strength constant #
+c=0.1
+tauv=1
+vth0=40
+vthb=20
+
+gammavth=1/tauv
+vth0=vth0
+n=M # occupied states
+v=0
+vth=vth0
+
+delta_t = 0.001
+tmax = 200 # <-------------- TMAX
+
+def tmeanvth(f,c,pr,k,M,tauv,vth):
+    return tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
+tvals=[]
+FFvs=[]
+nfs=10
+fslist=np.linspace(1,100,nfs)
+for j, f in enumerate(fslist):
+    # Calculate test
+    Tsim=[]
+# =============================================================================
+#     FFnsim=[]
+#     FFvsim=[]
+# =============================================================================
+    nsim=10
+    for i in range(nsim):
+        print(j, nfs, i, nsim)
+        _, _, _, _, _, _, T =simulate(n, v, f, pr, M, 
+                    k, c, gammavth, vthb, tauv, vth, vth0, tmax, delta_t)
+        Tsim.append(T)
+# =============================================================================
+#         FFnsim.append(FFn)
+#         FFvsim.append(FFv)
+# =============================================================================
+    Tsim=np.mean(Tsim)
+# =============================================================================
+#     FFnsim=np.mean(FFnsim)
+#     FFvsim=np.mean(FFvsim)
+# =============================================================================
+    tvals.append(Tsim)
+# =============================================================================
+#     FFvs.append(FFvsim)
+# =============================================================================
+
+# =============================================================================
+# plt.subplot(2,1,1)
+# =============================================================================
+plt.plot(fslist, tvals, label='Tsim')
+plt.plot(fslist, tmeanvth(fslist, c, pr, k, M, tauv, vth), label='Teq')
+plt.legend()
+# =============================================================================
+# plt.subplot(2,1,2)
+# plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
+# plt.plot(fslist, FFvs, label='FFvsim')
+# plt.xlabel('input frequency')
+# plt.legend()
+# plt.show()
+# =============================================================================
