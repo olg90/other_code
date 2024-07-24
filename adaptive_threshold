@@ -11,6 +11,13 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
     tlist=[]
     prelist=[]
     postlist=[]
+    
+    tplot=[]
+    vplot=[]
+    nplot=[]
+    vthplot=[]
+    
+    postvth=[]
 
     tcurr=0
     ratio = 0
@@ -27,12 +34,22 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
             tmin = t0
             timer-=tmin
             prelist.append(tcurr+tmin)
+            
+            tplot.append(tcurr)
+            vplot.append(v)
+            nplot.append(n)
+            vthplot.append(vth)
                 
         elif t1<t0 and t1<t2: # add a docked vesicle
             if n < M:
                 n+=1
             tmin = t1
             timer-=tmin
+            
+            tplot.append(tcurr)
+            vplot.append(v)
+            nplot.append(n)
+            vthplot.append(vth)
 
         else:
             tmin=t2
@@ -43,23 +60,29 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
                 vthlist.append(vth)
                 tlist.append(tcurr)
                 
+            tplot.append(tcurr)
+            vplot.append(v)
+            nplot.append(n)
+            vthplot.append(vth)
+                
         tcurr += tmin
         if v>=vth:
-            v=0
-            vth=vth0
             postlist.append(tcurr)
+            postvth.append(vth)
+            vth=vth0
+            v=0
 
         # Update the continuous dynamics
         v=v*exp(-tmin/tauv)
         vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
         
-
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
     FFn=np.var(nlist)/np.mean(nlist)
     FFv=np.var(Tlist)/Tmean
     
-    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, FFn, FFv
+    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, FFn, FFv,\
+        tplot, vplot, nplot, vthplot, postvth
 
 def tmeanopen(f, c, pr, k, M, tauv, vth):
     return tauv*np.log(1/(1-vth/(c*f*k*pr*M*tauv/(f*pr+k))))
@@ -80,60 +103,62 @@ f=100
 pr=0.2 #
 M=100
 k=10 # 10 # 10 # feedback strength constant #
-c=0.001
-tauv=5
+c=0.005
+tauv=0.1
 tauvth=tauv
 
 
-n=M # occupied states
+n=0 # occupied states
 v=0
 vth0=0.3
 vthb=0.2
 vth=vth0
 
 delta_t = 0.001
-tmax = 100 # <-------------- TMAX
+tmax = 1 # <-------------- TMAX
 
-tvals=[]
-FFvs=[]
-FFns=[]
-nfs=10
-fslist=np.linspace(1,100,nfs)
-for j, f in enumerate(fslist):
-    # Calculate test
-    Tsim=[]
-    FFnsim=[]
-    FFvsim=[]
-    nsim=10
-    for i in range(nsim):
-        print(j, nfs, i, nsim)
-        _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
-                        vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
-        Tsim.append(T)
-        FFnsim.append(FFn)
-        FFvsim.append(FFv)
-    Tsim=np.mean(Tsim)
-    FFnsim=np.mean(FFnsim)
-    FFvsim=np.mean(FFvsim)
-    tvals.append(Tsim)
-    FFvs.append(FFvsim)
-    FFns.append(FFnsim)
-    
-plt.subplot(3,1,1)
-plt.plot(fslist, tvals, label='Tsim')
-plt.plot(fslist, tmeanadapt(fslist, c, pr, k, M, tauv, vth), label='Teq')
-plt.legend()
-plt.subplot(3,1,2)
-plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
-plt.plot(fslist, FFvs, label='FFvsim')
-plt.xlabel('input frequency')
-plt.legend()
-plt.subplot(3,1,3)
-plt.plot(fslist, FFnadapt(fslist, c, pr, k, M, tauv, vth), label='FFneq')
-plt.plot(fslist, FFns, label='FFnsim')
-plt.xlabel('input frequency')
-plt.legend()
-plt.show()
+# =============================================================================
+# tvals=[]
+# FFvs=[]
+# FFns=[]
+# nfs=10
+# fslist=np.linspace(1,100,nfs)
+# for j, f in enumerate(fslist):
+#     # Calculate test
+#     Tsim=[]
+#     FFnsim=[]
+#     FFvsim=[]
+#     nsim=10
+#     for i in range(nsim):
+#         print(j, nfs, i, nsim)
+#         _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
+#                         vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+#         Tsim.append(T)
+#         FFnsim.append(FFn)
+#         FFvsim.append(FFv)
+#     Tsim=np.mean(Tsim)
+#     FFnsim=np.mean(FFnsim)
+#     FFvsim=np.mean(FFvsim)
+#     tvals.append(Tsim)
+#     FFvs.append(FFvsim)
+#     FFns.append(FFnsim)
+#     
+# plt.subplot(3,1,1)
+# plt.plot(fslist, tmeanadapt(fslist, c, pr, k, M, tauv, vth), label='Teq')
+# plt.plot(fslist, tvals, label='Tsim')
+# plt.legend()
+# plt.subplot(3,1,2)
+# plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
+# plt.plot(fslist, FFvs, label='FFvsim')
+# plt.xlabel('input frequency')
+# plt.legend()
+# plt.subplot(3,1,3)
+# plt.plot(fslist, FFnadapt(fslist, c, pr, k, M, tauv, vth), label='FFneq')
+# plt.plot(fslist, FFns, label='FFnsim')
+# plt.xlabel('input frequency')
+# plt.legend()
+# plt.show()
+# =============================================================================
 
 # =============================================================================
 # # Calculate test
@@ -153,26 +178,28 @@ plt.show()
 # FFvsim=np.mean(FFvsim)
 # =============================================================================
 
+res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+Tsim=res[6]
+FFnsim=res[7]
+FFvsim=res[8]
+fig, ax = plt.subplots(2,1)
+ax[0].plot(res[9], res[10], label='v')
+ax[0].plot(res[9], res[12], label='vth')
+ax[0].plot(res[5], res[13], 'ro')
+ax[1].plot(res[9], res[11])
+ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
 # =============================================================================
-# res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t)
-# Tsim=res[6]
-# FFnsim=res[7]
-# FFvsim=res[8]
-# fig, ax = plt.subplots(2,1)
-# ax[0].plot(res[0], res[2], label='v')
-# ax[0].plot(res[0], res[3], label='vth')
-# ax[1].plot(res[0], res[1])
-# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
 # for z in res[4]:
 #     ax[0].axvline(x=z, color='k', alpha = 0.1)
 # for z in res[5]:
 #     ax[0].axvline(x=z, color='red', alpha = 0.5)
-# ax[0].set_xticks([])
-# ax[0].set_ylabel('membrane potential')
-# ax[1].set_ylabel('vesicles')
-# ax[0].legend()
-# plt.show()
 # =============================================================================
+ax[0].set_xticks([])
+ax[0].set_ylabel('membrane potential')
+ax[1].set_ylabel('vesicles')
+ax[0].legend()
+plt.show()
+
 
 # =============================================================================
 # Teq = tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
