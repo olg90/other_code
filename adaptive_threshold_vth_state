@@ -5,75 +5,106 @@ from numpy.random import exponential, binomial, gamma
 from numpy import exp
 def simulate(n, v, f, pr, M, k, c, gammavth, vthb, tauv, vth, vth0, tmax, delta_t):
 
-        nlist=[]
-        vlist=[]
-        vthlist=[]
-        tlist=[]
-        prelist=[]
-        postlist=[]
+    nlist=[]
+    vlist=[]
+    vthlist=[]
+    tlist=[]
+    prelist=[]
+    postlist=[]
     
-        tcurr=0
-        
-        ratio = 0
+    tplot=[]
+    vplot=[]
+    nplot=[]
+    vthplot=[]
+    
+    postvth=[]
 
-        timer = delta_t
-        
-        e= 1e-6
 
-        while tcurr < tmax:
+    tcurr=0
+    
+    ratio = 0.3
 
-            t0=exponential(1/f) # action potential
-            t1=exponential(1/(k*(M-n) + e)) # site gets occupied
-            t2=exponential(1/(gammavth*(vth-vthb) + e))
-            t3=timer
+    timer = delta_t
+    
+    e= 1e-6
 
-            if t0 < t1 and t0 < t2 and t0<t3: # AP occurrs
-                b = binomial(n, pr)
-                n-=b
-                v+=c*b
+    while tcurr < tmax:
+
+        t0=exponential(1/f) # action potential
+        t1=exponential(1/(k*(M-n) + e)) # site gets occupied
+        t2=exponential(1/(gammavth*(vth-vthb) + e))
+        t3=timer
+
+        if t0 < t1 and t0 < t2 and t0<t3: # AP occurrs
+            b = binomial(n, pr)
+            n-=b
+            v+=c*b
+            if tcurr >= ratio*tmax:
                 prelist.append(tcurr)
-                tmin = t0
-                timer-=tmin
-                    
-            elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
-                n+=1
-                tmin = t1
-                timer-=tmin
+            tmin = t0
+            timer-=tmin
                 
-            elif t2<t0 and t2<t1 and t2<t3: # add a docked vesicle
-                vth-=1
-                tmin = t3
-                timer-=tmin
+        elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
+            n+=1
+            tmin = t1
+            timer-=tmin
+            
+        elif t2<t0 and t2<t1 and t2<t3: # add a docked vesicle
+            vth-=1
+            tmin = t3
+            timer-=tmin
 
-            else:
-                tmin=t3
-                timer = delta_t
-                if tcurr >= ratio*tmax:
-                    nlist.append(n)
-                    vlist.append(v)
-                    vthlist.append(vth)
-                    tlist.append(tcurr)
-                    
-            if v>=vth:
-                v=0
-                vth=vth0
-                postlist.append(tcurr)
+        else:
+            tmin=t3
+            timer = delta_t
+            if tcurr >= ratio*tmax:
+                nlist.append(n)
+                vlist.append(v)
+                vthlist.append(vth)
+                tlist.append(tcurr)
+                
+        tplot.append(tcurr)
+        vplot.append(v)
+        nplot.append(n)
+        vthplot.append(vth)
+                
+        if v>=vth:
+            v=0
+            vth=vth0
+            postlist.append(tcurr)
 
-            # Update the continuous dynamics
-# =============================================================================
-#             v=v*exp(-tmin/tauv)
-# =============================================================================
-            tcurr += tmin
+        # Update the continuous dynamics
+        v=v*exp(-tmin/tauv)
+        tcurr += tmin
 
-        Tmean = np.mean(np.diff(postlist))
-        return tlist, vlist, nlist, vthlist, prelist, postlist, Tmean
+    Tlist = np.diff(postlist)
+    Tmean = np.mean(Tlist)
+    FFn=np.var(nlist)/np.mean(nlist)
+    FFv=np.var(Tlist)/Tmean
+    
+    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, FFn, FFv,\
+        tplot, vplot, nplot, vthplot, postvth
+        
+def tmeanvth(f,c,pr,k,M,tauv,vth):
+    return tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
 
-f=10
+def FFnadapt(f, pr, k, M):
+    return 1 - (k*M)/(k + f*pr) + (2*k*(-1 + M))/(2*k - f*(-2 + pr)*pr)
+
+def FFvadapt(f, c, pr, k, M, tauv):
+    return (c*(2*k**3*(1 + (-1 + M)*pr)*tauv - \
+               f**2*(-2 + pr)*pr**2*(1 + f*pr*tauv) + \
+                   k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
+                       f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
+                        f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
+
+
+f=100
 pr=0.2 #
 M=100
 k=10 # 10 # 10 # feedback strength constant #
 c=0.1
-tauv=1
+tauv=5
 vth0=40
 vthb=20
 
@@ -84,52 +115,70 @@ v=0
 vth=vth0
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX
+tmax = 100 # <-------------- TMAX
 
-def tmeanvth(f,c,pr,k,M,tauv,vth):
-    return tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
+fmin=(k*vthb)/(c*k*M*pr*tauv - pr*vthb)         
+print(fmin)
+                                                                    
 tvals=[]
+FFns=[]
 FFvs=[]
-nfs=10
+nfs=20
 fslist=np.linspace(1,100,nfs)
 for j, f in enumerate(fslist):
-    # Calculate test
     Tsim=[]
-# =============================================================================
-#     FFnsim=[]
-#     FFvsim=[]
-# =============================================================================
+    FFnsim=[]
+    FFvsim=[]
     nsim=10
     for i in range(nsim):
         print(j, nfs, i, nsim)
-        _, _, _, _, _, _, T =simulate(n, v, f, pr, M, 
-                    k, c, gammavth, vthb, tauv, vth, vth0, tmax, delta_t)
-        Tsim.append(T)
-# =============================================================================
-#         FFnsim.append(FFn)
-#         FFvsim.append(FFv)
-# =============================================================================
+        res =simulate(n, v, f, pr, M, k, c, gammavth, vthb, tauv, 
+                                            vth, vth0, tmax, delta_t)
+        Tsim.append(res[6])
+        FFnsim.append(res[7])
+        FFvsim.append(res[8])
     Tsim=np.mean(Tsim)
-# =============================================================================
-#     FFnsim=np.mean(FFnsim)
-#     FFvsim=np.mean(FFvsim)
-# =============================================================================
+    FFnsim=np.mean(FFnsim)
+    FFvsim=np.mean(FFvsim)
     tvals.append(Tsim)
-# =============================================================================
-#     FFvs.append(FFvsim)
-# =============================================================================
+    FFns.append(FFnsim)
+    FFvs.append(FFvsim)
+plt.subplot(3,1,1)
+plt.plot(fslist, tmeanvth(fslist, c, pr, k, M, tauv, vth), label='Teq')
+plt.plot(fslist, tvals, label='Tsim')
+plt.legend()
+plt.subplot(3,1,2)
+plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv), label='FFveq')
+plt.plot(fslist, FFvs, label='FFvsim')
+plt.xlabel('input frequency')
+plt.legend()
+plt.subplot(3,1,3)
+plt.plot(fslist, FFnadapt(fslist, pr, k, M), label='FFneq')
+plt.plot(fslist, FFns, label='FFnsim')
+plt.xlabel('input frequency')
+plt.legend()
+plt.show()
 
 # =============================================================================
-# plt.subplot(2,1,1)
-# =============================================================================
-plt.plot(fslist, tvals, label='Tsim')
-plt.plot(fslist, tmeanvth(fslist, c, pr, k, M, tauv, vth), label='Teq')
-plt.legend()
-# =============================================================================
-# plt.subplot(2,1,2)
-# plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
-# plt.plot(fslist, FFvs, label='FFvsim')
-# plt.xlabel('input frequency')
-# plt.legend()
+# res = simulate(n, v, f, pr, M, k, c, gammavth, vthb, tauv, vth, vth0, tmax, delta_t)
+# Tsim=res[6]
+# FFnsim=res[7]
+# FFvsim=res[8]
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(res[9], res[10], label='v')
+# ax[0].plot(res[9], res[12], label='vth')
+# ax[0].plot(res[5], res[13], 'ro')
+# ax[1].plot(res[9], res[11])
+# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
+# # =============================================================================
+# # for z in res[4]:
+# #     ax[0].axvline(x=z, color='k', alpha = 0.1)
+# # for z in res[5]:
+# #     ax[0].axvline(x=z, color='red', alpha = 0.5)
+# # =============================================================================
+# ax[0].set_xticks([])
+# ax[0].set_ylabel('membrane potential')
+# ax[1].set_ylabel('vesicles')
+# ax[0].legend()
 # plt.show()
 # =============================================================================
