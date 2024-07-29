@@ -90,13 +90,11 @@ def bifun(i, k, f, M, pr):
     return (k*M*(1 - ((f*(1 - pr))/(f + k))**i)*pr)/(k + f*pr)
 b1=pr*k*M/(f+k)
 
-ib=1
+i=1
 bsimmean=[]
-for i in range(100):
-    print(i)
-    bisim=run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)['bhist'][ib-1]
+for j in range(200):
+    print(j)
+    bisim=run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)['bhist'][i-1]
     bsimmean.append(bisim)
     
-print(np.mean(bsimmean), b1)
-
-print(bifun(1, k, f, pr))
+print(np.mean(bsimmean), bifun(i, k, f, M, pr))
