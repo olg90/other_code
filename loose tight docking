@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
 from numpy import exp
 
-def simulate(n, v, L, f, pr, M, kL, kd, ku, c, vth, tauv, tmax, delta_t):
+def simulate(n, v, L, f, pr, M, kL, kd, ku, kr, c, vth, tauv, tmax, delta_t):
 
     nlist=[]
     Llist=[]
@@ -23,9 +23,10 @@ def simulate(n, v, L, f, pr, M, kL, kd, ku, c, vth, tauv, tmax, delta_t):
         t1=exponential(1/(kL*(M-n-L) + e)) # site gets occupied
         t2=exponential(1/(kd*L+e))
         t3=exponential(1/(ku*n+e))
-        t4 = timer
+        t4=exponential(1/(kr*L+e))
+        t5 = timer
 
-        if t0 < t1 and t0 < t2 and t0<t3 and t0<t4: # AP occurrs
+        if t0 < t1 and t0 < t2 and t0<t3 and t0<t4 and t0<t5: # AP occurrs
             b = binomial(n, pr)
             n-=b
             v+=c*b
@@ -33,25 +34,30 @@ def simulate(n, v, L, f, pr, M, kL, kd, ku, c, vth, tauv, tmax, delta_t):
             timer-=tmin
             prelist.append(tcurr+tmin)
                 
-        elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
+        elif t1<t0 and t1<t2 and t1<t3 and t1<t4 and t1<t5: #
             L+=1
             tmin = t1
             timer-=tmin
             
-        elif t2<t0 and t2<t1 and t2<t3 and t2<t4: # add a docked vesicle
+        elif t2<t0 and t2<t1 and t2<t3 and t2<t4 and t2<t5: #
             n+=1
             L-=1
             tmin = t2
             timer-=tmin
 
-        elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # add a docked vesicle
+        elif t3<t0 and t3<t1 and t3<t2 and t3<t4 and t3<t5: #
             n-=1
             L+=1
             tmin = t3
             timer-=tmin
+            
+        elif t4<t0 and t4<t1 and t4<t2 and t4<t3 and t4<t5: #
+            L-=1
+            tmin = t4
+            timer-=tmin
 
         else:
-            tmin=t4
+            tmin=t5
             timer = delta_t
             if tcurr >= ratio*tmax:
                 nlist.append(n)
@@ -77,8 +83,8 @@ def simulate(n, v, L, f, pr, M, kL, kd, ku, c, vth, tauv, tmax, delta_t):
 
     return tlist, nlist, vlist, Llist, prelist, postlist, Tmean, FFn, FFv, FFL
 
-def tmean(f,c,M,pr,kd,ku, tauv,vth):
-    return tauv*np.log((c*f*kL*M*pr*(ku + f*pr)*tauv)/(c*f*kL*M*pr*(ku + f*pr)*tauv - (kL*(kd + ku) + f*(kd + kL)*pr)*vth))
+def tmean(f,c,M,pr,kd,ku, kr, tauv,vth):
+    return tauv*np.log(1/(1 - ((kd*(kL + f*pr) + (kL + kr)*(ku + f*pr))*vth)/(c*f*kd*kL*M*pr*tauv)))
 def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
     if name=='n':
         return ((kd + kL + ku)*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)/(2.*ku*(kd + ku)*(kd + kL + ku))
@@ -89,8 +95,8 @@ def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
                (2*f*pr*tauv*(kd**3 + kd**2*kL + kd**2*ku + kd*ku**2 + kL*ku**2 + ku**3 + 2*kd**3*M + 2*kd**2*ku*M + 2*kd*kL*ku*M - 2*kd*ku**2*M -\
                2*kL*ku**2*M - 2*ku**3*M + (kd + kL + ku)*(kL*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)*tauv + \
                2*kL*(kd - ku)*ku*(kd + ku)*(kd + kL + ku)*M*tauv**2))/((kd + kL + ku)*(1 + kL*tauv)*(1 + (kd + ku)*tauv))))/(4.*ku*(kd + ku))
-f=100
-pr=0.3 #
+f=20
+pr=0.2 #
 M=100
 c=0.01
 tauv=5
@@ -98,22 +104,19 @@ tauv=5
 kL=20 # Mean rate of loosely docking
 kd=20 # Mean rate of docking
 ku=10 # Mean rate of undocking
+kr=10 # Mean unloosening
 
 n=0
 v=0
 L=0
 vth=0.2
 
-delta_t = 0.001
-tmax = 100 # <-------------- TMAX
+delta_t = 0.001 
+tmax = 200 # <-------------- TMAX
 
-check=vth* (kd + ku )/(c  *f * ku * M * pr * tauv) < 1
-fmin = vth *(kd + ku )/(c * ku*  M*  pr*  tauv)
-print(fmin)
-if check == False:
-    raise Exception('check failed')
+
 # =============================================================================
-# res=simulate(n, v, L, f, pr, M, kL, kd, ku, c, vth, tauv, tmax, delta_t)
+# res=simulate(n, v, L, f, pr, M, kL, kd, ku, kr, c, vth, tauv, tmax, delta_t)
 # 
 # plt.subplot(2,1,1)
 # plt.plot(res[0], res[2], label='v')
@@ -124,8 +127,8 @@ if check == False:
 # plt.plot(res[0], M-(np.array(res[1])+np.array(res[3])), label='u')
 # plt.legend()
 # plt.show()
+# 
 # =============================================================================
-
 
 tvals=[]
 FFvs=[]
@@ -142,8 +145,8 @@ for j, f in enumerate(fslist):
     navgs=1
     for i in range(navgs):
         print(j, nfs, i, navgs)
-        _, _, _, _, _, _, T, FFn, FFv, FFL = simulate(n, v, L, f, pr, M, 
-                            kL, kd, ku, c, vth, tauv, tmax, delta_t)
+        _, _, _, _, _, _, T, FFn, FFv, FFL = simulate(n, v, L, f, pr, M, kL, 
+                                    kd, ku, kr, c, vth, tauv, tmax, delta_t)
         Tsim.append(T)
         FFnsim.append(FFn)
         FFvsim.append(FFv)
@@ -152,10 +155,10 @@ for j, f in enumerate(fslist):
     FFvs.append(np.mean(FFvsim))    
     FFns.append(np.mean(FFnsim))
     FFLs.append(np.mean(FFLsim))
-plt.subplot(4,1,1)
 plt.plot(fslist, tvals, label='Tsim')
-plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, tauv, vth), label='Teq')
+plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, kd, tauv, vth), label='Teq')
 plt.legend()
+
 # =============================================================================
 # plt.subplot(4,1,2)
 # plt.plot(fslist, FF('v', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqv')
