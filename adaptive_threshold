@@ -50,12 +50,10 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
                 vthlist.append(vth)
                 tlist.append(tcurr)
                 
-                
         tplot.append(tcurr)
         vplot.append(v)
         nplot.append(n)
         vthplot.append(vth)
-                
                 
         tcurr += tmin
         if v>=vth:
@@ -87,7 +85,7 @@ def FFvadapt(f,c,pr,k,M,tauv,vth):
           + f*pr*tauv) + k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
           f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
           f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
-                                                       
+                                            
 def FFnadapt(f,c,pr,k,M,tauv,vth):
     return 1 - (k*M)/(k + f*pr) + (2*k*(-1 + M))/(2*k - f*(-2 + pr)*pr)                                                 
 
@@ -96,7 +94,7 @@ pr=0.1 #
 M=100
 k=10 # 10 # 10 # feedback strength constant #
 c=0.01
-tauv=5
+tauv=0.1
 tauvth=tauv
 
 n=0 # occupied states
@@ -106,51 +104,55 @@ vthb=0.2
 vth=vth0
 
 delta_t = 0.001
-tmax = 100 # <-------------- TMAX
+tmax = 1 # <-------------- TMAX
 
 fmin=(k*vthb)/(vth0*(c*k*M*pr*tauv - (pr*vthb)/vth0))
 print('fmin', fmin)
 
-tvals=[]
-FFvs=[]
-FFns=[]
-nfs=10
-fslist=np.linspace(1,100,nfs)
-for j, f in enumerate(fslist):
-    # Calculate test
-    Tsim=[]
-    FFnsim=[]
-    FFvsim=[]
-    nsim=10
-    for i in range(nsim):
-        print(j, nfs, i, nsim)
-        res=simulate(n, v, f, pr, M, k, c, 
-                    vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
-        Tsim.append(res[6])
-        FFnsim.append(res[7])
-        FFvsim.append(res[8])
-    Tsim=np.mean(Tsim)
-    FFnsim=np.mean(FFnsim)
-    FFvsim=np.mean(FFvsim)
-    tvals.append(Tsim)
-    FFvs.append(FFvsim)
-    FFns.append(FFnsim)
-    
-plt.subplot(3,1,1)
-plt.plot(fslist, tmeanadapt(fslist, c, pr, k, M, tauv, vth), label='Teq')
-plt.plot(fslist, tvals, label='Tsim')
-plt.legend()
-plt.subplot(3,1,2)
-plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
-plt.plot(fslist, FFvs, label='FFvsim')
-plt.xlabel('input frequency')
-plt.legend()
-plt.subplot(3,1,3)
-plt.plot(fslist, FFnadapt(fslist, c, pr, k, M, tauv, vth), label='FFneq')
-plt.plot(fslist, FFns, label='FFnsim')
-plt.xlabel('input frequency')
-plt.legend()
-plt.show()
+# =============================================================================
+# tvals=[]
+# FFvs=[]
+# FFns=[]
+# nfs=10
+# fslist=np.linspace(1,200,nfs)
+# for j, f in enumerate(fslist):
+#     # Calculate test
+#     Tsim=[]
+#     FFnsim=[]
+#     FFvsim=[]
+#     nsim=10
+#     for i in range(nsim):
+#         print(j, nfs, i, nsim)
+#         res=simulate(n, v, f, pr, M, k, c, 
+#                     vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+#         Tsim.append(res[6])
+#         FFnsim.append(res[7])
+#         FFvsim.append(res[8])
+#     Tsim=np.mean(Tsim)
+#     FFnsim=np.mean(FFnsim)
+#     FFvsim=np.mean(FFvsim)
+#     tvals.append(Tsim)
+#     FFvs.append(FFvsim)
+#     FFns.append(FFnsim)
+# =============================================================================
+
+# =============================================================================
+# plt.subplot(3,1,1)
+# plt.plot(fslist, tmeanadapt(fslist, c, pr, k, M, tauv, vth), label='<T> theoretical')
+# plt.plot(fslist, tvals, label='<T> simulations')
+# plt.legend()
+# plt.subplot(3,1,2)
+# plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFv theoretical')
+# plt.plot(fslist, FFvs, label='FFv simulations')
+# plt.xlabel('input frequency, (Hz)')
+# plt.legend()
+# plt.subplot(3,1,3)
+# plt.plot(fslist, FFnadapt(fslist, c, pr, k, M, tauv, vth), label='FFn theoretical')
+# plt.plot(fslist, FFns, label='FFn simulations')
+# plt.xlabel('input frequency')
+# plt.legend()
+# plt.show()
+# =============================================================================
 
 # =============================================================================
 # # Calculate test
@@ -170,24 +172,24 @@ plt.show()
 # FFvsim=np.mean(FFvsim)
 # =============================================================================
 
-# =============================================================================
-# res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
-# Tsim=res[6]
-# FFnsim=res[7]
-# FFvsim=res[8]
-# fig, ax = plt.subplots(2,1)
-# ax[0].plot(res[9], res[10], label='v')
-# ax[0].plot(res[9], res[12], label='vth')
-# ax[0].plot(res[5], res[13], 'ro')
-# ax[1].plot(res[9], res[11])
-# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
-# ax[0].set_xticks([])
-# ax[0].set_ylabel('membrane potential')
-# ax[1].set_ylabel('vesicles')
-# ax[0].legend()
-# plt.show()
-# =============================================================================
+res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+Tsim=res[6]
+FFnsim=res[7]
+FFvsim=res[8]
+fig, ax = plt.subplots(2,1)
+ax[0].plot(res[9], res[10], label='v membrane')
+ax[0].plot(res[9], res[12], label='vth(t) threshold')
+ax[0].plot(res[5], res[13], 'ro')
+ax[1].plot(res[9], res[11])
+ax[0].set_xticks([])
+ax[0].set_ylabel('membrane potential')
+ax[1].set_ylabel('# occupied docking sites')
+ax[0].plot(res[9], vth0*np.ones(len(res[9])), label='vth initial')
+ax[0].plot(res[9], vthb*np.ones(len(res[9])), label='vth steady state')
+ax[0].legend(loc='lower right', framealpha=1)
+ax[1].set_xlabel('time')
 
+plt.show()
 
 # =============================================================================
 # Teq = tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
