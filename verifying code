@@ -1,0 +1,102 @@
+import numpy as np
+import matplotlib.pyplot as plt
+def run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax):
+    vhist=[]
+    thist=[]
+    bhist=[]
+    AP_times = []
+    tcurr = 0
+    v = 0
+    n = 0
+    timer = delta_t
+    while tcurr < tmax:
+        t0=np.random.exponential(1/f)
+        t1=np.random.exponential(1/(k*(M-n)+1e-10))
+        t2=timer
+        if t0<t1 and t0<t2:
+            b=np.random.binomial(n, pr) # Number released
+            n-=b
+            v+=c*b
+            tmin=t0
+            timer -= tmin
+            bhist.append(b)
+        elif t1<t0 and t1<t2:
+            if n<M:
+                n+=1      
+            tmin=t1
+            timer-=tmin
+        else:
+            tmin=t2
+            vhist.append(v)
+            thist.append(tcurr)
+            timer = delta_t
+        tcurr += tmin
+        v = v*np.exp(-tmin/tauv)
+        if v >= vth:
+            v = 0
+            AP_times.append(tcurr)
+    vhist = np.array(vhist) # data array
+    AP_times = np.array(AP_times)
+    inter_AP_times = np.diff(AP_times)
+    if len(inter_AP_times) < 2:
+        mean_inter_AP_time = np.nan
+        CVT2 = np.nan
+    else:
+        mean_inter_AP_time = np.mean(inter_AP_times)
+        CVT2 = np.var(inter_AP_times) / mean_inter_AP_time**2
+    return {'vhist': vhist,
+            'thist':np.array(thist),
+            'AP_times':np.array(AP_times),
+            'inter_AP_times':np.array(inter_AP_times),
+            'mean_T':mean_inter_AP_time, 
+            'CVT2':CVT2,
+            'bhist':bhist}
+
+def bval(i, pr, M , k, f, n0):
+    # i means the ith AP, which is i/f seconds in
+    # i >= 1
+    def Q(n,i, pr):
+        return np.prod(pr[n-1:i])
+    A=M*(1-np.exp(-k/f))
+    B=np.exp(-k/f)
+    x = np.sum([B**(j)*Q(i-j,i, pr) for j in range(1, i)])
+    return pr[i-1]*(A*(x+1)+Q(1,i-1, pr)*B**(i-1)*n0)
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+
+f=100
+M = 100
+pr = 0.2
+c = 0.001
+k = 10
+tauv = 5
+vth = 0.2
+
+tmax = 200
+delta_t = 0.01
+
+res = run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)
+it=10
+ti=res['thist'][it-1]
+# =============================================================================
+# print(np.exp(ti/tauv), (f/(f-1/tauv))**it)
+# =============================================================================
+
+def bifun(i, k, f, M, pr):
+    return (k*M*(1 - ((f*(1 - pr))/(f + k))**i)*pr)/(k + f*pr)
+b1=pr*k*M/(f+k)
+
+ib=1
+bsimmean=[]
+for i in range(100):
+    print(i)
+    bisim=run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)['bhist'][ib-1]
+    bsimmean.append(bisim)
+    
+print(np.mean(bsimmean), b1)
+
+print(bifun(1, k, f, pr))
