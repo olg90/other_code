@@ -77,11 +77,13 @@ tauv = 5
 vth = 0.2
 
 tmax = 200
-delta_t = 0.01
+delta_t = 0.001
 
-res = run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)
-it=10
-ti=res['thist'][it-1]
+# =============================================================================
+# res = run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)
+# it=10
+# ti=res['thist'][it-1]
+# =============================================================================
 # =============================================================================
 # print(np.exp(ti/tauv), (f/(f-1/tauv))**it)
 # =============================================================================
@@ -89,12 +91,18 @@ ti=res['thist'][it-1]
 def bifun(i, k, f, M, pr):
     return (k*M*(1 - ((f*(1 - pr))/(f + k))**i)*pr)/(k + f*pr)
 b1=pr*k*M/(f+k)
-
-i=1
-bsimmean=[]
-for j in range(200):
-    print(j)
-    bisim=run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)['bhist'][i-1]
-    bsimmean.append(bisim)
+u=[]
+for i in range(1,100):
+    bsimmean=[]
+    for j in range(20):
+        print(i,j)
+        bisim=run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)['bhist'][i-1]
+        bsimmean.append(bisim)
+    u.append(bsimmean)
     
-print(np.mean(bsimmean), bifun(i, k, f, M, pr))
+uu=np.array(u)
+plt.plot(np.mean(uu,1), label='simulations')
+plt.plot(bifun(np.arange(1,100), k, f, M, pr), label='theoretical')
+plt.ylabel('number of vesicles released')
+plt.xlabel('action potential #')
+plt.legend()
