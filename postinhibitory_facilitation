@@ -96,7 +96,7 @@ pr=0.2 #
 M=100
 c=0.001
 tauv=0.1
-taux=0.1
+taux=0.01
 cx=10
 
 k=10
@@ -112,7 +112,6 @@ vi=0.01
 
 delta_t = 0.001
 tmax = 1 # <-------------- TMAX
-
 
 res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
 
