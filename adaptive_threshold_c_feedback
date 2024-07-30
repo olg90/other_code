@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
 from numpy import exp
 
-def simulate(n, v, z, f, pr, M, k, c, cz, c1, cmax, gammaz, tauv, vth, tmax, delta_t):
+def simulate(n, v, z, f, pr, M, k, cfun, cz, c1, cmax, gammaz, tauv, vth, tmax, delta_t):
 
     nlist=[]
     vlist=[]
@@ -31,7 +31,7 @@ def simulate(n, v, z, f, pr, M, k, c, cz, c1, cmax, gammaz, tauv, vth, tmax, del
         if t0 < t1 and t0 < t2 and t0<t3: # AP occurrs
             b = binomial(n, pr)
             n-=b
-            v+=c(z, cmax, c1)*b
+            v+=cfun(z, cmax, c1)*b
             z+=cz*b
             prelist.append(tcurr)
             tmin = t0
@@ -74,6 +74,24 @@ def simulate(n, v, z, f, pr, M, k, c, cz, c1, cmax, gammaz, tauv, vth, tmax, del
 
 def c(z,cmax, c1):
     return cmax/(1+c1*z)
+
+# =============================================================================
+# def tmeanc(f,c,pr,k,M,tauv,vth):
+#     return ((gammaz*k + f*gammaz*pr + c1*cz*f*k*M*pr)*vth)/(cmax*f*gammaz*k*M*pr)
+# =============================================================================
+
+def tmeanc(f,c,pr,k,M,tauv,vth, gammaz, Szc, czmean):
+    return tauv*np.log((czmean*f*k*pr*(-(M*(gammaz + k + f*pr)*(2*k - f*(-2 + pr)*pr)) - \
+            gammaz*(f*pr*(2 + (-2 + M)*pr) + 2*k*(1 + (-1 + M)*pr))*Szc)*tauv)/\
+             (czmean*f*k*pr*(-(M*(gammaz + k + f*pr)*(2*k - f*(-2 + \
+            pr)*pr)) - gammaz*(f*pr*(2 + (-2 + M)*pr) + 2*k*(1 + (-1 + \
+            M)*pr))*Szc)*tauv + \
+              (k + f*pr)*(gammaz + k + f*pr)*(2*k - f*(-2 + pr)*pr)*vth))
+
+def cfun(z, cmax, c1):
+    return cmax/(1+c1*z)
+def Dcfun(z, cmax, c1):
+    return -((c1 *cmax)/(1 + c1* z)**2)  
     
 f=10
 pr=0.2 #
@@ -96,12 +114,16 @@ z=0
 delta_t = 0.001
 tmax = 500 # <-------------- TMAX
 
+zss=(cz *f* k* M *pr)/(gammaz* k + f* gammaz* pr)
+czmean = cfun(zss, cmax, c1)       
+Szc=zss/czmean*Dcfun(zss, cmax, c1)            
+
 # =============================================================================
 # Tsim=[]
 # nsim=100
 # for i in range(nsim):
 #     print(i, nsim)
-#     T=simulate(n, v, z, f, pr, M, k, c, cz, c1, cmax, 
+#     T=simulate(n, v, z, f, pr, M, k, cfun, cz, c1, cmax, 
 #                gammaz, tauv, vth, tmax, delta_t)[6]
 #     Tsim.append(T)
 # Tmean=np.mean(Tsim)
@@ -127,19 +149,12 @@ tmax = 500 # <-------------- TMAX
 # plt.show()
 # =============================================================================
 
-# =============================================================================
-# def tmeanc(f,c,pr,k,M,tauv,vth):
-#     return ((gammaz*k + f*gammaz*pr + c1*cz*f*k*M*pr)*vth)/(cmax*f*gammaz*k*M*pr)
-# =============================================================================
 
-def tmeanc(f,c,pr,k,M,tauv,vth, gammaz, Szc, czmean):
-    return tauv*np.log((czmean*f*k*pr*(-(M*(gammaz + k + f*pr)*(2*k - f*(-2 + pr)*pr)) - \
-            gammaz*(f*pr*(2 + (-2 + M)*pr) + 2*k*(1 + (-1 + M)*pr))*Szc)*tauv)/\
-             (czmean*f*k*pr*(-(M*(gammaz + k + f*pr)*(2*k - f*(-2 + \
-            pr)*pr)) - gammaz*(f*pr*(2 + (-2 + M)*pr) + 2*k*(1 + (-1 + \
-            M)*pr))*Szc)*tauv + \
-              (k + f*pr)*(gammaz + k + f*pr)*(2*k - f*(-2 + pr)*pr)*vth))
+
+                                         
     
+
+
 tvals=[]
 FFvs=[]
 nfs=10
@@ -153,7 +168,7 @@ for j, f in enumerate(fslist):
     for i in range(nsim):
         print(j, nfs, i, nsim)
         _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, z, f, pr,
-                M, k, c, cz, c1, cmax, gammaz, tauv, vth, tmax, delta_t)
+                M, k, cfun, cz, c1, cmax, gammaz, tauv, vth, tmax, delta_t)
         Tsim.append(T)
         FFnsim.append(FFn)
         FFvsim.append(FFv)
@@ -167,7 +182,7 @@ for j, f in enumerate(fslist):
 # plt.subplot(2,1,1)
 # =============================================================================
 plt.plot(fslist, tvals, label='Tsim')
-plt.plot(fslist, tmeanc(fslist, c, pr, k, M, tauv, vth), label='Teq')
+plt.plot(fslist, tmeanc(fslist, c, pr, k, M, tauv, vth, gammaz, Szc, czmean), label='Teq')
 plt.legend()
 # =============================================================================
 # plt.subplot(2,1,2)
