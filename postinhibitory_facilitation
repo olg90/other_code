@@ -66,14 +66,14 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
         v=v*exp(-tmin/tauv)
         x=x*exp(-tmin/taux)
         
-
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
     FFn=np.var(nlist)/np.mean(nlist)
     FFv=np.var(Tlist)/Tmean
     FFx=np.var(xlist)/np.mean(xlist)
+    CVT = np.sqrt(np.var(Tlist))/Tmean
 
-    return tlist, nlist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist
+    return tlist, nlist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT
 
 def tmean(fe, fi, kL, pr, taux, vth, c, M, x0, x1, cx):
     return  tauv*np.log((tauv*((kL + fe*pr)*taux*(-(fi*vi) + cx*fe*x0) + c*fe*pr*(kL*M*taux - x0 + x1)))/(-((kL + fe*pr)*taux*(fi*tauv*vi + vth - cx*fe*tauv*x0)) + c*fe*pr*tauv*(kL*M*taux - x0 + x1)))
@@ -90,14 +90,14 @@ def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
                2*kL*(kd - ku)*ku*(kd + ku)*(kd + kL + ku)*M*tauv**2))/((kd + kL + ku)*(1 + kL*tauv)*(1 + (kd + ku)*tauv))))/(4.*ku*(kd + ku))
 
 fe=10
-fi=10
+fi=20
 
 pr=0.2 #
 M=100
 c=0.001
 tauv=0.1
 taux=0.01
-cx=10
+cx=1
 
 k=10
 x1=1
@@ -111,128 +111,54 @@ vth=0.2
 vi=0.01
 
 delta_t = 0.001
-tmax = 1 # <-------------- TMAX
+tmax = 200 # <-------------- TMAX
 
-res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+# =============================================================================
+# res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+# =============================================================================
 
-plt.subplot(2,1,1)
-plt.plot(res[0], res[2], label='v')
-plt.plot(res[0], vth*np.ones(len(res[0])), label='vth')
-for z in res[4]: # excitatory
-    plt.axvline(x=z, color='red', alpha = 0.5)
-for z in res[10]: # inhibitory
-    plt.axvline(x=z, color='blue', alpha = 0.5)
-for z in res[5]: # inhibitory
-    plt.axvline(x=z, color='green', alpha = 0.5)
-    
-plt.subplot(2,1,2)
-plt.plot(res[0], res[1], label='n')
-plt.plot(res[0], res[3], label='x')
+felist=np.linspace(0.01, 100, 20)
+filist=np.linspace(0.01, 100, 20)
+CVplot=np.zeros(len(felist))
+for i,fe in enumerate(felist):
+    res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+    CVplot[i]=res[12]
+plt.plot(CVplot, label='fi={}'.format(fi))
+plt.xlabel('excitatory frequency')
+plt.ylabel('Noise CV^2')
 plt.legend()
-
 plt.show()
 
-
 # =============================================================================
-# tvals=[]
-# FFvs=[]
-# FFns=[]
-# FFLs=[]
-# nfs=10
-# fslist=np.linspace(1,100,nfs)
-# for j, f in enumerate(fslist):
-#     # Calculate test
-#     Tsim=[]
-#     FFnsim=[]
-#     FFvsim=[]
-#     FFLsim=[]
-#     navgs=1
-#     for i in range(navgs):
-#         print(j, nfs, i, navgs)
-#         _, _, _, _, _, _, T, FFn, FFv, FFL = simulate(n, v, x, fe, fi, pr, M, k, 
-#                                     x0, x1, vi, c, vth, tauv, tmax, delta_t)
-#         Tsim.append(T)
-#         FFnsim.append(FFn)
-#         FFvsim.append(FFv)
-#         FFLsim.append(FFL)
-#     tvals.append(np.mean(Tsim))
-#     FFvs.append(np.mean(FFvsim))    
-#     FFns.append(np.mean(FFnsim))
-#     FFLs.append(np.mean(FFLsim))
-# plt.subplot(4,1,1)
-# plt.plot(fslist, tvals, label='Tsim')
-# plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, tauv, vth), label='Teq')
+# felist=np.linspace(0.01, 100, 20)
+# filist=np.linspace(0.01, 100, 20)
+# 
+# CVplot=np.zeros((len(felist), len(filist)))
+# for i,fe in enumerate(felist):
+#     for j,fi in enumerate(filist):
+#         res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+#         CVplot[i,j]=res[12]
+# plt.imshow(CVplot, origin='lower', cmap='twilight')
+# plt.xlabel('excitatory frequency')
+# plt.ylabel('inhibitory frequency')
+# plt.colorbar()
+# 
+# =============================================================================
+# =============================================================================
+# plt.subplot(2,1,1)
+# plt.plot(res[0], res[2], label='v')
+# plt.plot(res[0], vth*np.ones(len(res[0])), label='vth')
+# for z in res[4]: # excitatory
+#     plt.axvline(x=z, color='red', alpha = 0.5)
+# for z in res[10]: # inhibitory
+#     plt.axvline(x=z, color='blue', alpha = 0.5)
+# for z in res[5]: # inhibitory
+#     plt.axvline(x=z, color='green', alpha = 0.5)
+#
+# plt.subplot(2,1,2)
+# plt.plot(res[0], res[1], label='n')
+# plt.plot(res[0], res[3], label='x')
 # plt.legend()
-# =============================================================================
-# =============================================================================
-# plt.subplot(4,1,2)
-# plt.plot(fslist, FF('v', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqv')
-# plt.plot(fslist, FFvs, label='FFvsim')
-# plt.legend()
+#
 # plt.show()
-# plt.subplot(4,1,3)
-# plt.plot(fslist, FF('n', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqn')
-# plt.plot(fslist, FFns, label='FFnsim')
-# plt.legend()
-# plt.subplot(4,1,4)
-# plt.plot(fslist, FF('L', fslist, c, M, pr, kd, ku, kL, tauv, vth), label='FFveqL')
-# plt.plot(fslist, FFLs, label='FFLsim')
-# plt.legend()
-# plt.xlabel('input frequency')
-# =============================================================================
-
-# =============================================================================
-# # Calculate test
-# Tsim=[]
-# FFnsim=[]
-# FFvsim=[]
-# nsim=100
-# for i in range(nsim):
-#     print(i, nsim)
-#     _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
-#                         vth, tauv, tauvth, vthb, tmax, delta_t)
-#     Tsim.append(T)
-#     FFnsim.append(FFn)
-#     FFvsim.append(FFv)
-# Tsim=np.mean(Tsim)
-# FFnsim=np.mean(FFnsim)
-# FFvsim=np.mean(FFvsim)
-# =============================================================================
-
-# =============================================================================
-# res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, tmax, delta_t)
-# Tsim=res[6]
-# FFnsim=res[7]
-# FFvsim=res[8]
-# fig, ax = plt.subplots(2,1)
-# ax[0].plot(res[0], res[2], label='v')
-# ax[0].plot(res[0], res[3], label='vth')
-# ax[1].plot(res[0], res[1])
-# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
-# for z in res[4]:
-#     ax[0].axvline(x=z, color='k', alpha = 0.1)
-# for z in res[5]:
-#     ax[0].axvline(x=z, color='red', alpha = 0.5)
-# ax[0].set_xticks([])
-# ax[0].set_ylabel('membrane potential')
-# ax[1].set_ylabel('vesicles')
-# ax[0].legend()
-# plt.show()
-# =============================================================================
-
-# =============================================================================
-# Teq = tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
-# FFneq=((k + f*pr)*(-((k**2*M**2)/(k + f*pr)**2) + (k*M*(2*k*M - f*(-2 + pr)*pr))/((k + f*pr)*(2*k - f*(-2 + pr)*pr))))/(k*M)
-# FFveq=(c*(2*k**3*(1 + (-1 + M)*pr)*tauv - f**2*(-2 + pr)*pr**2*(1 \
-#       + f*pr*tauv) + k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
-#       f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
-#       f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
-# check=(c *f *k *M *pr* tauv)/(k + f *pr) - vthb/vth0>0
-# print('check', check)
-# print('T eq sim')
-# print(Teq, Tsim)
-# print('FFn eq sim')
-# print(FFneq, FFnsim)
-# print('FFv eq sim')
-# print(FFveq, FFvsim)
 # =============================================================================
