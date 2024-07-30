@@ -15,7 +15,7 @@ def simulate(n, v, z, f, pr, M, k, c, cz, c1, cmax, gammaz, tauv, vth, tmax, del
 
     tcurr=0
     
-    ratio = 0
+    ratio = 0.3
 
     timer = delta_t
     
@@ -78,13 +78,13 @@ def c(z,cmax, c1):
 f=10
 pr=0.2 #
 M=100
-k=10 #
+k=5 #
 
 cmax=0.005
 c1=0.01
 
 cz=10
-gammaz=100
+gammaz=50
 
 tauv=1
 vth=0.2
@@ -94,7 +94,7 @@ v=0
 z=0
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX
+tmax = 500 # <-------------- TMAX
 
 # =============================================================================
 # Tsim=[]
@@ -127,19 +127,29 @@ tmax = 200 # <-------------- TMAX
 # plt.show()
 # =============================================================================
 
-def tmeanc(f,c,pr,k,M,tauv,vth):
-    return ((gammaz*k + f*gammaz*pr + c1*cz*f*k*M*pr)*vth)/(cmax*f*gammaz*k*M*pr)
+# =============================================================================
+# def tmeanc(f,c,pr,k,M,tauv,vth):
+#     return ((gammaz*k + f*gammaz*pr + c1*cz*f*k*M*pr)*vth)/(cmax*f*gammaz*k*M*pr)
+# =============================================================================
+
+def tmeanc(f,c,pr,k,M,tauv,vth, gammaz, Szc, czmean):
+    return tauv*np.log((czmean*f*k*pr*(-(M*(gammaz + k + f*pr)*(2*k - f*(-2 + pr)*pr)) - \
+            gammaz*(f*pr*(2 + (-2 + M)*pr) + 2*k*(1 + (-1 + M)*pr))*Szc)*tauv)/\
+             (czmean*f*k*pr*(-(M*(gammaz + k + f*pr)*(2*k - f*(-2 + \
+            pr)*pr)) - gammaz*(f*pr*(2 + (-2 + M)*pr) + 2*k*(1 + (-1 + \
+            M)*pr))*Szc)*tauv + \
+              (k + f*pr)*(gammaz + k + f*pr)*(2*k - f*(-2 + pr)*pr)*vth))
     
 tvals=[]
 FFvs=[]
-nfs=20
+nfs=10
 fslist=np.linspace(1,100,nfs)
 for j, f in enumerate(fslist):
     # Calculate test
     Tsim=[]
     FFnsim=[]
     FFvsim=[]
-    nsim=20
+    nsim=1
     for i in range(nsim):
         print(j, nfs, i, nsim)
         _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, z, f, pr,
