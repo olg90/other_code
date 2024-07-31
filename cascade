@@ -32,7 +32,7 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
         elif ((targmin > 0) and (targmin < len(tlist)-1)):
             ns[targmin-1]+=1
             timer-=tmin
-            
+
         else:
             tmin=t2
             for i in range(nnum):
@@ -41,17 +41,17 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
                 thists[i].append(tcurr)
             timer = delta_t
         tcurr += tmin
+        print(vs)
         for i in range(len(vs)):
             vs[i] = vs[i]*np.exp(-tmin/tauv)
+        for i in range(len(vs)):
             if vs[i] >= vth:
                 vs[i] = 0
                 AP_times[i].append(tcurr)
-                
-# =============================================================================
-#                 b=np.random.binomial(ns[0], pr) # Number released
-#                 ns[0]-=b
-#                 vs[0]+=c*b
-# =============================================================================
+                if i != nnum-1:
+                    b=np.random.binomial(ns[i+1], pr) # Number released
+                    ns[i+1]-=b
+                    vs[i+1]+=c*b
                 
     return thists, nhists, vhists, AP_times
                 
@@ -88,7 +88,7 @@ k = 10
 tauv = 5
 vth = 0.2
 
-nnum=2
+nnum=3
 tmax = 10
 
 delta_t = 0.01
