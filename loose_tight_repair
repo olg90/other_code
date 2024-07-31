@@ -101,9 +101,13 @@ def simulate(n, v, L,R, f, pr, M, kL, kd, ku, kr, kR, c, vth, tauv, tmax, delta_
     CVL2=np.var(Llist)/np.mean(Llist)**2
     CVR2=np.var(Rlist)/np.mean(Rlist)**2
     CVT2=np.var(Tlist)/Tmean**2
-
+    #       0        1     2     3      4       5        6         7      8
     return tlist, nlist, vlist, Llist, Rlist, prelist, postlist, Tmean, CVn2,\
-        CVv2, CVL2, CVR2, CVT2, FFL, tplot, nplot, Lplot, vplot, Rplot
+        CVv2, CVL2, CVR2, CVT2, tplot, nplot, Lplot, vplot, Rplot
+        
+        
+def to_dict(*x):
+    return x
 
 def tmean(f,c,M,pr,kd,ku, kr, tauv,vth):
     return tauv*np.log(1/(1 - ((kd*(kL + f*pr) + (kL + kr)*(ku + f*pr))*vth)/(c*f*kd*kL*M*pr*tauv)))
@@ -123,9 +127,9 @@ M=100
 c=0.01
 tauv=0.1
 
-kL=20 # Mean rate of loosely docking
+kL=100 # Mean rate of loosely docking
 kd=20 # Mean rate of docking
-ku=10 # Mean rate of undocking
+ku=40 # Mean rate of undocking
 kr=10 # Mean unloosening
 kR=10 # Mean repair
 
@@ -136,7 +140,7 @@ R=0
 vth=0.2
 
 delta_t = 0.001 
-tmax = 1 # <-------------- TMAX
+tmax = 500 # <-------------- TMAX
 
 # =============================================================================
 # res=simulate(n, v, L, R, f, pr, M, kL, kd, ku, kr, kR, c, vth, tauv, tmax, delta_t)
@@ -159,34 +163,51 @@ tmax = 1 # <-------------- TMAX
 
 ## Simulate T mean plot with averages
 tvals=[]
-FFvs=[]
-FFns=[]
-FFLs=[]
+CVv2s=[]
+CVn2s=[]
+CVL2s=[]
+CVR2s=[]
+CVT2s=[]
+
 nfs=10
 fslist=np.linspace(1,100,nfs)
 for j, f in enumerate(fslist):
     # Calculate test
     Tsim=[]
-    FFnsim=[]
-    FFvsim=[]
-    FFLsim=[]
+    CVn2sim=[]
+    CVv2sim=[]
+    CVL2sim=[]
+    CVR2sim=[]
+    CVT2sim=[]
     navgs=1
     for i in range(navgs):
         print(j, nfs, i, navgs)
-        _, _, _, _, _, _, T, FFn, FFv, FFL = simulate(n, v, L, R, f, pr, M, 
-                                                      kL, kd, ku, kr, kR, c, 
+        sim = simulate(n, v, L, R, f, pr, M, kL, kd, ku, kr, kR, c, 
                                                       vth, tauv, tmax, delta_t)
-        Tsim.append(T)
-        FFnsim.append(FFn)
-        FFvsim.append(FFv)
-        FFLsim.append(FFL)
+        Tsim.append(sim[7])
+        CVn2sim.append(sim[8])
+        CVv2sim.append(sim[9])
+        CVL2sim.append(sim[10])
+        CVR2sim.append(sim[11])
+        CVT2sim.append(sim[12])
     tvals.append(np.mean(Tsim))
-    FFvs.append(np.mean(FFvsim))    
-    FFns.append(np.mean(FFnsim))
-    FFLs.append(np.mean(FFLsim))
+    CVv2s.append(np.mean(CVv2sim))    
+    CVn2s.append(np.mean(CVn2sim))
+    CVL2s.append(np.mean(CVL2sim))
+    CVR2s.append(np.mean(CVR2sim))
+    CVT2s.append(np.mean(CVT2sim))
+    
+plt.subplot(2,1,1)
 plt.plot(fslist, tvals, label='<T> simulations')
-plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, kd, tauv, vth), label='<T> theoretical')
 plt.legend()
+plt.subplot(2,1,2)
+plt.plot(fslist, CVT2s, label='CVT2 simulations')
+plt.legend()
+
+# =============================================================================
+# plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, kd, tauv, vth), label='<T> theoretical')
+# =============================================================================
+
 
 # =============================================================================
 # plt.subplot(4,1,2)
