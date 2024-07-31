@@ -88,28 +88,29 @@ k = 10
 tauv = 0.5
 vth = 0.2
 
-nnum=20
+nnum=30
 tmax = 100
 
 delta_t = 0.001
 
+res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
+plt.plot(res[4]/res[4][0], label='<T>')
+plt.plot(res[5]/res[5][0], label='CVT2')
+plt.xticks(range(0,nnum), labels=range(1, nnum+1))
+plt.legend(loc='upper right')
+
 # =============================================================================
 # res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-# plt.plot(res[4]/res[4][0], label='<T>')
-# plt.plot(res[5]/res[5][0], label='CVT2')
-# plt.xticks(range(0,nnum), labels=range(1, nnum+1))
-# plt.legend(loc='upper right')
+# fig, ax = plt.subplots(nnum,1)
+# for i in range(nnum):
+#     ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
+#     ax[i].plot(res[0][i], res[2][i], label='T={}, CVT={}'.format(np.around(res[4][i],3), np.around(res[5][i],3)))
+#     ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
+#     if i != nnum-1:
+#         ax[i].set_xticks([])
+#     if i == nnum-1:
+#         ax[i].set_xlabel('time (sec)')
+#     ax[i].legend(loc='upper right')
+# plt.show()
+# 
 # =============================================================================
-
-res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-fig, ax = plt.subplots(nnum,1)
-for i in range(nnum):
-    ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
-    ax[i].plot(res[0][i], res[2][i], label='T={}, CVT={}'.format(np.around(res[4][i],3), np.around(res[5][i],3)))
-    ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
-    if i != nnum-1:
-        ax[i].set_xticks([])
-    if i == nnum-1:
-        ax[i].set_xlabel('time (sec)')
-    ax[i].legend(loc='upper right')
-plt.show()
