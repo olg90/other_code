@@ -20,7 +20,7 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
     bnum=0
     bnumhist=[]
 
-    tcurr=0
+    tcurr = 0
     ratio = 0
     timer = delta_t
     while tcurr < tmax:
@@ -44,7 +44,7 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
             tmin = t1
             timer-=tmin
             
-        elif t2<t0 and t2<t1 and t2<t3: # add a docked vesicle
+        elif t2<t0 and t2<t1 and t2<t3: # inhibitory AP
             x=x0
             v=v-vi
             tmin = t2
@@ -75,20 +75,18 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
         
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
-# =============================================================================
-#     FFn=np.var(nlist)/np.mean(nlist)
-#     FFv=np.var(Tlist)/Tmean
-#     FFx=np.var(xlist)/np.mean(xlist)
-# =============================================================================
-    CVT2 = np.sqrt(np.var(Tlist))/Tmean**2
+    FFn=np.var(nlist)/np.mean(nlist)
+    FFv=np.var(Tlist)/Tmean
+    FFx=np.var(xlist)/np.mean(xlist)
+    CVT2 = np.var(Tlist)/Tmean**2
     
+    return tlist, nlist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT2, bnumhist
 # =============================================================================
-#     return tlist, nlist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT, bnumhist
+#     return CVT2
 # =============================================================================
-    return CVT2
     
 def tmean(fe, fi, kL, pr, taux, vth, c, M, x0, x1, cx):
-    return  tauv*np.log((tauv*((kL + fe*pr)*taux*(-(fi*vi) + cx*fe*x0) + c*fe*pr*(kL*M*taux - x0 + x1)))/(-((kL + fe*pr)*taux*(fi*tauv*vi + vth - cx*fe*tauv*x0)) + c*fe*pr*tauv*(kL*M*taux - x0 + x1)))
+    return tauv*np.log((tauv*((kL + fe*pr)*taux*(-(fi*vi) + cx*fe*x0) + c*fe*pr*(kL*M*taux - x0 + x1)))/(-((kL + fe*pr)*taux*(fi*tauv*vi + vth - cx*fe*tauv*x0)) + c*fe*pr*tauv*(kL*M*taux - x0 + x1)))
 
 def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
     if name=='n':
@@ -101,7 +99,7 @@ def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
                2*kL*ku**2*M - 2*ku**3*M + (kd + kL + ku)*(kL*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)*tauv + \
                2*kL*(kd - ku)*ku*(kd + ku)*(kd + kL + ku)*M*tauv**2))/((kd + kL + ku)*(1 + kL*tauv)*(1 + (kd + ku)*tauv))))/(4.*ku*(kd + ku))
 
-fe=10
+fe=100
 fi=20
 
 pr=0.2 #
@@ -126,64 +124,63 @@ delta_t = 0.001
 tmax = 200 # <-------------- TMAX
 
 # =============================================================================
+# tlist = []
+# felist=np.linspace(0,100,10)
+# for i in range(len(felist)):
+#     print(i)
+#     res=simulate(n, v, x, felist[i], fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+#     tlist.append(res[6])
+# plt.plot(felist, tlist)
+# plt.plot(felist, tmean(felist, fi, k, pr, taux, vth, c, M, x0, x1, cx))
+# =============================================================================
+# =============================================================================
 # res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
-# 
 # plt.plot(res[0], res[2])
-# 
 # for z in res[5]:
 #     plt.axvline(x=z, color='r')
-# 
 # print(np.mean(res[13]))
-# 
 # =============================================================================
-
 # =============================================================================
 # felist=np.linspace(0.01, 100, 20)
 # CVplot=np.zeros(len(felist))
 # for i,fe in enumerate(felist):
 #     res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
-#     CVplot[i]=res
+#     CVplot[i]=res[12]
 # plt.plot(CVplot, label='fi={}'.format(fi))
 # plt.xlabel('excitatory frequency')
 # plt.ylabel('Noise CV^2')
 # plt.legend()
 # plt.show()
+# =============================================================================
+# =============================================================================
+# # Postinhibitory facilitation reduces noise
+# felist=np.linspace(0.01, 100, 20)
+# filist=np.linspace(0.01, 100, 20)
+# CVplot=np.zeros((len(felist), len(filist)))
+# CVplot0=np.zeros((len(felist), len(filist)))
+# for i,fe in enumerate(felist):
+#     print(i)
+#     for j,fi in enumerate(filist):
+#         res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, 
+#                      c, cx, vth, tauv, taux, tmax, delta_t)
+#         res0=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi,
+#                       c, 0, vth, tauv, taux, tmax, delta_t)
+#         CVplot[i,j]=res
+#         CVplot0[i,j]=res0
+# plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
+#            vmin=0, vmax=2, extent=[0,felist[-1],0,filist[-1]])
+# plt.title(r'$CV_T^2=Var(T)/\langle T \rangle^2$ of FPT')
+# plt.xlabel('excitatory frequency')
+# plt.ylabel('inhibitory frequency')
+# plt.colorbar()
 # 
 # =============================================================================
-
-
-# Postinhibitory facilitation reduces noise
-felist=np.linspace(0.01, 100, 20)
-filist=np.linspace(0.01, 100, 20)
-
-CVplot=np.zeros((len(felist), len(filist)))
-CVplot0=np.zeros((len(felist), len(filist)))
-for i,fe in enumerate(felist):
-    print(i)
-    for j,fi in enumerate(filist):
-        res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, 
-                     c, cx, vth, tauv, taux, tmax, delta_t)
-        res0=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi,
-                      c, 0, vth, tauv, taux, tmax, delta_t)
-        CVplot[i,j]=res
-        CVplot0[i,j]=res0
-        
-
-plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
-           vmin=0, vmax=2, extent=[0,felist[-1],0,filist[-1]])
-plt.xlabel('excitatory frequency')
-plt.ylabel('inhibitory frequency')
-plt.colorbar()
-
-
-
 # =============================================================================
 # plt.contourf(CVplot.T, levels=100, origin='lower', cmap='seismic')
 # plt.xlabel('excitatory frequency')
 # plt.ylabel('inhibitory frequency')
 # plt.colorbar()
 # =============================================================================
-
 # =============================================================================
 # plt.subplot(2,1,1)
 # plt.plot(res[0], res[2], label='v')
