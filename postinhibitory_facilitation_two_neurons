@@ -1,0 +1,201 @@
+import numpy as np
+from matplotlib.pyplot import plot as pt
+import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial, gamma
+from numpy import exp
+
+def simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, cx, vth, tauv, taux, tmax, delta_t):
+
+    nlist=[]
+    nilist=[]
+    xlist=[]
+    vlist=[]
+    vthlist=[]
+    tlist=[]
+    preliste=[]
+    prelisti=[]
+    postlist=[]
+    bhist=[]
+    e=1e-9
+
+    tcurr=0
+    ratio = 0.3
+    timer = delta_t
+    while tcurr < tmax:
+        t0=exponential(1/fe) # action potential
+        t1=exponential(1/(k*(M-n) + e)) # site gets occupied
+        t2=exponential(1/fi)
+        t3=exponential(1/(ki*(Mi-ni) + e)) # site gets occupied
+        t4 = timer
+
+        if t0 < t1 and t0 < t2 and t0<t3 and t0<t4: # AP occurrs
+            b = binomial(n, pr)
+            n-=b
+            v=v+c*b+cx*x
+            tmin = t0
+            timer-=tmin
+            preliste.append(tcurr+tmin)
+            bhist.append(b)
+                
+        elif t1<t0 and t1<t2 and t1<t3 and t1<t4: # add a docked vesicle
+            n+=1
+            tmin = t1
+            timer-=tmin
+            
+        elif t2<t0 and t2<t1 and t2<t3 and t2 < t4: # add a docked vesicle
+            x=x0
+            bi = binomial(ni, pi)
+            ni-=bi
+            v=v-ci*bi
+            tmin = t2
+            timer-=tmin
+            prelisti.append(tcurr+tmin)
+            
+        elif t3<t0 and t3<t1 and t3<t2 and t3<t4: # add a docked vesicle
+            ni+=1
+            tmin = t3
+            timer-=tmin
+
+        else:
+            tmin=t4
+            timer = delta_t
+            if tcurr >= ratio*tmax:
+                nlist.append(n)
+                nilist.append(ni)
+                vlist.append(v)
+                xlist.append(x)
+                vthlist.append(vth)
+                tlist.append(tcurr)
+                
+        tcurr += tmin
+        if v>=vth:
+            v=0
+            postlist.append(tcurr)
+
+        # Update the continuous dynamics
+        v=v*exp(-tmin/tauv)
+        x=x*exp(-tmin/taux)
+        
+    Tlist = np.diff(postlist)
+    Tmean = np.mean(Tlist)
+# =============================================================================
+#     FFn=np.var(nlist)/np.mean(nlist)
+#     FFv=np.var(Tlist)/Tmean
+#     FFx=np.var(xlist)/np.mean(xlist)
+# =============================================================================
+    CVT2 = np.var(Tlist)/Tmean**2
+
+# =============================================================================
+#     return tlist, nlist, nilist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT
+# =============================================================================
+    return CVT2
+
+def tmean(fe, fi, kL, pr, taux, vth, c, M, x0, x1, cx):
+    return  tauv*np.log((tauv*((kL + fe*pr)*taux*(-(fi*vi) + cx*fe*x0) + c*fe*pr*(kL*M*taux - x0 + x1)))/(-((kL + fe*pr)*taux*(fi*tauv*vi + vth - cx*fe*tauv*x0)) + c*fe*pr*tauv*(kL*M*taux - x0 + x1)))
+
+def FF(name, f, c, M, pr, kd, ku, kL, tauv, vth):
+    if name=='n':
+        return ((kd + kL + ku)*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)/(2.*ku*(kd + ku)*(kd + kL + ku))
+    if name=='L':
+        return ((kd + kL + ku)*(kd**2 + ku**2) - 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(-kL + ku))*M)/(2.*kd*(kd + ku)*(kd + kL + ku))
+    if name == 'v':
+        return (c*(2*ku*(kd + ku) + (kd**2 - 2*kd*ku - ku**2)*pr + (2*kd*(kd**2 + (kd + kL)*ku)*M*pr)/(kd + kL + ku) + \
+               (2*f*pr*tauv*(kd**3 + kd**2*kL + kd**2*ku + kd*ku**2 + kL*ku**2 + ku**3 + 2*kd**3*M + 2*kd**2*ku*M + 2*kd*kL*ku*M - 2*kd*ku**2*M -\
+               2*kL*ku**2*M - 2*ku**3*M + (kd + kL + ku)*(kL*(kd**2 + ku**2) + 2*(kd - ku)*(kd**2 + 2*kd*ku + ku*(kL + ku))*M)*tauv + \
+               2*kL*(kd - ku)*ku*(kd + ku)*(kd + kL + ku)*M*tauv**2))/((kd + kL + ku)*(1 + kL*tauv)*(1 + (kd + ku)*tauv))))/(4.*ku*(kd + ku))
+
+fe=10
+fi=20
+
+pr=0.2 #
+pi=0.2
+M=100
+Mi=100
+c=0.001
+ci=0.001
+tauv=0.1
+taux=0.01
+cx=1
+
+k=10
+ki=10
+x1=1
+x0=10
+
+n=0
+ni=0
+v=0
+x=0
+
+vth=0.2
+vi=0.01
+
+delta_t = 0.001
+tmax = 200 # <-------------- TMAX
+
+# =============================================================================
+# res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+# =============================================================================
+
+# =============================================================================
+# felist=np.linspace(0.01, 100, 20)
+# filist=np.linspace(0.01, 100, 20)
+# CVplot=np.zeros(len(felist))
+# for i,fe in enumerate(felist):
+#     res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+#     CVplot[i]=res[12]
+# plt.plot(CVplot, label='fi={}'.format(fi))
+# plt.xlabel('excitatory frequency')
+# plt.ylabel('Noise CV^2')
+# plt.legend()
+# plt.show()
+# =============================================================================
+
+# Postinhibitory facilitation reduces noise
+felist=np.linspace(0.01, 100, 20)
+filist=np.linspace(0.01, 100, 20)
+
+CVplot=np.zeros((len(felist), len(filist)))
+CVplot0=np.zeros((len(felist), len(filist)))
+for i,fe in enumerate(felist):
+    print(i)
+    for j,fi in enumerate(filist):
+        res=simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, cx, vth, tauv, taux, tmax, delta_t)
+        res0=simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, 0, vth, tauv, taux, tmax, delta_t)
+        CVplot[i,j]=res
+        CVplot0[i,j]=res0
+        
+
+plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
+           vmin=0, vmax=2, extent=[0,felist[-1],0,filist[-1]])
+plt.xlabel('excitatory frequency')
+plt.ylabel('inhibitory frequency')
+plt.colorbar()
+
+
+
+# =============================================================================
+# plt.contourf(CVplot.T, levels=100, origin='lower', cmap='seismic')
+# plt.xlabel('excitatory frequency')
+# plt.ylabel('inhibitory frequency')
+# plt.colorbar()
+# =============================================================================
+
+# =============================================================================
+# plt.subplot(2,1,1)
+# plt.plot(res[0], res[2], label='v')
+# plt.plot(res[0], vth*np.ones(len(res[0])), label='vth')
+# for z in res[4]: # excitatory
+#     plt.axvline(x=z, color='red', alpha = 0.5)
+# for z in res[10]: # inhibitory
+#     plt.axvline(x=z, color='blue', alpha = 0.5)
+# for z in res[5]: # inhibitory
+#     plt.axvline(x=z, color='green', alpha = 0.5)
+#
+# plt.subplot(2,1,2)
+# plt.plot(res[0], res[1], label='n')
+# plt.plot(res[0], res[3], label='x')
+# plt.legend()
+#
+# plt.show()
+# =============================================================================
