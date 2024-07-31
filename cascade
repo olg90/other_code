@@ -8,11 +8,13 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
     nhists=[[] for i in range(nnum)]
     thists = [[] for i in range(nnum)]
     
+    ratio=0.3
     tcurr = 0
     vs = np.zeros(nnum)
     ns = np.zeros(nnum)
     timer = delta_t
     while tcurr < tmax:
+        print(tcurr/tmax)
         t0=np.random.exponential(1/f)
         t1s=[np.random.exponential(1/(k*(M-ns[i])+1e-10)) for i in range(nnum)]
         t2=timer
@@ -33,10 +35,11 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 
         else:
             tmin=t2
-            for i in range(nnum):
-                vhists[i].append(vs[i])
-                nhists[i].append(ns[i])
-                thists[i].append(tcurr)
+            if tcurr>ratio*tmax:
+                for i in range(nnum):
+                    vhists[i].append(vs[i])
+                    nhists[i].append(ns[i])
+                    thists[i].append(tcurr)
             timer = delta_t
         tcurr += tmin
         for i in range(len(vs)):
@@ -82,7 +85,7 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 
 f=100
 M = 100
-pr = 0.1
+pr = 0.5
 c = 0.01
 k = 10
 tauv = 0.5
