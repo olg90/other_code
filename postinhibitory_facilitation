@@ -18,7 +18,7 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
     e=1e-9
 
     tcurr=0
-    ratio = 0
+    ratio = 0.3
     timer = delta_t
     while tcurr < tmax:
         t0=exponential(1/fe) # action potential
@@ -111,39 +111,50 @@ vth=0.2
 vi=0.01
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX
+tmax = 200# <-------------- TMAX
 
 # =============================================================================
 # res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
 # =============================================================================
 
-felist=np.linspace(0.01, 100, 20)
-filist=np.linspace(0.01, 100, 20)
-CVplot=np.zeros(len(felist))
-for i,fe in enumerate(felist):
-    res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
-    CVplot[i]=res[12]
-plt.plot(CVplot, label='fi={}'.format(fi))
-plt.xlabel('excitatory frequency')
-plt.ylabel('Noise CV^2')
-plt.legend()
-plt.show()
-
 # =============================================================================
 # felist=np.linspace(0.01, 100, 20)
 # filist=np.linspace(0.01, 100, 20)
-# 
-# CVplot=np.zeros((len(felist), len(filist)))
+# CVplot=np.zeros(len(felist))
 # for i,fe in enumerate(felist):
-#     for j,fi in enumerate(filist):
-#         res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
-#         CVplot[i,j]=res[12]
-# plt.imshow(CVplot, origin='lower', cmap='twilight')
+#     res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+#     CVplot[i]=res[12]
+# plt.plot(CVplot, label='fi={}'.format(fi))
+# plt.xlabel('excitatory frequency')
+# plt.ylabel('Noise CV^2')
+# plt.legend()
+# plt.show()
+# =============================================================================
+
+felist=np.linspace(0.01, 100, 20)
+filist=np.linspace(0.01, 100, 20)
+
+CVplot=np.zeros((len(felist), len(filist)))
+for i,fe in enumerate(felist):
+    print(i)
+    for j,fi in enumerate(filist):
+        res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+        CVplot[i,j]=res[12]
+
+#%%
+plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
+           vmin=0, vmax=2, extent=[0,felist[-1],0,filist[-1]])
+plt.xlabel('excitatory frequency')
+plt.ylabel('inhibitory frequency')
+plt.colorbar()
+
+# =============================================================================
+# plt.contourf(CVplot.T, levels=100, origin='lower', cmap='seismic')
 # plt.xlabel('excitatory frequency')
 # plt.ylabel('inhibitory frequency')
 # plt.colorbar()
-# 
 # =============================================================================
+
 # =============================================================================
 # plt.subplot(2,1,1)
 # plt.plot(res[0], res[2], label='v')
