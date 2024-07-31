@@ -16,9 +16,12 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
     postlist=[]
     bhist=[]
     e=1e-9
+    
+    bnum=0
+    bnumhist=[]
 
     tcurr=0
-    ratio = 0.3
+    ratio = 0
     timer = delta_t
     while tcurr < tmax:
         t0=exponential(1/fe) # action potential
@@ -29,14 +32,12 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
         if t0 < t1 and t0 < t2 and t0<t3: # AP occurrs
             b = binomial(n, pr)
             n-=b
-            if taux != 0:
-                v=v+c*b+cx*x
-            else:
-                v=v+c*b
+            v=v+c*b+cx*x
             tmin = t0
             timer-=tmin
             preliste.append(tcurr+tmin)
             bhist.append(b)
+            bnum+=b
                 
         elif t1<t0 and t1<t2 and t1<t3: # add a docked vesicle
             n+=1
@@ -64,23 +65,28 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
         if v>=vth:
             v=0
             postlist.append(tcurr)
+            bnumhist.append(bnum)
+            bnum=0
 
         # Update the continuous dynamics
         v=v*exp(-tmin/tauv)
-        if taux != 0:
-            x=x*exp(-tmin/taux)
-        else:
-            pass
+        x=x*exp(-tmin/taux)
+
         
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
-    FFn=np.var(nlist)/np.mean(nlist)
-    FFv=np.var(Tlist)/Tmean
-    FFx=np.var(xlist)/np.mean(xlist)
-    CVT = np.sqrt(np.var(Tlist))/Tmean
-
-    return tlist, nlist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT
-
+# =============================================================================
+#     FFn=np.var(nlist)/np.mean(nlist)
+#     FFv=np.var(Tlist)/Tmean
+#     FFx=np.var(xlist)/np.mean(xlist)
+# =============================================================================
+    CVT2 = np.sqrt(np.var(Tlist))/Tmean**2
+    
+# =============================================================================
+#     return tlist, nlist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT, bnumhist
+# =============================================================================
+    return CVT2
+    
 def tmean(fe, fi, kL, pr, taux, vth, c, M, x0, x1, cx):
     return  tauv*np.log((tauv*((kL + fe*pr)*taux*(-(fi*vi) + cx*fe*x0) + c*fe*pr*(kL*M*taux - x0 + x1)))/(-((kL + fe*pr)*taux*(fi*tauv*vi + vth - cx*fe*tauv*x0)) + c*fe*pr*tauv*(kL*M*taux - x0 + x1)))
 
@@ -100,10 +106,10 @@ fi=20
 
 pr=0.2 #
 M=100
-c=0.001
-tauv=0.1
+c=0.005
+tauv=1
 taux=0.01
-cx=1
+cx=0 #1
 
 k=10
 x1=1
@@ -121,21 +127,30 @@ tmax = 200 # <-------------- TMAX
 
 # =============================================================================
 # res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+# 
+# plt.plot(res[0], res[2])
+# 
+# for z in res[5]:
+#     plt.axvline(x=z, color='r')
+# 
+# print(np.mean(res[13]))
+# 
 # =============================================================================
 
 # =============================================================================
 # felist=np.linspace(0.01, 100, 20)
-# filist=np.linspace(0.01, 100, 20)
 # CVplot=np.zeros(len(felist))
 # for i,fe in enumerate(felist):
 #     res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
-#     CVplot[i]=res[12]
+#     CVplot[i]=res
 # plt.plot(CVplot, label='fi={}'.format(fi))
 # plt.xlabel('excitatory frequency')
 # plt.ylabel('Noise CV^2')
 # plt.legend()
 # plt.show()
+# 
 # =============================================================================
+
 
 # Postinhibitory facilitation reduces noise
 felist=np.linspace(0.01, 100, 20)
@@ -149,9 +164,9 @@ for i,fe in enumerate(felist):
         res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, 
                      c, cx, vth, tauv, taux, tmax, delta_t)
         res0=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi,
-                      c, cx, vth, tauv, 0, tmax, delta_t)
-        CVplot[i,j]=res[12]
-        CVplot0[i,j]=res0[12]
+                      c, 0, vth, tauv, taux, tmax, delta_t)
+        CVplot[i,j]=res
+        CVplot0[i,j]=res0
         
 
 plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
