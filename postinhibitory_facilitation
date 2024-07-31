@@ -29,7 +29,10 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
         if t0 < t1 and t0 < t2 and t0<t3: # AP occurrs
             b = binomial(n, pr)
             n-=b
-            v=v+c*b+cx*x
+            if taux != 0:
+                v=v+c*b+cx*x
+            else:
+                v=v+c*b
             tmin = t0
             timer-=tmin
             preliste.append(tcurr+tmin)
@@ -64,7 +67,10 @@ def simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax
 
         # Update the continuous dynamics
         v=v*exp(-tmin/tauv)
-        x=x*exp(-tmin/taux)
+        if taux != 0:
+            x=x*exp(-tmin/taux)
+        else:
+            pass
         
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
@@ -111,7 +117,7 @@ vth=0.2
 vi=0.01
 
 delta_t = 0.001
-tmax = 200# <-------------- TMAX
+tmax = 200 # <-------------- TMAX
 
 # =============================================================================
 # res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
@@ -131,22 +137,30 @@ tmax = 200# <-------------- TMAX
 # plt.show()
 # =============================================================================
 
+# Postinhibitory facilitation reduces noise
 felist=np.linspace(0.01, 100, 20)
 filist=np.linspace(0.01, 100, 20)
 
 CVplot=np.zeros((len(felist), len(filist)))
+CVplot0=np.zeros((len(felist), len(filist)))
 for i,fe in enumerate(felist):
     print(i)
     for j,fi in enumerate(filist):
-        res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
+        res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, 
+                     c, cx, vth, tauv, taux, tmax, delta_t)
+        res0=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi,
+                      c, cx, vth, tauv, 0, tmax, delta_t)
         CVplot[i,j]=res[12]
+        CVplot0[i,j]=res0[12]
+        
 
-#%%
 plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
            vmin=0, vmax=2, extent=[0,felist[-1],0,filist[-1]])
 plt.xlabel('excitatory frequency')
 plt.ylabel('inhibitory frequency')
 plt.colorbar()
+
+
 
 # =============================================================================
 # plt.contourf(CVplot.T, levels=100, origin='lower', cmap='seismic')
