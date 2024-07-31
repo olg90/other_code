@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 
 def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 
-    vhist=[]
-    thist=[]
     AP_times = [[] for i in range(nnum)]
     vhists=[[] for i in range(nnum)]
     nhists=[[] for i in range(nnum)]
@@ -41,7 +39,6 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
                 thists[i].append(tcurr)
             timer = delta_t
         tcurr += tmin
-        print(vs)
         for i in range(len(vs)):
             vs[i] = vs[i]*np.exp(-tmin/tauv)
         for i in range(len(vs)):
@@ -79,23 +76,27 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 #
 ###############################################################################
 
-
-f=100
+f=200
 M = 100
-pr = 0.2
+pr = 0.5
 c = 0.001
 k = 10
-tauv = 5
+tauv = 10
 vth = 0.2
 
-nnum=3
+nnum=4
 tmax = 10
 
-delta_t = 0.01
+delta_t = 0.001
 
 res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-
+fig, ax = plt.subplots(nnum,1)
 for i in range(nnum):
-    plt.plot(res[2][i], label='{}'.format(i))
-plt.legend()
+    ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
+    ax[i].plot(res[0][i], res[2][i], label='{}'.format(i))
+    ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
+    if i != nnum-1:
+        ax[i].set_xticks([])
+    if i == nnum-1:
+        ax[i].set_xlabel('time (sec)')
 plt.show()
