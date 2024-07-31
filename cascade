@@ -80,24 +80,28 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 #
 ###############################################################################
 
-f=200
+f=100
 M = 100
-pr = 1
+pr = 0.1
 c = 0.01
 k = 10
 tauv = 0.5
 vth = 0.2
 
-nnum=30
-tmax = 100
+nnum=10
+tmax = 500
 
 delta_t = 0.001
 
 res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
 plt.plot(res[4]/res[4][0], label='<T>')
 plt.plot(res[5]/res[5][0], label='CVT2')
-plt.xticks(range(0,nnum), labels=range(1, nnum+1))
-plt.legend(loc='upper right')
+plt.plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
+plt.plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(k, tauv, vth))
+plt.xlim([0, nnum])
+plt.xlabel('Neuron number in sequence')
+plt.ylabel('Coefficient of variation squared\nnormalized by the first neuron')
+plt.legend(loc='lower right')
 
 # =============================================================================
 # res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
