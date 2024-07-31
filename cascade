@@ -49,8 +49,12 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
                     b=np.random.binomial(ns[i+1], pr) # Number released
                     ns[i+1]-=b
                     vs[i+1]+=c*b
+                    
+    Tmeans=[np.mean(np.diff(AP_times[i])) for i in range(nnum)]
+    CVT2s=[np.var(np.diff(AP_times[i]))/np.mean(np.diff(AP_times[i]))**2 for i in range(nnum)]
+        
                 
-    return thists, nhists, vhists, AP_times
+    return thists, nhists, vhists, AP_times, Tmeans, CVT2s
                 
 # =============================================================================
 #     vhist = np.array(vhist) # data array
@@ -78,25 +82,33 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 
 f=200
 M = 100
-pr = 0.5
-c = 0.001
+pr = 1
+c = 0.01
 k = 10
-tauv = 10
+tauv = 0.5
 vth = 0.2
 
-nnum=4
-tmax = 10
+nnum=10
+tmax = 200
 
 delta_t = 0.001
 
 res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-fig, ax = plt.subplots(nnum,1)
-for i in range(nnum):
-    ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
-    ax[i].plot(res[0][i], res[2][i], label='{}'.format(i))
-    ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
-    if i != nnum-1:
-        ax[i].set_xticks([])
-    if i == nnum-1:
-        ax[i].set_xlabel('time (sec)')
-plt.show()
+plt.plot(res[4], label='<T>')
+plt.plot(res[5], label='CVT2')
+plt.xticks(range(0,nnum), labels=range(1, nnum+1))
+plt.legend()
+
+# =============================================================================
+# fig, ax = plt.subplots(nnum,1)
+# for i in range(nnum):
+#     ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
+#     ax[i].plot(res[0][i], res[2][i], label='T={}, CVT={}'.format(np.around(res[4][i],3), np.around(res[5][i],3)))
+#     ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
+#     if i != nnum-1:
+#         ax[i].set_xticks([])
+#     if i == nnum-1:
+#         ax[i].set_xlabel('time (sec)')
+#     ax[i].legend(loc='upper right')
+# plt.show()
+# =============================================================================
