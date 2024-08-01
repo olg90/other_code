@@ -88,7 +88,7 @@ def simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, cx, v
 # =============================================================================
 #     return tlist, nlist, nilist, vlist, xlist, preliste, postlist, Tmean, FFn, FFv, FFx, prelisti, bhist, CVT
 # =============================================================================
-    return CVT2
+    return Tmean, CVT2
 
 def tmean(fe, fi, kL, pr, taux, vth, c, M, x0, x1, cx):
     return  tauv*np.log((tauv*((kL + fe*pr)*taux*(-(fi*vi) + cx*fe*x0) + c*fe*pr*(kL*M*taux - x0 + x1)))/(-((kL + fe*pr)*taux*(fi*tauv*vi + vth - cx*fe*tauv*x0)) + c*fe*pr*tauv*(kL*M*taux - x0 + x1)))
@@ -138,44 +138,95 @@ tmax = 200 # <-------------- TMAX
 # =============================================================================
 
 # =============================================================================
-# felist=np.linspace(0.01, 100, 20)
-# filist=np.linspace(0.01, 100, 20)
-# CVplot=np.zeros(len(felist))
-# for i,fe in enumerate(felist):
-#     res=simulate(n, v, x, fe, fi, pr, M, k, x0, x1, vi, c, cx, vth, tauv, taux, tmax, delta_t)
-#     CVplot[i]=res[12]
-# plt.plot(CVplot, label='fi={}'.format(fi))
-# plt.xlabel('excitatory frequency')
-# plt.ylabel('Noise CV^2')
+# filist=np.linspace(0.01, 200, 40)
+# felist=[100]
+# Tplot=np.zeros(len(filist))
+# # =============================================================================
+# # CVplot=np.zeros(len(filist))
+# # =============================================================================
+# 
+# for i,fi in enumerate(filist):
+#     print(i/len(filist))
+#     res=simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki,
+#                  x0, x1, vi, c, ci, cx, vth, tauv, taux, tmax, delta_t)
+#     Tplot[i]=res[0]
+# # =============================================================================
+# #     CVplot[i]=res[1]
+# # =============================================================================
+# 
+# # =============================================================================
+# # plt.plot(filist, CVplot, label='fe={}'.format(felist[0]), marker='o')
+# # =============================================================================
+# plt.plot(filist, Tplot, label='fe={}'.format(felist[0]), marker='o')
+# plt.plot(filist, 1*np.ones(len(filist)), color='k')
+# plt.xlabel('inhibitory frequency')
+# plt.ylabel('First passage time')
+# plt.title('Postinhibitory facilitation with two neurons')
 # plt.legend()
 # plt.show()
 # =============================================================================
 
-# Postinhibitory facilitation reduces noise
-felist=np.linspace(0.01, 100, 20)
-filist=np.linspace(0.01, 100, 20)
 
-CVplot=np.zeros((len(felist), len(filist)))
-CVplot0=np.zeros((len(felist), len(filist)))
+
+# Postinhibitory facilitation reduces noise
+felist=np.linspace(0.01, 100, 100)
+filist=np.linspace(0.01, 100, 100)
+
+# =============================================================================
+# CVplot=np.zeros((len(felist), len(filist)))
+# CVplot0=np.zeros((len(felist), len(filist)))
+# =============================================================================
+
+Tplot = np.zeros((len(felist), len(filist)))
 for i,fe in enumerate(felist):
     print(i)
     for j,fi in enumerate(filist):
         res=simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, cx, vth, tauv, taux, tmax, delta_t)
-        res0=simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, 0, vth, tauv, taux, tmax, delta_t)
-        CVplot[i,j]=res
-        CVplot0[i,j]=res0
+# =============================================================================
+#         res0=simulate(n, ni, v, x, fe, fi, pr, pi, M, Mi, k, ki, x0, x1, vi, c, ci, 0, vth, tauv, taux, tmax, delta_t)
+#         CVplot[i,j]=res[1]
+#         CVplot0[i,j]=res0[1]
+# =============================================================================
+        Tplot[i,j]=res[0]
         
-#%%
 cmap = plt.get_cmap('seismic')
 cmap.set_bad(color='k')
 
-plt.imshow(CVplot.T, origin='lower', cmap=cmap, vmin=0, vmax=2, extent=[0, felist[-1], 0, filist[-1]])
+# =============================================================================
+# plt.imshow(CVplot.T, origin='lower', cmap=cmap, vmin=0, vmax=2, extent=[0, felist[-1], 0, filist[-1]])
+# =============================================================================
+plt.imshow(Tplot.T, origin='lower', cmap=cmap, vmin=0, vmax=2, extent=[0, felist[-1], 0, filist[-1]])
 plt.xlabel('excitatory frequency')
 plt.ylabel('inhibitory frequency')
-plt.title('')
+plt.title('CV^2 of T')
 plt.colorbar()
 
 plt.show()
+
+
+
+# =============================================================================
+# cmap = plt.get_cmap('seismic')
+# cmap.set_bad(color='green')
+# # Create a masked array to ignore NaN values in contours
+# masked_CVplot = np.ma.array(CVplot.T, mask=np.isnan(CVplot.T))
+# # Create grid for contour plot
+# X, Y = np.meshgrid(felist, filist)
+# # Plot the contourf and contour
+# levels=np.linspace(0, 2, 20)
+# contourf_plot = plt.contourf(X, Y, masked_CVplot, levels=levels, cmap=cmap, vmin=0, vmax=2, extend='both')
+# # Add a colorbar
+# plt.colorbar(contourf_plot)
+# # Labels and title
+# plt.xlabel('excitatory frequency')
+# plt.ylabel('inhibitory frequency')
+# plt.title('')
+# plt.show()
+# =============================================================================
+
+
+
+
 # =============================================================================
 # plt.contourf(CVplot.T, levels=100, origin='lower', cmap='seismic')
 # plt.xlabel('excitatory frequency')
