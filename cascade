@@ -83,9 +83,9 @@ def run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax):
 #
 ###############################################################################
 
-f=100
+f = 100
 M = 100
-pr = 0.3
+pr = 0.2
 c = 0.01
 k = 10
 tauv = 0.5
@@ -95,6 +95,8 @@ nnum=20
 tmax = 500
 
 delta_t = 0.001
+# -----------------------------------------------------------------------------
+
 
 res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
 plt.plot(range(1, nnum+1), 1*np.ones(nnum), color='k')
@@ -105,8 +107,20 @@ plt.plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
 plt.plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(k, tauv, vth))
 
 plt.xlabel('Neuron number in sequence')
-plt.ylabel('Coefficient of variation squared\nnormalized by the first neuron')
+plt.ylabel('CVT^2 and <T>\nnormalized by the first neuron')
 plt.legend()
+#%%
+prlist = np.linspace(0.01,0.3,5)
+CV2list=[]
+for pr in prlist:
+    print(pr)
+    res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
+    CV2list.append(res[5])
+for i,x in enumerate(CV2list):
+    plt.plot(range(1, nnum+1),x, label = 'pr={}'.format(prlist[i]), marker='o')
+plt.legend()
+
+
 
 # =============================================================================
 # res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
