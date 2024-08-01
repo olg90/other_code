@@ -165,15 +165,17 @@ for i,fe in enumerate(felist):
         CVplot[i,j]=res
         CVplot0[i,j]=res0
         
+#%%
+cmap = plt.get_cmap('seismic')
+cmap.set_bad(color='k')
 
-plt.imshow(CVplot.T, origin='lower', cmap='seismic', 
-           vmin=0, vmax=2, extent=[0,felist[-1],0,filist[-1]])
+plt.imshow(CVplot.T, origin='lower', cmap=cmap, vmin=0, vmax=2, extent=[0, felist[-1], 0, filist[-1]])
 plt.xlabel('excitatory frequency')
 plt.ylabel('inhibitory frequency')
+plt.title('')
 plt.colorbar()
 
-
-
+plt.show()
 # =============================================================================
 # plt.contourf(CVplot.T, levels=100, origin='lower', cmap='seismic')
 # plt.xlabel('excitatory frequency')
