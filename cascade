@@ -92,17 +92,44 @@ tauv = 10
 vth = 0.2
 
 nnum=20
-tmax = 1000
+tmax = 200
 
 delta_t = 0.001
 # -----------------------------------------------------------------------------
 
-res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-T = res[4]
-CVT2=res[5]
+# =============================================================================
+# res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
+# T = res[4]
+# CVT2=res[5]
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(range(1,nnum+1), T, marker='o', color='b')
+# ax[1].plot(range(1, nnum+1), CVT2, marker='o', color='orange')
+# plt.xlim([0.5, nnum+1])
+# ax[0].plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
+# ax[0].plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(100, tauv, vth))
+# ax[1].set_xlabel('Neuron number in sequence')
+# ax[0].set_ylabel('FPT')
+# ax[1].set_ylabel('CVT2')
+# ax[0].legend()
+# plt.show()
+# =============================================================================
+Tavg=[]
+CVT2avg=[]
+navgs=10
+for _ in range(navgs):
+    res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
+    T = res[4]
+    CVT2=res[5]
+    Tavg.append(T)
+    CVT2avg.append(CVT2)
+Tavg=np.array(Tavg)
+CVT2avg=np.array(CVT2avg)
+Tavg=np.mean(Tavg, 0)
+CVT2avg=np.mean(CVT2avg, 0)
+
 fig, ax = plt.subplots(2,1)
-ax[0].plot(range(1,nnum+1), T, marker='o', color='b')
-ax[1].plot(range(1, nnum+1), CVT2, marker='o', color='orange')
+ax[0].plot(range(1,nnum+1), Tavg, marker='o', color='b')
+ax[1].plot(range(1, nnum+1), CVT2avg, marker='o', color='orange')
 plt.xlim([0.5, nnum+1])
 ax[0].plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
 ax[0].plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(100, tauv, vth))
@@ -111,7 +138,6 @@ ax[0].set_ylabel('FPT')
 ax[1].set_ylabel('CVT2')
 ax[0].legend()
 plt.show()
-
 
 # Parameter sweep
 # =============================================================================
