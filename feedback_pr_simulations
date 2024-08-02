@@ -125,7 +125,7 @@ cz=100 # number of neurotransmitters per vesicle
 gammar=1
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 500 # <-------------- TMAX, set to 200 for the FF calculation
 # =============================================================================
 # 
 # res=simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
@@ -141,6 +141,7 @@ tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 Tlist=[]
 CVT2list=[]
 xname='f'
+
 xlist=np.linspace(0.01, 100, 10)
 for i, x in enumerate(xlist):
     print(i, len(xlist))
