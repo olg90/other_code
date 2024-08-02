@@ -1,0 +1,161 @@
+import numpy as np
+from matplotlib.pyplot import plot as pt
+import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial
+# =============================================================================
+#      no -> no + 1   with rate   K*(M-n-r), where K is: (-): k/(1+k1 z)
+#                                             (+):kb+(k-kb)( k1 z / (1+ k1 z))
+# 
+# 
+#      n -> n - b   with rate   f
+#      r -> r + b
+#      z -> z + cb
+# 
+# 
+#      r -> r - 1   with rate   kr * r
+#                   
+# 
+#      z -> z - 1     with rate   gammaz*z
+# ============================================================================= 
+
+def get_FF(x):
+    return np.var(x)/np.mean(x)
+
+def getCV2(x):
+    return np.var(x)/np.mean(x)**2
+
+def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
+        nlist=[]
+        rlist=[]
+        zlist=[]
+        tlist=[]        
+        APlist=[]
+        
+        n,r,z=0,0,0
+
+        tcurr=0
+
+        timer = delta_t
+        ratio=0.4
+        e=1e-6
+        
+        while tcurr < tmax:
+            
+            # Get the three event times
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n) + e)) # add 1 occupied site
+            t2=exponential(1/(gammaz*z + e)) # remove 1 neurotransmitter
+            t3=exponential(1/(gammar*r + e))
+            t4=timer
+
+            # Choose the smallest one and then make that event happen
+            if t0<t1 and t0<t2 and t0<t3 and t0<timer: # AP occurrs
+                b = binomial(n, pr(z, ftype))
+                n = n - b
+                z = z + cz*b
+                r += b
+                if tcurr>=ratio*tmax:
+                    APlist.append(tcurr+t0)
+                tmin = t0
+                timer-=tmin
+
+            elif t1<t0 and t1<t2 and t1<t3 and t1<timer: # add a docked vesicle
+                n=n+1
+                tmin = t1
+                timer-=tmin
+
+            elif t2<t0 and t2<t1 and t2<t3 and t2<timer: # remove a neurotransmitter
+                z=z-1
+                tmin = t2
+                timer-=tmin
+                
+            elif t3<t0 and t3<t1 and t3<t2 and t3<timer: # remove a repair site
+                r=r-1
+                tmin = t3
+                timer-=tmin
+                
+            else:
+                tmin=t4
+                timer = delta_t
+# =============================================================================
+#                 if tcurr>=ratio*tmax:
+#                     nlist.append(n)
+#                     rlist.append(r)
+#                     zlist.append(z)
+#                     tlist.append(tcurr)
+# =============================================================================
+            tcurr += tmin
+           
+        Tdiffs=np.diff(APlist)
+        Tmean = np.mean(Tdiffs)
+        CV2=np.var(Tdiffs)/Tmean**2
+
+# =============================================================================
+#         return tlist, nlist, rlist, zlist, APlist, Tmean, CV2
+# =============================================================================
+        return Tmean, CV2
+    
+def pr(z, ftype):
+    pru = 0.2 # prob
+    prn = 0.5 # 0.5, previously # prob ------------------------------- Negative
+    p1n = 0.001 #15 # fb strength
+    prp = 1 # 0.63 # prob --------------------------------- Positive
+    p1p = 0.001 #30 20 15 10 # fb strength
+    pb = 0.5 # 0.5, basal rate, %
+    
+    if ftype == 'u':
+        return pru
+    if ftype=='n':
+        return prn/(1+p1n*z)
+    if ftype=='p':
+        return pb + (prp-pb)*p1p*z/(1+p1p*z)
+    
+###############################################################################
+#
+#                               Parameters
+#
+###############################################################################
+    
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
+f=10
+M=100
+k=10 # 10 
+gammaz=100
+cz=100 # number of neurotransmitters per vesicle
+gammar=1
+
+delta_t = 0.001
+tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+# =============================================================================
+# 
+# res=simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(res[0], res[1], label='n')
+# ax[0].plot(res[0], res[2], label='r')
+# ax[1].plot(res[0], res[3])
+# ax[0].legend()
+# ax[1].set_ylabel('z')
+# 
+# =============================================================================
+
+Tlist=[]
+CVT2list=[]
+xname='f'
+xlist=np.linspace(0.01, 100, 10)
+for i, x in enumerate(xlist):
+    print(i, len(xlist))
+    res=simulate(x, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
+    Tlist.append(res[0])
+    CVT2list.append(res[1])
+   
+fig, ax = plt.subplots(2,1)
+ax[0].plot(xlist, Tlist, label='T', color='b')
+ax[1].plot(xlist, CVT2list, label='C', color='orange')
+ax[1].set_xlabel('{}'.format(xname))
+ax[0].set_ylabel('FPT')
+ax[1].set_ylabel('CVT^2')
+ax[0].plot([],[], ' ', label='f={}, M={}, k={}'.format(f,M,k))
+ax[0].plot([],[], ' ', label='gammaz={}, cz={}, gammar={}'.format(gammaz,cz, gammar))
+ax[0].plot([],[], ' ', label='ftype={}, dt={}, tmax={}'.format(ftype, delta_t, tmax))
+ax[0].legend(loc='upper right')
+plt.show()
