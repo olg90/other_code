@@ -71,10 +71,11 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
         
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
+    CVT2=np.var(Tlist)/Tmean**2
     FFn=np.var(nlist)/np.mean(nlist)
     FFv=np.var(vlist)/np.mean(vlist)
     
-    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, FFn, FFv,\
+    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, CVT2, FFn, FFv,\
         tplot, vplot, nplot, vthplot, postvth
         
         
@@ -98,11 +99,11 @@ def get_vth(vth, v):
 #     return 1 - (k*M)/(k + f*pr) + (2*k*(-1 + M))/(2*k - f*(-2 + pr)*pr)                                                 
 # 
 # =============================================================================
-f=100
+f=10
 pr=0.2 #
 M=100
 k=10 # 10 # 10 # feedback strength constant #
-c=0.01
+c=0.003
 tauv=1
 tauvth=0.1
 
@@ -113,15 +114,56 @@ vthb=0.2
 vth=vth0
 
 delta_t = 0.001
-tmax = 1 # <-------------- TMAX
+tmax = 2 # <-------------- TMAX
 
 fmin=(k*vthb)/(vth0*(c*k*M*pr*tauv - (pr*vthb)/vth0))
 print('fmin', fmin)
 
 res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+plt.plot(res[10], res[11], label='membrane potential')
+plt.plot(res[10], res[13], label='AP firing threshold')
+plt.ylabel('volts')
+plt.xlabel('time (sec)')
+plt.plot([],[], ' ', label='f={}, M={}, k={}, pr={}, c={}'.format(f,M,k, pr, c))
+plt.plot([],[], ' ', label='tauv={}, tauvth={}, vthb={}'.format(tauv, tauvth, vthb))
+plt.plot([],[], ' ', label='tmax={}, delta_t={}'.format(tmax, delta_t))
 
-plt.plot(res[9], res[10])
-plt.plot(res[9], res[12])
+plt.legend(bbox_to_anchor=[0.85,1.4], loc='upper right')
+
+
+# =============================================================================
+# T=[]
+# CVT2=[]
+# xname='tauvth'
+# xlist=np.linspace(0.01, 100,100)
+# for i, x in enumerate(xlist):
+#     print(i/len(xlist))
+#     res=simulate(n, v, f, pr, M, k, c, vth, tauv, x, vth0, vthb, tmax, delta_t)
+# # =============================================================================
+# #     res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+# # =============================================================================
+#     T.append(res[6])
+#     CVT2.append(res[7])
+# 
+# fig, ax = plt.subplots(2,1)
+# ax[0].set_title('Adaptive threshold ')
+# ax[0].plot(T, color='blue')
+# ax[1].plot(CVT2, color='orange')
+# ax[0].set_xticks([])
+# ax[0].set_ylabel('First passage time')
+# ax[1].set_ylabel('Coefficient of\nvariation squared')
+# ax[1].set_xlabel('{}'.format(xname))
+# 
+# ax[0].plot([],[], ' ', label='f={}, M={}, k={}, pr={}, c={}'.format(f,M,k, pr, c))
+# ax[0].plot([],[], ' ', label='tauv={}, tauvth={}, vthb={}'.format(tauv, tauvth, vthb))
+# ax[0].plot([],[], ' ', label='tmax={}, delta_t={}'.format(tmax, delta_t))
+# 
+# ax[0].legend()
+# plt.show()
+# =============================================================================
+    
+
+
 
 # =============================================================================
 # tvals=[]
