@@ -105,7 +105,6 @@ def simulate(n, v, L,R, f, pr, M, kL, kd, ku, kr, kR, c, vth, tauv, tmax, delta_
     return tlist, nlist, vlist, Llist, Rlist, prelist, postlist, Tmean, CVn2,\
         CVv2, CVL2, CVR2, CVT2, tplot, nplot, Lplot, vplot, Rplot
         
-        
 def to_dict(*x):
     return x
 
@@ -131,7 +130,7 @@ kL=100 # Mean rate of loosely docking
 kd=20 # Mean rate of docking
 ku=40 # Mean rate of undocking
 kr=10 # Mean unloosening
-kR=10 # Mean repair
+kR=100 # Mean repair
 
 n=0
 v=0
@@ -140,7 +139,43 @@ R=0
 vth=0.2
 
 delta_t = 0.001 
-tmax = 500 # <-------------- TMAX
+tmax = 200 # <-------------- TMAX
+
+xname='f'
+xlist=np.linspace(0.01, 25, 20)
+
+
+Tlistavg=[]
+CVT2listavg=[]
+navgs=100
+for j in range(navgs):
+    Tlist=[]
+    CVT2list=[]
+    for i, x in enumerate(xlist):
+        print(j, navgs, i, len(xlist))
+        res=simulate(n, v, L, R, x, pr, M, kL, kd, ku, kr, kR, c, vth, tauv, tmax, delta_t)
+        Tlist.append(res[7])
+        CVT2list.append(res[12])
+    Tlistavg.append(Tlist)
+    CVT2listavg.append(CVT2list)
+
+Tlist = np.array(Tlistavg)
+Tlist = np.mean(Tlistavg, 0)
+CVT2list = np.array(CVT2listavg)
+CVT2list = np.mean(CVT2list, 0)
+
+fig, ax = plt.subplots(2,1)
+ax[0].set_title('Loose tight repair')
+ax[0].plot(xlist, Tlist, label='T', color='b', marker='o')
+ax[1].plot(xlist, CVT2list, label='C', color='orange', marker='o')
+ax[1].set_xlabel('{}'.format(xname))
+ax[0].set_ylabel('First passage time')
+ax[1].set_ylabel('Coefficient of\nvariation squated')
+ax[0].plot([],[], ' ', label='f={}, M={}, pr={}, ={}'.format(f, M, pr, c))
+ax[0].plot([],[], ' ', label='kL={}, kd={}, kr={}, kR={}'.format(kL, kd, kr, kR))
+ax[0].plot([],[], ' ', label='vth={}, tauv={}, tmax={}, dt={}'.format(vth, tauv, tmax, delta_t))
+ax[0].legend(loc='upper right')
+plt.show()
 
 # =============================================================================
 # res=simulate(n, v, L, R, f, pr, M, kL, kd, ku, kr, kR, c, vth, tauv, tmax, delta_t)
@@ -161,48 +196,48 @@ tmax = 500 # <-------------- TMAX
 # plt.show()
 # =============================================================================
 
-## Simulate T mean plot with averages
-tvals=[]
-CVv2s=[]
-CVn2s=[]
-CVL2s=[]
-CVR2s=[]
-CVT2s=[]
-
-nfs=10
-fslist=np.linspace(1,100,nfs)
-for j, f in enumerate(fslist):
-    # Calculate test
-    Tsim=[]
-    CVn2sim=[]
-    CVv2sim=[]
-    CVL2sim=[]
-    CVR2sim=[]
-    CVT2sim=[]
-    navgs=1
-    for i in range(navgs):
-        print(j, nfs, i, navgs)
-        sim = simulate(n, v, L, R, f, pr, M, kL, kd, ku, kr, kR, c, 
-                                                      vth, tauv, tmax, delta_t)
-        Tsim.append(sim[7])
-        CVn2sim.append(sim[8])
-        CVv2sim.append(sim[9])
-        CVL2sim.append(sim[10])
-        CVR2sim.append(sim[11])
-        CVT2sim.append(sim[12])
-    tvals.append(np.mean(Tsim))
-    CVv2s.append(np.mean(CVv2sim))    
-    CVn2s.append(np.mean(CVn2sim))
-    CVL2s.append(np.mean(CVL2sim))
-    CVR2s.append(np.mean(CVR2sim))
-    CVT2s.append(np.mean(CVT2sim))
-    
-plt.subplot(2,1,1)
-plt.plot(fslist, tvals, label='<T> simulations')
-plt.legend()
-plt.subplot(2,1,2)
-plt.plot(fslist, CVT2s, label='CVT2 simulations')
-plt.legend()
+# =============================================================================
+# ## Simulate T mean plot with averages
+# tvals=[]
+# CVv2s=[]
+# CVn2s=[]
+# CVL2s=[]
+# CVR2s=[]
+# CVT2s=[]
+# nfs=10
+# fslist=np.linspace(1,100,nfs)
+# for j, f in enumerate(fslist):
+#     # Calculate test
+#     Tsim=[]
+#     CVn2sim=[]
+#     CVv2sim=[]
+#     CVL2sim=[]
+#     CVR2sim=[]
+#     CVT2sim=[]
+#     navgs=1
+#     for i in range(navgs):
+#         print(j, nfs, i, navgs)
+#         sim = simulate(n, v, L, R, f, pr, M, kL, kd, ku, kr, kR, c, 
+#                                                       vth, tauv, tmax, delta_t)
+#         Tsim.append(sim[7])
+#         CVn2sim.append(sim[8])
+#         CVv2sim.append(sim[9])
+#         CVL2sim.append(sim[10])
+#         CVR2sim.append(sim[11])
+#         CVT2sim.append(sim[12])
+#     tvals.append(np.mean(Tsim))
+#     CVv2s.append(np.mean(CVv2sim))    
+#     CVn2s.append(np.mean(CVn2sim))
+#     CVL2s.append(np.mean(CVL2sim))
+#     CVR2s.append(np.mean(CVR2sim))
+#     CVT2s.append(np.mean(CVT2sim))
+# plt.subplot(2,1,1)
+# plt.plot(fslist, tvals, label='<T> simulations')
+# plt.legend()
+# plt.subplot(2,1,2)
+# plt.plot(fslist, CVT2s, label='CVT2 simulations')
+# plt.legend()
+# =============================================================================
 
 # =============================================================================
 # plt.plot(fslist, tmean(fslist, c, M, pr, kd, ku, kd, tauv, vth), label='<T> theoretical')
