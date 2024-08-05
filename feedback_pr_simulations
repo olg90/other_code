@@ -123,8 +123,8 @@ f=10
 M=100
 k=10 # 10 
 gammaz=100
-cz=100 # number of neurotransmitters per vesicle
-gammar=1
+cz=50 # number of neurotransmitters per vesicle
+gammar=20
 
 delta_t = 0.001
 tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
