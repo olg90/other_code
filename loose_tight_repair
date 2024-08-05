@@ -130,7 +130,7 @@ kL=100 # Mean rate of loosely docking
 kd=20 # Mean rate of docking
 ku=40 # Mean rate of undocking
 kr=10 # Mean unloosening
-kR=100 # Mean repair
+kR=20 # Mean repair
 
 n=0
 v=0
