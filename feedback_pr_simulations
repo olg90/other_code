@@ -36,7 +36,7 @@ def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
         tcurr=0
 
         timer = delta_t
-        ratio=0.3
+        ratio=0.4
         e=1e-6
         
         while tcurr < tmax:
@@ -96,20 +96,20 @@ def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
         return Tmean, CV2
     
 def pr(z, ftype):
-    pru = 0.2 # prob
-    
-    prn = 0.2 # 0.5, previously # prob ------------------------------- Negative
-    p1n = 0.01 #15 # fb strength
-    
-    prp = 1 # 0.63 # prob --------------------------------- Positive
-    p1p = 0.01 #30 20 15 10 # fb strength
-    pb = 0.1 # 0.5, basal rate, %
-    
+
     if ftype == 'u':
+        pru = 0.2 # prob
         return pru
+
     if ftype=='n':
+        prn = 0.5 # 0.5, previously # prob
+        p1n = 0.001 #15 # fb strength
         return prn/(1+p1n*z)
+
     if ftype=='p':
+        prp = 1 # 0.63 # prob
+        p1p = 0.001 #30 20 15 10 # fb strength
+        pb = 0.5 # 0.5, basal rate, %
         return pb + (prp-pb)*p1p*z/(1+p1p*z)
     
 ###############################################################################
@@ -118,18 +118,18 @@ def pr(z, ftype):
 #
 ###############################################################################
     
-ftype='p' # feedback type: n-negative, p-positive, u-unregulated
+ftype='n' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 M=100
 k=10 # 10 
 gammaz=100
 cz=100 # number of neurotransmitters per vesicle
-gammar=20
+gammar=1
 
 delta_t = 0.001
-tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
-
+tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 # =============================================================================
+# 
 # res=simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
 # fig, ax = plt.subplots(2,1)
 # ax[0].plot(res[0], res[1], label='n')
@@ -137,34 +137,33 @@ tmax = 100 # <-------------- TMAX, set to 200 for the FF calculation
 # ax[1].plot(res[0], res[3])
 # ax[0].legend()
 # ax[1].set_ylabel('z')
+# 
 # =============================================================================
 
-xname='Input frequency'
-xlist=np.linspace(0.01, 100, 20)
 navgs=1
-Tmean=[]
-CVT2mean=[]
+T=[]
+CVT2=[]
 for j in range(navgs):
     Tlist=[]
     CVT2list=[]
+    xname='f'
+    xlist=np.linspace(0.01, 100, 100)
     for i, x in enumerate(xlist):
         print(j, navgs, i, len(xlist))
         res=simulate(x, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
         Tlist.append(res[0])
         CVT2list.append(res[1])
-    Tmean.append(Tlist)
-    CVT2mean.append(CVT2list)
-Tmean=np.array(Tmean)
-CVT2mean=np.array(CVT2mean)
-Tmean=np.mean(Tmean, 0)
-CVT2mean=np.mean(CVT2mean, 0)
+    T.append(Tlist)
+    CVT2.append(CVT2list)
+T = np.mean(np.array(Tlist),0)
+       
 fig, ax = plt.subplots(2,1)
-ax[0].set_title('Feedback in pr')
+ax[0].set_title('feedback in pr')
 ax[0].plot(xlist, Tlist, label='T', color='b')
 ax[1].plot(xlist, CVT2list, label='C', color='orange')
 ax[1].set_xlabel('{}'.format(xname))
-ax[0].set_ylabel('First passage time')
-ax[1].set_ylabel('Coefficient of\nvariation squated')
+ax[0].set_ylabel('FPT')
+ax[1].set_ylabel('CVT^2')
 ax[0].plot([],[], ' ', label='f={}, M={}, k={}'.format(f,M,k))
 ax[0].plot([],[], ' ', label='gammaz={}, cz={}, gammar={}'.format(gammaz,cz, gammar))
 ax[0].plot([],[], ' ', label='ftype={}, dt={}, tmax={}'.format(ftype, delta_t, tmax))
