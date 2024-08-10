@@ -3,7 +3,7 @@ from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
 from numpy import exp
-def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t):
+def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, ttype):
 
     nlist=[]
     vlist=[]
@@ -20,7 +20,7 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
     postvth=[]
 
     tcurr=0
-    ratio = 0.3
+    ratio = 0.4
     timer = delta_t
     while tcurr < tmax:
         t0=exponential(1/f) # action potential
@@ -61,12 +61,18 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
         if v>=vth:
             postlist.append(tcurr)
             postvth.append(vth)
-            vth=get_vth(v, vth)
+            if ttype=='adaptive':
+                vth=get_vth(v, vth)
+            else:
+                vth=vth
             v=0
 
         # Update the continuous dynamics
         v=v*exp(-tmin/tauv)
-        vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
+        if ttype=='adaptive':
+            vth=vthb + (vth - vthb)*exp(-tmin/tauvth)
+        else:
+            vth=vth
         
         
     Tlist = np.diff(postlist)
@@ -114,7 +120,7 @@ vthb=0.2
 vth=vth0
 
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX
+tmax = 100 # <-------------- TMAX
 
 fmin=(k*vthb)/(vth0*(c*k*M*pr*tauv - (pr*vthb)/vth0))
 print('fmin', fmin)
@@ -132,43 +138,60 @@ print('fmin', fmin)
 # plt.legend(bbox_to_anchor=[0.85,1.4], loc='upper right')
 # =============================================================================
 
-navgs=1
-T=[]
-CVT2=[]
+navgs=10
+Ta=[]
+T0=[]
+Ca=[]
+C0=[]
 for j in range(navgs):
-    Tarr=[]
-    CVT2arr=[]
-    xname='k'
+    Taj=[]
+    Caj=[]  
+    T0j=[]
+    C0j=[]
+    xname='f'
     xlist=np.linspace(0.01, 100, 100)
     for i, x in enumerate(xlist):
         print(j, navgs, i, len(xlist))
-        res=simulate(n, v, f, pr, M, x, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+        res=simulate(n, v, x, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, 'adaptive')
+        res0=simulate(n, v, x, pr, M, k, c, vth, tauv, tauvth, vth0, vth0, tmax, delta_t, None)
     # =============================================================================
-    ##  res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+    ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
     # =============================================================================
-        Tarr.append(res[6])
-        CVT2arr.append(res[7])
-    T.append(Tarr)
-    CVT2.append(CVT2arr)
-        
-T = np.mean(np.array(T), 0)
-CVT2 = np.mean(np.array(CVT2), 0)
+        Taj.append(res[6])
+        Caj.append(res[7])
+        T0j.append(res0[6])
+        C0j.append(res0[7])
+    Ta.append(Taj)
+    T0.append(T0j)
+    Ca.append(Caj)
+    C0.append(C0j)
 
-fig, ax = plt.subplots(2,1)
+Ta = np.mean(np.array(Ta), 0)
+Ca = np.mean(np.array(Ca), 0)
+T0 = np.mean(np.array(T0), 0)
+C0 = np.mean(np.array(C0), 0)
+
+fig, ax = plt.subplots(3,1, figsize=(5,5))
 ax[0].set_title('Adaptive threshold ')
-ax[0].plot(xlist, T, color='blue')
-ax[1].plot(xlist, CVT2, color='orange')
+ax[0].plot(xlist, Ta, color='blue')
+ax[0].plot(xlist, T0, color='blue', linestyle='--', alpha=0.6)
 ax[0].set_xticks([])
 ax[0].set_ylabel('First passage time')
-ax[1].set_ylabel('Coefficient of\nvariation squared')
-ax[1].set_xlabel('{}'.format(xname))
-
 ax[0].plot([],[], ' ', label='f={}, M={}, k={}, pr={}, c={}'.format(f,M,k, pr, c))
 ax[0].plot([],[], ' ', label='tauv={}, tauvth={}, vthb={}'.format(tauv, tauvth, vthb))
 ax[0].plot([],[], ' ', label='tmax={}, delta_t={}'.format(tmax, delta_t))
-
 ax[0].legend()
-plt.show()
+
+ax[1].plot(xlist, Ca, color='orange', label='adaptive')
+ax[1].plot(xlist, C0, color='orange', linestyle='--', alpha=0.6, label='fixed threshold')
+ax[1].set_ylabel('Noise in FPT\n(CV squared)')
+ax[1].set_xticks([])
+ax[1].legend()
+
+ax[2].plot(xlist, np.ones(len(xlist)), color='k')
+ax[2].plot(xlist, Ca/C0, color='green')
+ax[2].set_xlabel('{}'.format(xname))
+ax[2].set_ylabel('Ratio of adaptvie\nand fixed CV^2\'s')
 
 # -----------------------------------------------------------------------------
 
