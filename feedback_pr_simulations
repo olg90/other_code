@@ -122,9 +122,9 @@ ftype='n' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 M=100
 k=10 # 10 
-gammaz=100
-cz=50 # number of neurotransmitters per vesicle
-gammar=20
+gammaz=10
+cz=10 # number of neurotransmitters per vesicle
+gammar=10
 
 delta_t = 0.001
 tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
@@ -141,31 +141,56 @@ tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 # =============================================================================
 
 navgs=1
-T=[]
-CVT2=[]
+Tp=[]
+Cp=[]
+T0=[]
+C0=[]
 for j in range(navgs):
-    Tlist=[]
-    CVT2list=[]
+    Tpj=[]
+    Cpj=[]
+    T0j=[]
+    C0j=[]
     xname='f'
-    xlist=np.linspace(0.01, 100, 100)
+    xlist=np.linspace(0.01, 100, 20)
     for i, x in enumerate(xlist):
         print(j, navgs, i, len(xlist))
         res=simulate(x, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
-        Tlist.append(res[0])
-        CVT2list.append(res[1])
-    T.append(Tlist)
-    CVT2.append(CVT2list)
-T = np.mean(np.array(Tlist),0)
+        res0=simulate(x, pr, M, k, gammaz, gammar, cz, 'u', tmax, delta_t)
+        Tpj.append(res[0])
+        Cpj.append(res[1])
+        T0j.append(res0[0])
+        C0j.append(res0[1])
+    Tp.append(Tpj)
+    Cp.append(Cpj)
+    T0.append(T0j)
+    C0.append(C0j)
+Tpm = np.mean(np.array(Tp),0)
+T0m = np.mean(np.array(T0),0)
+Cpm = np.mean(np.array(Cp),0)
+C0m = np.mean(np.array(C0),0)
        
-fig, ax = plt.subplots(2,1)
+fig, ax = plt.subplots(3,1)
+
 ax[0].set_title('feedback in pr')
-ax[0].plot(xlist, Tlist, label='T', color='b')
-ax[1].plot(xlist, CVT2list, label='C', color='orange')
-ax[1].set_xlabel('{}'.format(xname))
+ax[0].plot(xlist, Tpm, label='Tp', color='b')
+ax[0].plot(xlist, T0m, label='T0', color='b', linestyle='--', alpha=0.5)
 ax[0].set_ylabel('FPT')
-ax[1].set_ylabel('CVT^2')
 ax[0].plot([],[], ' ', label='f={}, M={}, k={}'.format(f,M,k))
 ax[0].plot([],[], ' ', label='gammaz={}, cz={}, gammar={}'.format(gammaz,cz, gammar))
 ax[0].plot([],[], ' ', label='ftype={}, dt={}, tmax={}'.format(ftype, delta_t, tmax))
 ax[0].legend(loc='upper right')
+
+ax[1].plot(xlist, Cpm, label='Cp', color='orange')
+ax[1].plot(xlist, C0m, label='C0', color='orange', linestyle='--', alpha=0.5)
+ax[1].set_xlabel('{}'.format(xname))
+ax[1].set_ylabel('CVT^2')
+
+
+
+ax[2].plot(xlist, np.ones(len(xlist)), color='k')
+ax[2].plot(xlist, Cpm/C0m, color='green')
+ax[2].set_xlabel('{}'.format(xname))
+ax[2].set_ylabel('Ratio of pr feedback\nand fixed pr CV^2\'s')
+
+
 plt.show()
