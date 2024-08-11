@@ -120,7 +120,7 @@ vthb=0.2
 vth=vth0
 
 delta_t = 0.001
-tmax = 100 # <-------------- TMAX
+tmax = 200 # <-------------- TMAX
 
 fmin=(k*vthb)/(vth0*(c*k*M*pr*tauv - (pr*vthb)/vth0))
 print('fmin', fmin)
@@ -138,7 +138,7 @@ print('fmin', fmin)
 # plt.legend(bbox_to_anchor=[0.85,1.4], loc='upper right')
 # =============================================================================
 
-navgs=10
+navgs=100
 Ta=[]
 T0=[]
 Ca=[]
@@ -148,12 +148,13 @@ for j in range(navgs):
     Caj=[]  
     T0j=[]
     C0j=[]
-    xname='f'
-    xlist=np.linspace(0.01, 100, 100)
+    xname='pr'
+    xlist=np.linspace(0.01, 1, 100)
     for i, x in enumerate(xlist):
         print(j, navgs, i, len(xlist))
-        res=simulate(n, v, x, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, 'adaptive')
-        res0=simulate(n, v, x, pr, M, k, c, vth, tauv, tauvth, vth0, vth0, tmax, delta_t, None)
+        pr=x
+        res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, 'adaptive')
+        res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vth0, tmax, delta_t, None)
     # =============================================================================
     ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
     # =============================================================================
@@ -170,28 +171,36 @@ Ta = np.mean(np.array(Ta), 0)
 Ca = np.mean(np.array(Ca), 0)
 T0 = np.mean(np.array(T0), 0)
 C0 = np.mean(np.array(C0), 0)
+#%%
+fig, ax = plt.subplots(2,2, figsize=(8,4))
 
-fig, ax = plt.subplots(3,1, figsize=(5,5))
-ax[0].set_title('Adaptive threshold ')
-ax[0].plot(xlist, Ta, color='blue')
-ax[0].plot(xlist, T0, color='blue', linestyle='--', alpha=0.6)
-ax[0].set_xticks([])
-ax[0].set_ylabel('First passage time')
-ax[0].plot([],[], ' ', label='f={}, M={}, k={}, pr={}, c={}'.format(f,M,k, pr, c))
-ax[0].plot([],[], ' ', label='tauv={}, tauvth={}, vthb={}'.format(tauv, tauvth, vthb))
-ax[0].plot([],[], ' ', label='tmax={}, delta_t={}'.format(tmax, delta_t))
-ax[0].legend()
+fig.suptitle('Adaptive threshold model')
+ax[0,0].plot(xlist, Ta, color='blue')
+ax[0,0].plot(xlist, T0, color='blue', linestyle='--', alpha=0.6)
+ax[0,0].set_xticks([])
+ax[0,0].set_title('First passage time')
+ax[0,0].plot([],[], ' ', label='f={}, M={}, k={}, pr={}, c={}'.format(f,M,k, pr, c))
+ax[0,0].plot([],[], ' ', label='tauv={}, tauvth={}, vthb={}'.format(tauv, tauvth, vthb))
+ax[0,0].plot([],[], ' ', label='tmax={}, delta_t={}'.format(tmax, delta_t))
+ax[0,0].legend()
 
-ax[1].plot(xlist, Ca, color='orange', label='adaptive')
-ax[1].plot(xlist, C0, color='orange', linestyle='--', alpha=0.6, label='fixed threshold')
-ax[1].set_ylabel('Noise in FPT\n(CV squared)')
-ax[1].set_xticks([])
-ax[1].legend()
+ax[0,1].plot(xlist, Ca, color='orange', label='adaptive')
+ax[0,1].plot(xlist, C0, color='orange', linestyle='--', alpha=0.6, label='fixed threshold')
+ax[0,1].set_title('Coefficient of variation squared')
+ax[0,1].legend()
+ax[0,1].set_xticks([])
 
-ax[2].plot(xlist, np.ones(len(xlist)), color='k')
-ax[2].plot(xlist, Ca/C0, color='green')
-ax[2].set_xlabel('{}'.format(xname))
-ax[2].set_ylabel('Ratio of adaptvie\nand fixed CV^2\'s')
+ax[1,0].plot(xlist, Ta/T0, color='purple')
+ax[1,0].set_title('Ratio of adaptive and fixed FPT')
+ax[1,0].plot(xlist, np.ones(len(xlist)), color='k')
+ax[1,0].set_xlabel('{}'.format(xname))
+
+ax[1,1].plot(xlist, np.ones(len(xlist)), color='k')
+ax[1,1].plot(xlist, Ca/C0, color='red')
+ax[1,1].set_xlabel('{}'.format(xname))
+ax[1,1].set_title('Ratio of adaptive and fixed CV^2')
+
+
 
 # -----------------------------------------------------------------------------
 
