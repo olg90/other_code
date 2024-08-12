@@ -24,7 +24,7 @@ def get_FF(x):
 def getCV2(x):
     return np.var(x)/np.mean(x)**2
 
-def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
+def simulate(f, pru, prn, p1n, prp, p1p, pb, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
         nlist=[]
         rlist=[]
         zlist=[]
@@ -40,6 +40,7 @@ def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
         e=1e-6
         
         while tcurr < tmax:
+            print(tcurr/tmax)
             
             # Get the three event times
             t0=exponential(1/f) # action potential
@@ -50,7 +51,7 @@ def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
 
             # Choose the smallest one and then make that event happen
             if t0<t1 and t0<t2 and t0<t3 and t0<timer: # AP occurrs
-                b = binomial(n, pr(z, ftype))
+                b = binomial(n, pr(z, pru, prn, p1n, prp, p1p, pb, ftype))
                 n = n - b
                 z = z + cz*b
                 r += b
@@ -77,39 +78,41 @@ def simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t):
             else:
                 tmin=t4
                 timer = delta_t
-# =============================================================================
-#                 if tcurr>=ratio*tmax:
-#                     nlist.append(n)
-#                     rlist.append(r)
-#                     zlist.append(z)
-#                     tlist.append(tcurr)
-# =============================================================================
+                if tcurr>=ratio*tmax:
+                    nlist.append(n)
+                    rlist.append(r)
+                    zlist.append(z)
+                    tlist.append(tcurr)
             tcurr += tmin
            
-        Tdiffs=np.diff(APlist)
-        Tmean = np.mean(Tdiffs)
-        CV2=np.var(Tdiffs)/Tmean**2
 
+            nmean=np.mean(nlist)
+            rmean=np.mean(rlist)
+            zmean=np.mean(zlist)
+
+            ffn=np.var(nlist)/nmean
+            ffr=np.var(rlist)/rmean
+            ffz=np.var(zlist)/zmean
+            
+            
+        return nmean, rmean, zmean, ffn, ffr, ffz
+#       0-4 lists, 5-7 means, 8-10 ffs
 # =============================================================================
-#         return tlist, nlist, rlist, zlist, APlist, Tmean, CV2
+#         return tlist, nlist, rlist, zlist, APlist, \
+#             nmean, rmean, zmean, \
+#                 ffn, ffr, ffz
 # =============================================================================
-        return Tmean, CV2
+# =============================================================================
+#         return Tmean, CV2
+# =============================================================================
     
-def pr(z, ftype):
+def pr(z, pru, prn, p1n, prp, p1p, pb, ftype):
 
     if ftype == 'u':
-        pru = 0.2 # prob
         return pru
-
     if ftype=='n':
-        prn = 0.5 # 0.5, previously # prob
-        p1n = 0.001 #15 # fb strength
         return prn/(1+p1n*z)
-
     if ftype=='p':
-        prp = 1 # 0.63 # prob
-        p1p = 0.001 #30 20 15 10 # fb strength
-        pb = 0.5 # 0.5, basal rate, %
         return pb + (prp-pb)*p1p*z/(1+p1p*z)
     
 ###############################################################################
@@ -118,18 +121,34 @@ def pr(z, ftype):
 #
 ###############################################################################
     
-ftype='n' # feedback type: n-negative, p-positive, u-unregulated
+ftype='u' # feedback type: n-negative, p-positive, u-unregulated
 f=10
 M=100
 k=10 # 10 
-gammaz=10
-cz=10 # number of neurotransmitters per vesicle
+gammaz=50
+cz=50 # number of neurotransmitters per vesicle
 gammar=10
 
+pru=0.2 # Unregulated
+
+prn = 0.5 #  -------------- Negative feedback
+p1n = 0.001 # fb strength
+
+prp = 1 # prob
+p1p = 0.001 # Positive feedback
+pb = 0.2 # 0.5, basal rate, %
+
 delta_t = 0.001
-tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
+tmax = 100
+
 # =============================================================================
+# res=simulate(f, pru, prn, p1n, prp, p1p, pb, M, k, 
+#              gammaz, gammar, cz, ftype, tmax, delta_t)
 # 
+# print(res[3])
+# =============================================================================
+
+# =============================================================================
 # res=simulate(f, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
 # fig, ax = plt.subplots(2,1)
 # ax[0].plot(res[0], res[1], label='n')
@@ -137,60 +156,72 @@ tmax = 200 # <-------------- TMAX, set to 200 for the FF calculation
 # ax[1].plot(res[0], res[3])
 # ax[0].legend()
 # ax[1].set_ylabel('z')
-# 
 # =============================================================================
 
 navgs=1
-Tp=[]
-Cp=[]
-T0=[]
-C0=[]
+fnf=[]
+frf=[]
+fzf=[]
+fnu=[]
+fru=[]
+fzu=[]
 for j in range(navgs):
-    Tpj=[]
-    Cpj=[]
-    T0j=[]
-    C0j=[]
+    fnfj=[]
+    frfj=[]
+    fzfj=[]
+    fnuj=[]
+    fruj=[]
+    fzuj=[]
+
     xname='f'
     xlist=np.linspace(0.01, 100, 20)
     for i, x in enumerate(xlist):
         print(j, navgs, i, len(xlist))
-        res=simulate(x, pr, M, k, gammaz, gammar, cz, ftype, tmax, delta_t)
-        res0=simulate(x, pr, M, k, gammaz, gammar, cz, 'u', tmax, delta_t)
-        Tpj.append(res[0])
-        Cpj.append(res[1])
-        T0j.append(res0[0])
-        C0j.append(res0[1])
-    Tp.append(Tpj)
-    Cp.append(Cpj)
-    T0.append(T0j)
-    C0.append(C0j)
-Tpm = np.mean(np.array(Tp),0)
-T0m = np.mean(np.array(T0),0)
-Cpm = np.mean(np.array(Cp),0)
-C0m = np.mean(np.array(C0),0)
-       
-fig, ax = plt.subplots(3,1)
+        resf=simulate(f, pru, prn, p1n, prp, p1p, pb, M, k, 
+                     gammaz, gammar, cz, ftype, tmax, delta_t)
+        resu=simulate(f, pru, prn, p1n, prp, p1p, pb, M, k, 
+                      gammaz, gammar, cz, 'u', tmax, delta_t)
+        fnfj.append(resf[3])
+        frfj.append(resf[4])
+        fzfj.append(resf[5])
+        fnuj.append(resu[5])
+        fruj.append(resu[5])
+        fzuj.append(resu[5])
+    fnf.append(fnfj)
+    frf.append(frfj)
+    fzf.append(fzfj)
+    fnu.append(fnuj)
+    fru.append(fruj)
+    fzu.append(fzuj)
+fnfm = np.mean(np.array(fnf),0)
+frfm = np.mean(np.array(frf),0)
+fzfm = np.mean(np.array(fzf),0)
+fnum = np.mean(np.array(fnu),0)
+frum = np.mean(np.array(fru),0)
+fzum = np.mean(np.array(fzu),0)
 
+fig, ax = plt.subplots(3,1, figsize=(6,6))
 ax[0].set_title('feedback in pr')
-ax[0].plot(xlist, Tpm, label='Tp', color='b')
-ax[0].plot(xlist, T0m, label='T0', color='b', linestyle='--', alpha=0.5)
-ax[0].set_ylabel('FPT')
+
+ax[0].plot(xlist, fnfm, label='nf', color='b')
+ax[0].plot(xlist, fnum, label='nu', color='b', linestyle='--', alpha=0.5)
+ax[0].set_xticks([])
 ax[0].plot([],[], ' ', label='f={}, M={}, k={}'.format(f,M,k))
 ax[0].plot([],[], ' ', label='gammaz={}, cz={}, gammar={}'.format(gammaz,cz, gammar))
+ax[0].plot([],[], ' ', label='pru={}, prn={}, p1n={}'.format(pru, prn, p1n))
+ax[0].plot([],[], ' ', label='prp={}, p1p={}, pb={}'.format(prp, p1p, pb))
 ax[0].plot([],[], ' ', label='ftype={}, dt={}, tmax={}'.format(ftype, delta_t, tmax))
 ax[0].legend(loc='upper right')
+ax[0].set_ylabel('n')
 
-ax[1].plot(xlist, Cpm, label='Cp', color='orange')
-ax[1].plot(xlist, C0m, label='C0', color='orange', linestyle='--', alpha=0.5)
-ax[1].set_xlabel('{}'.format(xname))
-ax[1].set_ylabel('CVT^2')
+ax[1].plot(xlist, frfm, label='rf', color='b')
+ax[1].plot(xlist, frum, label='ru', color='b', linestyle='--', alpha=0.5)
+ax[1].set_xticks([])
+ax[1].set_ylabel('r')
 
-
-
-ax[2].plot(xlist, np.ones(len(xlist)), color='k')
-ax[2].plot(xlist, Cpm/C0m, color='green')
+ax[2].plot(xlist, fzfm, label='zf', color='b')
+ax[2].plot(xlist, fzum, label='zu', color='b', linestyle='--', alpha=0.5)
 ax[2].set_xlabel('{}'.format(xname))
-ax[2].set_ylabel('Ratio of pr feedback\nand fixed pr CV^2\'s')
-
+ax[2].set_ylabel('z')
 
 plt.show()
