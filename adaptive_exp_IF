@@ -1,0 +1,80 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Membrane potential parameters
+taum=0.5
+R=1
+Em=-0.065
+Delta_T=0.001 # sharpness of AP
+vth=0.02
+
+# Adaption current parameters
+tau=1
+a=0.0001
+b=0.01
+vr=-0.065
+
+v=-0.065 # membrane potential
+w=-0 # adaption current
+
+tmax=20
+dt=0.01
+
+times = np.arange(0, tmax, dt)
+vlist=np.zeros(len(times))
+wlist=np.zeros_like(vlist)
+vlist[0]=v
+wlist[0]=w
+I = np.zeros_like(times)
+
+I0=0.1
+t0=2
+t1=6
+tlen=10
+I[int(t0/dt):int((t0+tlen)/dt)]=I0
+
+tflist=[]
+tf=np.inf
+
+def delta(y):
+    if y == 0:
+        return 1
+    else:
+        return 0
+
+for i in range(1,len(times)):
+    dvdt=1/taum*(R*I[i]+(Em-v+Delta_T*np.exp((v-vth)/Delta_T))-R*w)
+    dwdt=1/tau*(-a*(v-Em)-w)
+    
+    v=v+dvdt*dt
+    w=w+dwdt*dt
+    
+    if v >= vth:
+        v=vr
+        w=w+tau*b
+        
+        tflist.append(i*dt)
+        tf=i*dt
+    
+    vlist[i]=v
+    wlist[i]=w
+
+fig, ax = plt.subplots(3,1, figsize=(5,3))
+fig.suptitle('Adaptive exponential integrate and fire model')
+ax[0].plot(times, vlist)
+ax[0].plot(times, vth*np.ones(len(times)), color='k')
+ax[1].plot(times, wlist, color='green')
+ax[2].plot(times, I, color='red')
+for tf in tflist:
+    ax[0].axvline(tf, color='r', alpha=0.5)
+
+ax[0].set_ylabel('membrane\npotential')
+ax[1].set_ylabel('adaptation\ncurrent')
+ax[2].set_ylabel('input\ncurrent')
+
+ax[0].set_ylim([np.min(vlist)-0.01, vth+0.01])
+
+ax[0].set_xticks([])
+ax[1].set_xticks([])
+ax[2].set_xlabel('time')
+plt.show()
