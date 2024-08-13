@@ -1,0 +1,121 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# FF
+
+def simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax):
+
+    thist=[]
+    nhist=[]
+    vhist=[]
+    AP_times = []
+    
+    tcurr = 0
+    v = 0
+    n = 0
+    timer = delta_t
+    ftimer = 1/f
+    while tcurr < tmax:
+        if tcurr<tstim:
+            t0=ftimer
+        else:
+            t0=np.inf
+        t1=np.random.exponential(1/(k*(M-n)+1e-10))
+        t2=timer
+
+        if t0<t1 and t0<t2:
+            b=np.random.binomial(n, pr) # Number released
+            n-=b
+            v+=c*b
+            tmin=t0
+            timer -= tmin
+            ftimer = 1/f
+            
+        elif t1<t0 and t1<t2:
+            if n<M:
+                n+=1      
+            tmin=t1
+            timer-=tmin
+            ftimer-=tmin
+            
+        else:
+            tmin=t2
+            ftimer-=tmin
+            thist.append(tcurr)
+            nhist.append(n)
+            vhist.append(v)
+            timer = delta_t
+            
+        tcurr += tmin
+        v = v*np.exp(-tmin/tauv)
+        
+        if v >= vth:
+            v = 0
+            AP_times.append(tcurr)
+            
+    vhist = np.array(vhist) # data array
+    AP_times = np.array(AP_times)
+    inter_AP_times = np.diff(AP_times)
+    if len(inter_AP_times) < 2:
+        Tmean = np.nan
+        CVT2 = np.nan
+    else:
+        Tmean = np.mean(inter_AP_times)
+        CVT2 = np.var(inter_AP_times) / Tmean**2
+        
+        
+    return thist, nhist, vhist, AP_times, Tmean, CVT2
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+
+
+f=10
+M = 100
+pr = 0.5
+c = 0.001
+k = 10
+tauv = 1
+vth = 0.2
+
+tmax = 10
+tstim=5
+
+delta_t = 0.001
+
+flist=np.linspace(0.01, 100, 100)
+Tlist=np.zeros(len(flist))
+for i, f in enumerate(flist):
+    print(i)
+    r=simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax)
+    Tlist[i]=r[4]
+    
+plt.plot(flist, 1/Tlist)
+plt.xlabel('input frequency')
+plt.ylabel('output frequency')
+plt.show()
+    
+# =============================================================================
+# res=simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax)
+# plt.plot(res[0], res[2], label='membrane potential')
+# plt.plot(res[0], vth*np.ones(len(res[0])), label='AP firing threshold', color='k')
+# for AP in res[3]:
+#     plt.axvline(x=AP, color='r')
+#     
+# plt.legend(loc='upper right')
+# =============================================================================
+
+
+
+# =============================================================================
+# Tlist=[]
+# nruns=100
+# for i in range(nruns):
+#     print(i, nruns)
+#     result = simulate(f, k, M, pr, c, vth, tauv, delta_t, nstims, tmax)
+#     Tlist.append(result['T'])
+# print(np.mean(Tlist), tauv*np.log(1/(1-vth/((c*f*pr*k*M*tauv)/(f*pr + k)))))
+# =============================================================================
