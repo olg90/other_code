@@ -1,0 +1,44 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+dt = 0.01
+b = np.random.binomial(10,0.2)
+tcurr=0
+tmax=10
+tauv=10
+v=0
+vth=10
+vhist=[]
+thist=[]
+aptimes=[]
+deltat=0.001
+timers=np.array([dt, deltat])
+while tcurr<tmax:
+    argmin = np.argmin(timers)
+    if argmin==0:
+        timers-=timers[argmin]
+        timers[argmin]=dt
+        b=np.random.binomial(10,0.4)
+        v=v+b
+        if v>vth:
+            v=0
+            aptimes.append(tcurr)
+    if argmin==1:
+        timers-=timers[argmin]
+        timers[argmin]=deltat
+        vhist.append(v)
+        thist.append(tcurr)
+    v=v*np.exp(-dt/tauv)
+    tcurr+=dt
+    
+tdiffs=np.diff(aptimes)
+T=np.mean(tdiffs)
+    
+plt.plot(thist, vhist)
+for ap in aptimes:
+    plt.axvline(x=ap, color='r')
+    
+mu=10*0.4
+Teq=tauv*np.log(1/(1-vth/tauv*(1-np.exp(-dt/tauv))))
+    
+print(T, Teq)
