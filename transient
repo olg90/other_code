@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# FF
+# FFI
 
-def simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax):
+def simulate(f, k, M, pr, pi, c, ci, vth, vthi, tauv, delta_t, tstim, tmax):
 
     thist=[]
     nhist=[]
@@ -13,6 +13,9 @@ def simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax):
     tcurr = 0
     v = 0
     n = 0
+    ni=0
+    vi=0
+    
     timer = delta_t
     ftimer = 1/f
     while tcurr < tmax:
@@ -24,16 +27,25 @@ def simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax):
         t2=timer
 
         if t0<t1 and t0<t2:
+            # Firing onto the postsynaptic neuron
             b=np.random.binomial(n, pr) # Number released
             n-=b
             v+=c*b
+            vi+=c*b
             tmin=t0
             timer -= tmin
             ftimer = 1/f
             
+            # Firing onto the interneuron
+            if vi>vthi:
+                vi=0
+                bi = np.random.binomial(ni, pi)
+                ni-=bi
+                v-=ci*bi
+
         elif t1<t0 and t1<t2:
             if n<M:
-                n+=1      
+                n+=1
             tmin=t1
             timer-=tmin
             ftimer-=tmin
@@ -76,7 +88,9 @@ def simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax):
 f=10
 M = 100
 pr = 0.5
+pi = 0.2
 c = 0.001
+ci=0.001
 k = 10
 tauv = 1
 vth = 0.2
@@ -90,7 +104,7 @@ flist=np.linspace(0.01, 100, 100)
 Tlist=np.zeros(len(flist))
 for i, f in enumerate(flist):
     print(i)
-    r=simulate(f, k, M, pr, c, vth, tauv, delta_t, tstim, tmax)
+    r=simulate(f, k, M, pr, pi, c, ci, vth, tauv, delta_t, tstim, tmax)
     Tlist[i]=r[4]
     
 plt.plot(flist, 1/Tlist)
