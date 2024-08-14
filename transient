@@ -140,3 +140,12 @@ plt.show()
 #     Tlist.append(result['T'])
 # print(np.mean(Tlist), tauv*np.log(1/(1-vth/((c*f*pr*k*M*tauv)/(f*pr + k)))))
 # =============================================================================
+
+
+Remove["Global`*"]
+Fb[x_] := CDF[BinomialDistribution[n, p], x]
+Pb[x_] := PDF[BinomialDistribution[n, p], x]
+1 - Integrate[
+  Integrate[
+   Fb[x - b1  Exp[-tau  t2]]  Pb[b1], {b1, -Infinity, x}], {t2, 0, 
+   Infinity}]
