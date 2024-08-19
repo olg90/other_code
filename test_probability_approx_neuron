@@ -6,7 +6,9 @@ def run_test(f, pr, n, vth, tauv, delta_t, tmax):
     vhist=[]
     thist=[]
     AP_times = []
+    burstlist=[]
     
+    nbursts=0
     tcurr = 0
     v = 0
     n = 100
@@ -23,6 +25,7 @@ def run_test(f, pr, n, vth, tauv, delta_t, tmax):
             v+=b
             tmin=t0
             timer -= tmin
+            nbursts+=1
         else:
             tmin=t1
             vhist.append(v)
@@ -33,6 +36,8 @@ def run_test(f, pr, n, vth, tauv, delta_t, tmax):
         if v >= vth:
             v = 0
             AP_times.append(tcurr)
+            burstlist.append(nbursts)
+            nbursts=0
     vhist = np.array(vhist) # data array
     AP_times = np.array(AP_times)
     inter_AP_times = np.diff(AP_times)
@@ -47,7 +52,8 @@ def run_test(f, pr, n, vth, tauv, delta_t, tmax):
             'AP_times':np.array(AP_times),
             'inter_AP_times':np.array(inter_AP_times),
             'mean_T':mean_inter_AP_time, 
-            'CVT2':CVT2}
+            'CVT2':CVT2,
+            'nbursts':np.mean(burstlist)}
 
 def teq(f, tauv, vth, n, pr, M, mu):
     Mval=M(f,tauv)
@@ -70,38 +76,55 @@ mu=n*pr
 
 delta_t = 0.001
 
-flist=np.linspace(1, 100,100)
+# =============================================================================
+# res=run_test(f, pr, n, vth, tauv, delta_t, 1)
+# plt.plot(res['thist'], res['vhist'])
+# =============================================================================
 
+flist=np.linspace(1, 100,100)
+blist=[]
 tf=[]
 navgs=1
 for i in range(navgs):
     Tlist=[]
+    blisti=[]
     for j,f in enumerate(flist):
         print(j, len(flist), i, navgs)
         result = run_test(f, pr, n, vth, tauv, delta_t, tmax)
         Tlist.append(result['mean_T'])
+        blisti.append(result['nbursts'])
     tf.append(Tlist)
-
+    blist.append(blisti)
+    
 def M(f, tauv):
     return f/(f+tauv)
 
 tf=np.array(tf)
+burstfs=np.array(blist)
 # =============================================================================
 # print(np.mean(Tlist), teq(f, tauv, vth, n, pr, M))
 # =============================================================================
 tf=np.mean(tf,0)
-
-plt.title('b-binomial b, Ti-exponential')
+burstfs=np.mean(burstfs, 0)
+#%%
+plt.subplot(2,1,1)
+plt.title('b-binomial(n={},pr={}) , Ti-exponential(f)'.format(n,pr))
 plt.plot(flist, tf, label='simulations')
 plt.plot(flist, teq(flist, tauv, vth, n, pr, M, mu),label='equation')
 # =============================================================================
 # plt.xscale('log')
 # =============================================================================
-plt.xlabel('input frequency (exponential)')
+
 plt.ylabel('First passage time')
 # =============================================================================
-# plt.ylim([0, 5])
-# plt.xlim([35,100])
+# plt.ylim([0, 3])
+# plt.xlim([0,100])
 # =============================================================================
+plt.plot([], [], ' ', label='vth={}, tauv={}'.format(vth, tauv))
 plt.legend()
+
+plt.subplot(2,1,2)
+plt.plot(flist, burstfs)
+plt.ylabel('number of bursts')
+plt.xlabel('input frequency (exponential)')
 plt.show()
