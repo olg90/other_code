@@ -1,0 +1,107 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def run_test(f, pr, n, vth, tauv, delta_t, tmax):
+
+    vhist=[]
+    thist=[]
+    AP_times = []
+    
+    tcurr = 0
+    v = 0
+    n = 100
+    timer = delta_t
+    while tcurr < tmax:
+        t0=np.random.exponential(1/f)
+        t1=timer
+        
+        if t0<t1:
+            b=np.random.binomial(n, pr) # Number released
+# =============================================================================
+#             b=np.random.geometric(pr) # Number released
+# =============================================================================
+            v+=b
+            tmin=t0
+            timer -= tmin
+        else:
+            tmin=t1
+            vhist.append(v)
+            thist.append(tcurr)
+            timer = delta_t
+        tcurr += tmin
+        v = v*np.exp(-tmin/tauv)
+        if v >= vth:
+            v = 0
+            AP_times.append(tcurr)
+    vhist = np.array(vhist) # data array
+    AP_times = np.array(AP_times)
+    inter_AP_times = np.diff(AP_times)
+    if len(inter_AP_times) < 2:
+        mean_inter_AP_time = np.nan
+        CVT2 = np.nan
+    else:
+        mean_inter_AP_time = np.mean(inter_AP_times)
+        CVT2 = np.var(inter_AP_times) / mean_inter_AP_time**2
+    return {'vhist': vhist,
+            'thist':np.array(thist),
+            'AP_times':np.array(AP_times),
+            'inter_AP_times':np.array(inter_AP_times),
+            'mean_T':mean_inter_AP_time, 
+            'CVT2':CVT2}
+
+def teq(f, tauv, vth, n, pr, M, mu):
+    Mval=M(f,tauv)
+    return 1/f/(np.log(Mval))*np.log(vth*(Mval-1)/(mu)+1)
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+
+tmax = 200
+f=100
+pr = 0.3
+tauv = 1
+vth = 100
+n=100
+
+mu=n*pr
+
+delta_t = 0.001
+
+flist=np.linspace(1, 100,100)
+
+tf=[]
+navgs=1
+for i in range(navgs):
+    Tlist=[]
+    for j,f in enumerate(flist):
+        print(j, len(flist), i, navgs)
+        result = run_test(f, pr, n, vth, tauv, delta_t, tmax)
+        Tlist.append(result['mean_T'])
+    tf.append(Tlist)
+
+def M(f, tauv):
+    return f/(f+tauv)
+
+tf=np.array(tf)
+# =============================================================================
+# print(np.mean(Tlist), teq(f, tauv, vth, n, pr, M))
+# =============================================================================
+tf=np.mean(tf,0)
+
+plt.title('b-binomial b, Ti-exponential')
+plt.plot(flist, tf, label='simulations')
+plt.plot(flist, teq(flist, tauv, vth, n, pr, M, mu),label='equation')
+# =============================================================================
+# plt.xscale('log')
+# =============================================================================
+plt.xlabel('input frequency (exponential)')
+plt.ylabel('First passage time')
+# =============================================================================
+# plt.ylim([0, 5])
+# plt.xlim([35,100])
+# =============================================================================
+plt.legend()
+plt.show()
