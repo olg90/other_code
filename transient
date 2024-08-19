@@ -24,10 +24,9 @@ def simulate(f, k, M, pr, pi, c, ci, vth, vthi, tauv, delta_t, tstim, tmax):
         else:
             t0=np.inf
         t1=np.random.exponential(1/(k*(M-n)+1e-10))
-        t2=np.random.exponential(1/(k*(M-n)+1e-10))
-        t3=timer
+        t2=timer
 
-        if t0<t1 and t0<t2 and t0<t3:
+        if t0<t1 and t0<t2:
             # Firing onto the postsynaptic neuron
             b=np.random.binomial(n, pr) # Number released
             n-=b
@@ -44,21 +43,15 @@ def simulate(f, k, M, pr, pi, c, ci, vth, vthi, tauv, delta_t, tstim, tmax):
                 ni-=bi
                 v-=ci*bi
 
-        elif t1<t0 and t1<t2 and t1<t3:
-            n+=1
+        elif t1<t0 and t1<t2:
+            if n<M:
+                n+=1
             tmin=t1
             timer-=tmin
             ftimer-=tmin
             
-        elif t2<t0 and t2<t1 and t2<t3:
-            ni+=1
-            tmin=t2
-            timer-=tmin
-            ftimer-=tmin
-            
-            
         else:
-            tmin=t3
+            tmin=t2
             ftimer-=tmin
             thist.append(tcurr)
             nhist.append(n)
@@ -91,16 +84,17 @@ def simulate(f, k, M, pr, pi, c, ci, vth, vthi, tauv, delta_t, tstim, tmax):
 #
 ###############################################################################
 
+
 f=10
 M = 100
 pr = 0.5
-pi = 0.05
+pi = 0.2
 c = 0.001
 ci=0.001
 k = 10
 tauv = 1
 vth = 0.2
-vthi=0.1
+vthi=0.2
 
 tmax = 10
 tstim=5
@@ -117,6 +111,10 @@ for i, f in enumerate(flist):
 plt.plot(flist, 1/Tlist)
 plt.xlabel('input frequency')
 plt.ylabel('output frequency')
+plt.plot([], [], ' ', label='M={}, pr={}, pi={}'.format(M, pr, pi))
+plt.plot([], [], ' ', label='c={}, ci={}, k={}, ki={}'.format(c,ci,k,k))
+plt.plot([], [], ' ', label='tauv={}, vth={}, vthi={}'.format(tauv, vth, vthi))
+plt.legend()
 plt.show()
     
 # =============================================================================
@@ -140,12 +138,3 @@ plt.show()
 #     Tlist.append(result['T'])
 # print(np.mean(Tlist), tauv*np.log(1/(1-vth/((c*f*pr*k*M*tauv)/(f*pr + k)))))
 # =============================================================================
-
-
-Remove["Global`*"]
-Fb[x_] := CDF[BinomialDistribution[n, p], x]
-Pb[x_] := PDF[BinomialDistribution[n, p], x]
-1 - Integrate[
-  Integrate[
-   Fb[x - b1  Exp[-tau  t2]]  Pb[b1], {b1, -Infinity, x}], {t2, 0, 
-   Infinity}]
