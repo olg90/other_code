@@ -2,23 +2,44 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Membrane potential parameters
-taum=0.5
-R=1
-Em=-0.065
-Delta_T=0.001 # sharpness of AP
-vth=0.02
+# =============================================================================
+# # Original testable
+# taum=0.5
+# R=1
+# Em=-0.065
+# Delta_T=0.001 # sharpness of AP
+# vth=0.02
+# 
+# # Adaption current parameters
+# tauw=1
+# a=0.1
+# b=0.01
+# vr=-0.065
+# 
+# v=-0.065 # membrane potential
+# w=-0 # adaption current
+# 
+# tmax=20
+# dt=0.01
+# =============================================================================
+
+taum=20e-3
+R=500e6
+Em=-0.07
+Delta_T=2e-3 # sharpness of AP
+vth=-50e-3
 
 # Adaption current parameters
-tau=1
-a=0.0001
-b=0.01
-vr=-0.065
+tauw=30e-3
+a=0
+b=60e-12
+vrest=-70e-3
 
-v=-0.065 # membrane potential
+v=-55e-3 # membrane potential
 w=-0 # adaption current
 
-tmax=20
-dt=0.01
+tmax=3
+dt=0.001
 
 times = np.arange(0, tmax, dt)
 vlist=np.zeros(len(times))
@@ -27,31 +48,28 @@ vlist[0]=v
 wlist[0]=w
 I = np.zeros_like(times)
 
-I0=0.1
-t0=2
-t1=6
-tlen=10
-I[int(t0/dt):int((t0+tlen)/dt)]=I0
+I0=65e-12
+t0=1
+t1=2
+tlen=1
+I[int(t0/dt):int((t1)/dt)]=I0
 
 tflist=[]
 tf=np.inf
 
-def delta(y):
-    if y == 0:
-        return 1
-    else:
-        return 0
-
 for i in range(1,len(times)):
-    dvdt=1/taum*(R*I[i]+(Em-v+Delta_T*np.exp((v-vth)/Delta_T))-R*w)
-    dwdt=1/tau*(-a*(v-Em)-w)
+    dvdt=1/taum*(-(v-vrest)+Delta_T*np.exp((v-vth)/Delta_T)-R*w+R*I[i])
+# =============================================================================
+#     dvdt=1/taum*(R*I[i]+(Em-v+Delta_T*np.exp((v-vth)/Delta_T))-R*w)
+# =============================================================================
+    dwdt=1/tauw*(a*(v-Em)-w)
     
     v=v+dvdt*dt
     w=w+dwdt*dt
     
     if v >= vth:
         v=vr
-        w=w+tau*b
+        w=w+b
         
         tflist.append(i*dt)
         tf=i*dt
