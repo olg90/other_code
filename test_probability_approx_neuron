@@ -69,7 +69,25 @@ def teq(f, tauv, vth, n, pr, M, mu):
 #     # Taylor series approximation on T
 #     return (1/f)**2*vth*tauv/(mu*np.log(1/(1-tauv*1/f)))
 # =============================================================================
-    return (1-np.exp(-tauv*1/f))*vth/(mu*tauv)
+# =============================================================================
+#     return (1-np.exp(-tauv*1/f))*vth/(mu*tauv)
+# =============================================================================
+
+    Tmean = 1/f
+    # T3
+# =============================================================================
+#     return (Tmean**2*vth)/(mu*np.log(1/(1 - tauv*Tmean)))
+# =============================================================================
+    # T4
+# =============================================================================
+#     return ((1 - np.exp(-(tauv*Tmean)))*vth)/(mu*tauv)
+# =============================================================================
+# =============================================================================
+#     # T5
+#     return (Tmean*np.log(1 - (tauv*Tmean*vth)/mu))/np.log(1 - tauv*Tmean)
+# =============================================================================
+    # T6
+    return np.log(1/(1 - ((1 - np.exp(-(tauv*Tmean)))*vth)/mu))/tauv
 
 def M(f, tauv):
     return f/(f+tauv)
@@ -122,7 +140,7 @@ burstfs=np.array(blist)
 # =============================================================================
 tf=np.mean(tf,0)
 burstfs=np.mean(burstfs, 0)
-#%%
+
 fig, ax = plt.subplots(2, 1)
 ax[0].set_title('b-binomial(n={},pr={}) , Ti-exponential(f)'.format(n, pr))
 ax[0].plot(flist, tf, label='simulations')
@@ -144,3 +162,4 @@ ax[1].plot(flist, burstfs)
 ax[1].set_ylabel('number of bursts')
 ax[1].set_xlabel('input frequency (exponential)')
 plt.show()
+
