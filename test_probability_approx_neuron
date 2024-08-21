@@ -162,4 +162,3 @@ ax[1].plot(flist, burstfs)
 ax[1].set_ylabel('number of bursts')
 ax[1].set_xlabel('input frequency (exponential)')
 plt.show()
-
