@@ -1,70 +1,46 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
 # Tonic firing
 taum=20e-3
-R=500e6
-Delta_T=2e-3 # sharpness of AP
-vth=-50e-3
-# Adaption current parameters
 tauw=30e-3
 a=0
 b=60e-12
-vrest=-70e-3
 vr=-55e-3
-v=vrest # membrane potential
-w=-0 # adaption current
 
 # =============================================================================
 # # Adapting
 # taum=20e-3
-# R=500e6
-# Delta_T=2e-3 # sharpness of AP
-# vth=-50e-3
-# # Adaption current parameters
 # tauw=100e-3
 # a=0
 # b=5e-12
 # vr=-55e-3
-# vrest=-70e-3
-# v=vrest # membrane potential
-# w=-0 # adaption current
 # =============================================================================
 
 # =============================================================================
 # # Init. burst
 # taum=5e-3
-# R=500e6
-# Delta_T=2e-3 # sharpness of AP
-# vth=-50e-3
-# # Adaption current parameters
 # tauw=100e-3
 # a=0.5-9
 # b=7e-12
 # vr=-51e-3
-# vrest=-70e-3
-# v=vrest # membrane potential
-# w=-0 # adaption current
 # =============================================================================
 
 # =============================================================================
 # # Bursting
 # taum=5e-3
-# R=500e6
-# Delta_T=2e-3 # sharpness of AP
-# vth=-50e-3
-# # Adaption current parameters
 # tauw=100e-3
 # a=-0.5-9
 # b=7e-12
 # vr=-46e-3
-# vrest=-70e-3
-# v=vrest # membrane potential
-# w=-0 # adaption current
 # =============================================================================
 
+vrest=-70e-3
+R=500e6
+Delta_T=2e-3 # sharpness of AP
+vth=-50e-3
+v=vrest # membrane potential
+w=-0 # adaption current
 tmax=3
 dt=0.001
 
