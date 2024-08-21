@@ -57,7 +57,22 @@ def run_test(f, pr, n, vth, tauv, delta_t, tmax):
 
 def teq(f, tauv, vth, n, pr, M, mu):
     Mval=M(f,tauv)
-    return 1/f/(np.log(Mval))*np.log(vth*(Mval-1)/(mu)+1)
+# =============================================================================
+#     # First approximation, 0th order
+#     return 1/f/(np.log(Mval))*np.log(vth*(Mval-1)/(mu)+1)
+# =============================================================================
+# =============================================================================
+#     # Taylor series approximation at 0, 1st order
+#     return 1/f*vth*(Mval-1)/mu/np.log(Mval)
+# =============================================================================
+# =============================================================================
+#     # Taylor series approximation on T
+#     return (1/f)**2*vth*tauv/(mu*np.log(1/(1-tauv*1/f)))
+# =============================================================================
+    return (1-np.exp(-tauv*1/f))*vth/(mu*tauv)
+
+def M(f, tauv):
+    return f/(f+tauv)
 
 ###############################################################################
 #
@@ -65,9 +80,13 @@ def teq(f, tauv, vth, n, pr, M, mu):
 #
 ###############################################################################
 
+# =============================================================================
+# plt.plot(teq(np.linspace(0,10,100), 1, 100, 100, 0.2, M, 20))
+# =============================================================================
+
 tmax = 200
 f=100
-pr = 0.3
+pr = 0.2
 tauv = 1
 vth = 100
 n=100
@@ -95,9 +114,6 @@ for i in range(navgs):
         blisti.append(result['nbursts'])
     tf.append(Tlist)
     blist.append(blisti)
-    
-def M(f, tauv):
-    return f/(f+tauv)
 
 tf=np.array(tf)
 burstfs=np.array(blist)
@@ -107,24 +123,24 @@ burstfs=np.array(blist)
 tf=np.mean(tf,0)
 burstfs=np.mean(burstfs, 0)
 #%%
-plt.subplot(2,1,1)
-plt.title('b-binomial(n={},pr={}) , Ti-exponential(f)'.format(n,pr))
-plt.plot(flist, tf, label='simulations')
-plt.plot(flist, teq(flist, tauv, vth, n, pr, M, mu),label='equation')
+fig, ax = plt.subplots(2, 1)
+ax[0].set_title('b-binomial(n={},pr={}) , Ti-exponential(f)'.format(n, pr))
+ax[0].plot(flist, tf, label='simulations')
+ax[0].plot(flist, teq(flist, tauv, vth, n, pr, M, mu), label='equation')
 # =============================================================================
-# plt.xscale('log')
+# ax[0].set_xscale('log')  
 # =============================================================================
+ax[0].set_ylabel('First passage time')
+# =============================================================================
+# ax[0].set_ylim([0, 3])
+# =============================================================================
+# =============================================================================
+# ax[0].set_xlim([0, 100]) 
+# =============================================================================
+ax[0].plot([], [], ' ', label='vth={}, tauv={}'.format(vth, tauv))
+ax[0].legend()
 
-plt.ylabel('First passage time')
-# =============================================================================
-# plt.ylim([0, 3])
-# plt.xlim([0,100])
-# =============================================================================
-plt.plot([], [], ' ', label='vth={}, tauv={}'.format(vth, tauv))
-plt.legend()
-
-plt.subplot(2,1,2)
-plt.plot(flist, burstfs)
-plt.ylabel('number of bursts')
-plt.xlabel('input frequency (exponential)')
+ax[1].plot(flist, burstfs)
+ax[1].set_ylabel('number of bursts')
+ax[1].set_xlabel('input frequency (exponential)')
 plt.show()
