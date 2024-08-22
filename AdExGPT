@@ -1,0 +1,52 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Parameters
+C = 200.0  # membrane capacitance (pF)
+EL = -70.0  # leak reversal potential (mV)
+VT = -50.0  # spike threshold (mV)
+DeltaT = 2.0  # slope factor (mV)
+tau_w = 200.0  # adaptation time constant (ms)
+a = 2.0  # subthreshold adaptation (nS)
+b = 100.0  # spike-triggered adaptation (pA)
+V_reset = -70.0  # reset potential (mV)
+Vth = 20.0  # spike detection threshold (mV)
+I_baseline = 0.0  # baseline current (pA)
+I_step = 400.0  # step current (pA)
+
+# Simulation settings
+T = 1000.0  # total time (ms)
+dt = 0.1  # time step (ms)
+time = np.arange(0, T, dt)
+
+# Initialize variables
+V = EL * np.ones_like(time)
+w = np.zeros_like(time)
+I = np.ones_like(time) * I_baseline  # Initialize the input current array
+
+# Apply the step current between 200 ms and 600 ms
+I[(time >= 200) & (time <= 600)] = I_step
+
+for i in range(1, len(time)):
+    # Membrane potential update
+    dV = (-(V[i-1] - EL) + DeltaT * np.exp((V[i-1] - VT) / DeltaT) - w[i-1] + I[i]) * dt / C
+    V[i] = V[i-1] + dV
+    
+    # Adaptation current update
+    dw = (a * (V[i-1] - EL) - w[i-1]) * dt / tau_w
+    w[i] = w[i-1] + dw
+    
+    # Spike detection and reset
+    if V[i] >= Vth:
+        V[i-1] = Vth  # Prevents overshoot
+        V[i] = V_reset
+        w[i] += b  # Spike-triggered adaptation
+
+# Plot results
+plt.figure(figsize=(10, 4))
+plt.plot(time, V, label='Membrane Potential (mV)')
+plt.xlabel('Time (ms)')
+plt.ylabel('V (mV)')
+plt.title('AdEx Neuron Model - Bursting Behavior with Step Current')
+plt.grid()
+plt.show()
