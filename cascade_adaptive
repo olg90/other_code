@@ -1,0 +1,268 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin, 
+             nnum, delta_t, tmax, ttype=None):
+
+    AP_times = [[] for i in range(nnum)]
+    vhists=[[] for i in range(nnum)]
+    vthhists=[[] for i in range(nnum)]
+    nhists=[[] for i in range(nnum)]
+    thists = [[] for i in range(nnum)]
+    
+    ratio=0.3
+    tcurr = 0
+    vs = np.zeros(nnum)
+    vths= np.zeros(nnum)
+    ns = np.zeros(nnum)
+    timer = delta_t
+    while tcurr < tmax:
+# =============================================================================
+#         print(tcurr/tmax)
+# =============================================================================
+        t0=np.random.exponential(1/f)
+        t1s=[np.random.exponential(1/(k*(M-ns[i])+1e-10)) for i in range(nnum)]
+        t2=timer
+        tlist=[t0] + t1s + [t2]
+        tmin=np.min(tlist)
+        targmin=np.argmin(tlist)
+        
+        if targmin == 0:
+            
+            b=np.random.binomial(ns[0], pr) # Number released
+            ns[0]-=b
+            vs[0]+=c*b
+            timer -= tmin
+            
+        elif ((targmin > 0) and (targmin < len(tlist)-1)):
+            ns[targmin-1]+=1
+            timer-=tmin
+
+        else:
+            tmin=t2
+            if tcurr>ratio*tmax:
+                for i in range(nnum):
+                    vhists[i].append(vs[i])
+                    nhists[i].append(ns[i])
+                    thists[i].append(tcurr)
+                    vthhists[i].append(vths[i])
+            timer = delta_t
+        tcurr += tmin
+
+        for i in range(len(vs)):
+            vs[i] = vs[i]*np.exp(-tmin/tauv)
+            if ttype=='adaptive':
+                vths[i] = vthb+(vths[i]-vthb)*np.exp(-tmin/tauvth)
+            else:
+                vths[i] = vth
+                
+        for i in range(len(vs)):
+            if vs[i] >= vths[i]:
+                vs[i] = 0
+                if ttype=='adaptive':
+                    vths[i]=get_vth(vs[i], H, cv, vth0, vths[i], vthmax, vthmin)
+                AP_times[i].append(tcurr)
+                if i != nnum-1:
+                    b=np.random.binomial(ns[i+1], pr) # Number released
+                    ns[i+1]-=b
+                    vs[i+1]+=c*b
+                    
+    Tmeans=[np.mean(np.diff(AP_times[i])) for i in range(nnum)]
+    CVT2s=[np.var(np.diff(AP_times[i]))/np.mean(np.diff(AP_times[i]))**2 for i in range(nnum)]
+        
+    return thists, nhists, vhists, AP_times, Tmeans, CVT2s, vthhists
+
+def getstats(navgs, x):
+    pr = x
+# =============================================================================
+#     navgs=20
+# =============================================================================
+    Tavg=[]
+    CVT2avg=[]
+    Tavga=[]
+    CVT2avga=[]
+    
+    for i in range(navgs):
+        print(i, navgs)
+        res = run_test(f, k, M, pr, c, vth, tauv, 
+                       tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='None')
+        resa = run_test(f, k, M, pr, c, vth, tauv, 
+                       tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='adaptive')
+        
+        T = res[4]
+        CVT2=res[5]
+        Tavg.append(T)
+        CVT2avg.append(CVT2)
+        
+        Ta = resa[4]
+        CVT2a=resa[5]
+        Tavga.append(Ta)
+        CVT2avga.append(CVT2a)
+        
+    Tavg=np.array(Tavg)
+    CVT2avg=np.array(CVT2avg)
+    Tavg=np.mean(Tavg, 0)
+    CVT2avg=np.mean(CVT2avg, 0)
+    
+    Tavga=np.array(Tavga)
+    CVT2avga=np.array(CVT2avga)
+    Tavga=np.mean(Tavga, 0)
+    CVT2avga=np.mean(CVT2avga, 0)
+
+    return Tavg, CVT2avg, Tavga, CVT2avga
+
+def get_vth(v, H, cv, vth0, vth, vthmax, vthmin):
+# =============================================================================
+#     return vth+(vthmax*(v/cv)**H+vthmin)/(1+(v/cv)**H)
+# =============================================================================
+    return vth0
+                
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+
+f = 100
+M = 100
+pr = 0.2
+c = 0.01
+k = 10
+tauv = 1 # 1
+tauvth=1
+vth = 0.2
+vth0=0.3
+vthb=0.2
+
+vthmax=0.2
+vthmin=0.01
+
+H=20
+cv=0.2
+
+nnum=20 # num neurons in sequence
+tmax = 10
+
+delta_t = 0.001
+
+# -----------------------------------------------------------------------------
+
+res = getstats(navgs=50, x=pr)
+
+fig, ax = plt.subplots(2,1, figsize=(4,3.5))
+# =============================================================================
+# fig.suptitle('f={}, M={}, pr={}, c={},k={}, tauv={}\ntauvth={}, vthb={}, vth0={}, nnum={}'.format(\
+#                             f, M, pr, c,k, tauv, tauvth, vth, vth0, nnum))
+# =============================================================================
+ax[0].plot(range(1,nnum+1), res[0], marker='o', color='k', label='fixed threshold')
+ax[0].plot(range(1,nnum+1), res[2], marker='o', color='b', linestyle='--', label='adaptive threshold')
+ax[0].set_ylabel('First passage time')
+ax[0].legend()
+
+ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k')
+ax[1].plot(range(1, nnum+1), res[3], marker='o', color='b', linestyle='--')
+ax[1].set_xlabel('Neuron number in sequence')
+ax[1].set_ylabel('Coefficient of\nvariation squared')
+
+plt.show()
+#%%
+
+# =============================================================================
+# res = run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, nnum, delta_t, tmax)
+# T = res[4]
+# CVT2=res[5]
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(range(1,nnum+1), T, marker='o', color='b')
+# ax[1].plot(range(1, nnum+1), CVT2, marker='o', color='orange')
+# plt.xlim([0.5, nnum+1])
+# ax[0].plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
+# ax[0].plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(100, tauv, vth))
+# ax[1].set_xlabel('Neuron number in sequence')
+# ax[0].set_ylabel('FPT')
+# ax[1].set_ylabel('CVT2')
+# ax[0].legend()
+# plt.show()
+# =============================================================================
+#%%
+
+
+T=[]
+C=[]
+Ta=[]
+Ca=[]
+
+xlist=[0.1, 0.2, 0.5, 0.7, 1]
+for x in xlist:
+    Tavg, CVT2avg, Tavga, CVT2avga = getstats(50, x)
+    T.append(Tavg)
+    C.append(CVT2avg)
+    Ta.append(Tavga)
+    Ca.append(CVT2avga)
+
+Tr=np.array(Ta)/np.array(T)
+Cr=np.array(Ca)/np.array(C)
+
+fig, ax=plt.subplots(2,1)
+for i in range(len(Tr)):
+    ax[0].plot(Tr[i], label='x={}'.format(np.around(xlist[i],3)))
+    ax[1].plot(Cr[i])
+ax[0].legend()
+ax[1].legend()
+
+plt.show()
+#%%
+    
+fig, ax = plt.subplots(2,1)
+ax[0].plot(range(1,nnum+1), Tavg, marker='o', color='blue')
+ax[0].plot(range(1,nnum+1), Tavga, color='red', linestyle = '--')
+ax[0].set_xlim([0.5, nnum+1])
+ax[0].plot([], [], ' ', label='f={}, M={}, pr={}, c={}'.format(f, M, pr, c))
+ax[0].plot([], [], ' ', label='k={}, tauv={}, tauvth={}, '.format(k, tauv, tauvth))
+ax[0].plot([], [], ' ', label='vthb={}, vth0={}, nnum={}'.format(vth, vth0, nnum))
+ax[0].set_ylabel('First passage time')
+ax[0].legend(loc='upper left')
+ax[0].set_title('FPT and CVT^2 of each neuron in a cascade')
+
+ax[1].plot(range(1,nnum+1), CVT2avg, marker='o', color='blue', label='fixed threshold')
+ax[1].plot(range(1,nnum+1), CVT2avga, color='red', label='adapted', linestyle='--')
+ax[1].set_xlim([0.5, nnum+1])
+ax[1].set_xlabel('Neuron number in sequence')
+ax[1].set_ylabel('Coefficient of\nvariation squared')
+ax[1].legend()
+
+plt.show()
+
+# Parameter sweep
+# =============================================================================
+# xname='tauv'
+# xlist = [0.1, 1, 10, 100]
+# CV2list=[]
+# for x in xlist:
+#     print(x)
+#     res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
+#     CV2list.append(res[5])
+# for i,z in enumerate(CV2list):
+#     plt.plot(range(1, nnum+1), z, label = '{}={}'.format(xname,xlist[i]), marker='o')
+# plt.plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
+# plt.plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(k, tauv, vth))
+# plt.xticks(np.arange(1,nnum+1))
+# plt.xlabel('Neuron number in sequence')
+# plt.ylabel('Coefficient of variation squared')
+# plt.legend()
+# =============================================================================
+
+# =============================================================================
+# res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
+# fig, ax = plt.subplots(nnum,1)
+# for i in range(nnum):
+#     ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
+#     ax[i].plot(res[0][i], res[2][i], label='T={}, CVT={}'.format(np.around(res[4][i],3), np.around(res[5][i],3)))
+#     ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
+#     if i != nnum-1:
+#         ax[i].set_xticks([])
+#     if i == nnum-1:
+#         ax[i].set_xlabel('time (sec)')
+#     ax[i].legend(loc='upper right')
+# plt.show()
+# 
+# =============================================================================
