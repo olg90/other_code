@@ -10,10 +10,10 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin,
     nhists=[[] for i in range(nnum)]
     thists = [[] for i in range(nnum)]
     
-    ratio=0.3
+    ratio=0
     tcurr = 0
     vs = np.zeros(nnum)
-    vths= np.zeros(nnum)
+    vths= vthb*np.ones(nnum)
     ns = np.zeros(nnum)
     timer = delta_t
     while tcurr < tmax:
@@ -54,7 +54,7 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin,
             if ttype=='adaptive':
                 vths[i] = vthb+(vths[i]-vthb)*np.exp(-tmin/tauvth)
             else:
-                vths[i] = vth
+                vths[i] = vthb
                 
         for i in range(len(vs)):
             if vs[i] >= vths[i]:
@@ -112,10 +112,10 @@ def getstats(navgs, x):
     return Tavg, CVT2avg, Tavga, CVT2avga
 
 def get_vth(v, H, cv, vth0, vth, vthmax, vthmin):
+    return vth+(vthmax*(v/cv)**H+vthmin)/(1+(v/cv)**H)
 # =============================================================================
-#     return vth+(vthmax*(v/cv)**H+vthmin)/(1+(v/cv)**H)
+#     return vth0
 # =============================================================================
-    return vth0
                 
 ###############################################################################
 #
@@ -140,14 +140,27 @@ vthmin=0.01
 H=20
 cv=0.2
 
-nnum=20 # num neurons in sequence
+nnum=10 # num neurons in sequence
 tmax = 10
 
 delta_t = 0.001
 
+# =============================================================================
+# res = run_test(f, k, M, pr, c, vth, tauv, 
+#                tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='None')
+# resa = run_test(f, k, M, pr, c, vth, tauv, 
+#                tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='adaptive')
+# pnum=0
+# plt.plot(resa[0][pnum], resa[2][pnum], label='v')
+# plt.plot(resa[0][pnum],resa[6][pnum], label='vth')
+# for x in resa[3][pnum]:
+#     plt.axvline(x=x, color='r', alpha=0.1)
+# plt.legend()
+# #%%
+# =============================================================================
 # -----------------------------------------------------------------------------
 
-res = getstats(navgs=50, x=pr)
+res = getstats(navgs=20, x=pr)
 
 fig, ax = plt.subplots(2,1, figsize=(4,3.5))
 # =============================================================================
