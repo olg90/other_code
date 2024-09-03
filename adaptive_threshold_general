@@ -3,8 +3,7 @@ from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
 from numpy import exp
-def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin,
-             H, cv, tmax, delta_t, ttype):
+def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, cvth, cv, alpha, tmax, delta_t):
 
     nlist=[]
     vlist=[]
@@ -21,7 +20,7 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin
     postvth=[]
 
     tcurr=0
-    ratio = 0.4
+    ratio = 0
     timer = delta_t
     while tcurr < tmax:
         t0=exponential(1/f) # action potential
@@ -59,14 +58,12 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin
         if v>=vth:
             postlist.append(tcurr)
             postvth.append(vth)
-            if ttype=='adaptive':
-                vth=get_vth(v, H, cv, vth0, vth, vthmax, vthmin)
+            vth=get_vth(vth, v, cvth, alpha, cv)
             v=0
 
         # Update the continuous dynamics
         v=v*exp(-tmin/tauv)
-        if ttype=='adaptive':
-            vth=vthb+(vth-vthb)*np.exp(-tmin/tauvth)
+        vth=vthb+(vth-vthb)*np.exp(-tmin/tauvth)
 
     Tlist = np.diff(postlist)
     Tmean = np.mean(Tlist)
@@ -77,35 +74,15 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin
     return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, CVT2, FFn, FFv,\
         tplot, vplot, nplot, vthplot, postvth
 
-def get_vth(v, H, cv, vth0, vth, vthmax, vthmin):
+def get_vth(vth, v, cvth, alpha, cv):
+    return vth+cvth*(v/cv)**alpha
 
-    return vth+(vthmax*(v/cv)**H+vthmin)/(1+(v/cv)**H)
-# =============================================================================
-#     return vth0
-# =============================================================================
-# =============================================================================
-# def tmeanopen(f, c, pr, k, M, tauv, vth):
-#     return tauv*np.log(1/(1-vth/(c*f*k*pr*M*tauv/(f*pr+k))))
-# 
-# def tmeanadapt(f, c, pr, k, M, tauv, vth):
-#     return tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
-# 
-# def FFvadapt(f,c,pr,k,M,tauv,vth):
-#     return (c*(2*k**3*(1 + (-1 + M)*pr)*tauv - f**2*(-2 + pr)*pr**2*(1 \
-#           + f*pr*tauv) + k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
-#           f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
-#           f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
-#                                                        
-# def FFnadapt(f,c,pr,k,M,tauv,vth):
-#     return 1 - (k*M)/(k + f*pr) + (2*k*(-1 + M))/(2*k - f*(-2 + pr)*pr)                                                 
-# 
-# =============================================================================
 
 f=10
 pr=0.2 
 M=100
 k=10
-c=0.01
+c=0.003
 tauv=1
 tauvth=1
 
@@ -116,24 +93,24 @@ vth0=0.3
 vthb=0.2
 vth=0.2
 
-vthmax=0.2
-vthmin=0.01
-
-H=20
-cv=0.25
+# alpha = 0  constant jumps
+# cvth = 0  fixed threshold
+cvth=0.1
+alpha=0
+cv=0.1
 
 delta_t = 0.001
-tmax = 100 # <-------------- TMAX
-ttype='adaptive'
+tmax = 20 # <-------------- TMAX
 
-res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin,
-             H, cv, tmax, delta_t, ttype)
-plt.plot(res[0],res[2])
-plt.plot(res[0],res[3])
-for x in res[5]:
-    plt.axvline(x=x, alpha=0.1, color='r')
-
-#%%
+# =============================================================================
+# res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, cvth, cv, alpha, tmax, delta_t)
+# plt.plot(res[0],res[2])
+# plt.plot(res[0],res[3])
+# for x in res[5]:
+#     plt.axvline(x=x, alpha=1, color='r')
+# 
+# #%%
+# =============================================================================
 
 # =============================================================================
 # plt.plot(np.linspace(0, 0.4, 100),
@@ -156,11 +133,9 @@ for j in range(navgs):
         print(j, navgs, i, len(xlist))
         f=x
         res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb,
-                     vthmax, vthmin,
-                     H, cv, tmax, delta_t, 'adaptive')
+                     cvth, cv, alpha, tmax, delta_t)
         res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vth0,
-                      vthmax, vthmin,
-                      H, cv, tmax, delta_t, None)
+                      cvth, cv, alpha, tmax, delta_t)
     # =============================================================================
     ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
     # =============================================================================
@@ -192,9 +167,7 @@ ax[1].set_ylabel('Coefficient of\nvariation squared')
 ax[1].set_xlabel('Input frequency (Hz)')
 plt.show()
 
-
 # -----------------------------------------------------------------------------
-
 
 # =============================================================================
 # tvals=[]
