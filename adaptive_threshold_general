@@ -154,12 +154,12 @@ T0 = np.mean(np.array(T0), 0)
 C0 = np.mean(np.array(C0), 0)
 
 fig, ax = plt.subplots(2,1, figsize=(4,3.5))
+ax[0].set_title('Constant threshold jumps')
 ax[0].plot(xlist, 1/Ta, color='blue',linestyle='--', label='adaptive threshold')
 ax[0].plot(xlist, 1/T0, color='k', label='fixed threshold')
 ax[0].set_xticks([])
 ax[0].set_ylabel('Output frequency')
 ax[0].legend()
-ax[0].set_ylim([0,1])
 
 ax[1].plot(xlist, C0, color='k')
 ax[1].plot(xlist, Ca, color='b',linestyle='--')
