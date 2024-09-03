@@ -125,10 +125,10 @@ def get_vth(v, H, cv, vth0, vth, vthmax, vthmin):
 
 f = 100
 M = 100
-pr = 0.2
+pr = 0.5
 c = 0.01
 k = 10
-tauv = 1 # 1
+tauv=1 # 1
 tauvth=1
 vth = 0.2
 vth0=0.3
@@ -140,8 +140,8 @@ vthmin=0.01
 H=20
 cv=0.2
 
-nnum=10 # num neurons in sequence
-tmax = 10
+nnum=20 # num neurons in sequence
+tmax = 30
 
 delta_t = 0.001
 
@@ -170,12 +170,15 @@ fig, ax = plt.subplots(2,1, figsize=(4,3.5))
 ax[0].plot(range(1,nnum+1), res[0], marker='o', color='k', label='fixed threshold')
 ax[0].plot(range(1,nnum+1), res[2], marker='o', color='b', linestyle='--', label='adaptive threshold')
 ax[0].set_ylabel('First passage time')
-ax[0].legend()
+# =============================================================================
+# ax[0].legend()
+# =============================================================================
 
-ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k')
-ax[1].plot(range(1, nnum+1), res[3], marker='o', color='b', linestyle='--')
+ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k', label='fixed threshold')
+ax[1].plot(range(1, nnum+1), res[3], marker='o', color='b', linestyle='--', label='adaptive threshold')
 ax[1].set_xlabel('Neuron number in sequence')
 ax[1].set_ylabel('Coefficient of\nvariation squared')
+ax[1].legend()
 
 plt.show()
 #%%
