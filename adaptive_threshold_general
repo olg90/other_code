@@ -21,7 +21,7 @@ def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin
     postvth=[]
 
     tcurr=0
-    ratio = 0
+    ratio = 0.4
     timer = delta_t
     while tcurr < tmax:
         t0=exponential(1/f) # action potential
@@ -101,7 +101,7 @@ def get_vth(v, H, cv, vth0, vth, vthmax, vthmin):
 # 
 # =============================================================================
 
-f=100
+f=10
 pr=0.2 
 M=100
 k=10
@@ -123,7 +123,7 @@ H=20
 cv=0.25
 
 delta_t = 0.001
-tmax = 10 # <-------------- TMAX
+tmax = 100 # <-------------- TMAX
 ttype='adaptive'
 
 res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin,
@@ -140,7 +140,7 @@ for x in res[5]:
 #          [get_vth(v, H, cv, vth0) for v in range(100)])
 # =============================================================================
 
-navgs=20
+navgs=100
 Ta=[]
 T0=[]
 Ca=[]
@@ -184,6 +184,7 @@ ax[0].plot(xlist, T0, color='k', label='fixed threshold')
 ax[0].set_xticks([])
 ax[0].set_ylabel('First passage time')
 ax[0].legend()
+ax[0].set_ylim([0,1])
 
 ax[1].plot(xlist, C0, color='k')
 ax[1].plot(xlist, Ca, color='b',linestyle='--')
