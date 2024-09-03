@@ -117,7 +117,7 @@ tmax = 20 # <-------------- TMAX
 #          [get_vth(v, H, cv, vth0) for v in range(100)])
 # =============================================================================
 
-navgs=100
+navgs=1
 Ta=[]
 T0=[]
 Ca=[]
@@ -133,7 +133,7 @@ for j in range(navgs):
         print(j, navgs, i, len(xlist))
         f=x
         res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb,
-                     cvth, cv, alpha, tmax, delta_t)
+                     0, cv, alpha, tmax, delta_t)
         res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vth0,
                       cvth, cv, alpha, tmax, delta_t)
     # =============================================================================
@@ -154,10 +154,10 @@ T0 = np.mean(np.array(T0), 0)
 C0 = np.mean(np.array(C0), 0)
 
 fig, ax = plt.subplots(2,1, figsize=(4,3.5))
-ax[0].plot(xlist, Ta, color='blue',linestyle='--', label='adaptive threshold')
-ax[0].plot(xlist, T0, color='k', label='fixed threshold')
+ax[0].plot(xlist, 1/Ta, color='blue',linestyle='--', label='adaptive threshold')
+ax[0].plot(xlist, 1/T0, color='k', label='fixed threshold')
 ax[0].set_xticks([])
-ax[0].set_ylabel('First passage time')
+ax[0].set_ylabel('Output frequency')
 ax[0].legend()
 ax[0].set_ylim([0,1])
 
