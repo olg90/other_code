@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, cvth, alpha, cv, nnum, delta_t, tmax, ttype=None):
+def run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv,
+             nnum, delta_t, tmax, ttype=None):
 
     AP_times = [[] for i in range(nnum)]
     vhists=[[] for i in range(nnum)]
@@ -28,7 +29,7 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, cvth, alpha, cv, nnu
         
         if targmin == 0:
             
-            b=np.random.binomial(ns[0], pr) # Number released
+            b=np.random.binomial(ns[0], pr) 
             ns[0]-=b
             vs[0]+=c*b
             timer -= tmin
@@ -50,16 +51,14 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, cvth, alpha, cv, nnu
 
         for i in range(len(vs)):
             vs[i] = vs[i]*np.exp(-tmin/tauv)
-            if ttype=='adaptive':
-                vths[i] = vthb+(vths[i]-vthb)*np.exp(-tmin/tauvth)
-            else:
-                vths[i] = vthb
+            vths[i] = vthb+(vths[i]-vthb)*np.exp(-tmin/tauvth)
                 
         for i in range(len(vs)):
             if vs[i] >= vths[i]:
+                vths[i]=vths[i]+get_vth(vs[i], cvth, alpha, cv)
                 vs[i] = 0
-                if ttype=='adaptive':
-                    vths[i]=get_vth(vths[i], vs[i], cvth, alpha, cv)
+                
+                
                 AP_times[i].append(tcurr)
                 if i != nnum-1:
                     b=np.random.binomial(ns[i+1], pr) # Number released
@@ -73,47 +72,66 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, cvth, alpha, cv, nnu
 
 def getstats(navgs, x):
     pr = x
-# =============================================================================
-#     navgs=20
-# =============================================================================
     Tavg=[]
     CVT2avg=[]
-    Tavga=[]
-    CVT2avga=[]
+    Tavg0=[]
+    CVT2avg0=[]
+    Tavg1=[]
+    CVT2avg1=[]
+    Tavg2=[]
+    CVT2avg2=[]
     
     for i in range(navgs):
         print(i, navgs)
-        res = run_test(f, k, M, pr, c, vth, tauv, 
-                       tauvth, vth0, vthb, cvth, alpha, cv, 
-                       nnum, delta_t, tmax, ttype='None')
-        resa = run_test(f, k, M, pr, c, vth, tauv, 
-                       tauvth, vth0, vthb, cvth, alpha, cv, 
-                       nnum, delta_t, tmax, ttype='adaptive')
+        res = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, 0, alpha, cv, nnum, delta_t, tmax)
+        res0 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 0, cv, nnum, delta_t, tmax)
+        res1 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 1, cv, nnum, delta_t, tmax)
+        res2 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 2, cv, nnum, delta_t, tmax)
         
         T = res[4]
         CVT2=res[5]
         Tavg.append(T)
         CVT2avg.append(CVT2)
         
-        Ta = resa[4]
-        CVT2a=resa[5]
-        Tavga.append(Ta)
-        CVT2avga.append(CVT2a)
+        T0 = res0[4]
+        CVT20=res0[5]
+        Tavg0.append(T0)
+        CVT2avg0.append(CVT20)
+        
+        T1 = res1[4]
+        CVT21=res1[5]
+        Tavg1.append(T1)
+        CVT2avg1.append(CVT21)
+        
+        T2 = res2[4]
+        CVT22=res2[5]
+        Tavg2.append(T2)
+        CVT2avg2.append(CVT22)
         
     Tavg=np.array(Tavg)
     CVT2avg=np.array(CVT2avg)
     Tavg=np.mean(Tavg, 0)
     CVT2avg=np.mean(CVT2avg, 0)
     
-    Tavga=np.array(Tavga)
-    CVT2avga=np.array(CVT2avga)
-    Tavga=np.mean(Tavga, 0)
-    CVT2avga=np.mean(CVT2avga, 0)
+    Tavg0=np.array(Tavg0)
+    CVT2avg0=np.array(CVT2avg0)
+    Tavg0=np.mean(Tavg0, 0)
+    CVT2avg0=np.mean(CVT2avg0, 0)
+    
+    Tavg1=np.array(Tavg1)
+    CVT2avg1=np.array(CVT2avg1)
+    Tavg1=np.mean(Tavg1, 0)
+    CVT2avg1=np.mean(CVT2avg1, 0)
+    
+    Tavg2=np.array(Tavg2)
+    CVT2avg2=np.array(CVT2avg2)
+    Tavg2=np.mean(Tavg2, 0)
+    CVT2avg2=np.mean(CVT2avg2, 0)
 
-    return Tavg, CVT2avg, Tavga, CVT2avga
+    return Tavg, CVT2avg, Tavg0, CVT2avg0, Tavg1, CVT2avg1, Tavg2, CVT2avg2
 
-def get_vth(vth, v, cvth, alpha, cv):
-    return vth+cvth*(v/cv)**alpha
+def get_vth(v, cvth, alpha, cv):
+    return cvth*(v/cv)**alpha
 # =============================================================================
 #     return vth0
 # =============================================================================
@@ -127,7 +145,7 @@ def get_vth(vth, v, cvth, alpha, cv):
 f = 100
 M = 100
 pr = 0.5
-c = 0.01
+c = 0.005
 k = 10
 tauv=1 # 1
 tauvth=1
@@ -135,31 +153,27 @@ vth = 0.2
 vth0=0.3
 vthb=0.2
 
-cvth=0.1
+cvth=0
 alpha=0
 cv=0.1
 
-H=20
-cv=0.2
-
 nnum=20 # num neurons in sequence
-tmax = 30
+tmax = 30 # 30
 
 delta_t = 0.001
 
 # =============================================================================
-# res = run_test(f, k, M, pr, c, vth, tauv, 
-#                tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='None')
-# resa = run_test(f, k, M, pr, c, vth, tauv, 
-#                tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='adaptive')
-# pnum=0
+# resa = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv, nnum, delta_t, tmax)
+# #%%
+# pnum=3
 # plt.plot(resa[0][pnum], resa[2][pnum], label='v')
-# plt.plot(resa[0][pnum],resa[6][pnum], label='vth')
+# plt.plot(resa[0][pnum], resa[6][pnum], label='vth')
 # for x in resa[3][pnum]:
 #     plt.axvline(x=x, color='r', alpha=0.1)
 # plt.legend()
 # #%%
 # =============================================================================
+
 # -----------------------------------------------------------------------------
 
 res = getstats(navgs=20, x=pr)
@@ -170,14 +184,18 @@ fig, ax = plt.subplots(2,1, figsize=(4,3.5))
 #                             f, M, pr, c,k, tauv, tauvth, vth, vth0, nnum))
 # =============================================================================
 ax[0].plot(range(1,nnum+1), res[0], marker='o', color='k', label='fixed threshold')
-ax[0].plot(range(1,nnum+1), res[2], marker='o', color='b', linestyle='--', label='adaptive threshold')
+ax[0].plot(range(1,nnum+1), res[2], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
+ax[0].plot(range(1,nnum+1), res[4], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
+ax[0].plot(range(1,nnum+1), res[6], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
 ax[0].set_ylabel('First passage time')
 # =============================================================================
 # ax[0].legend()
 # =============================================================================
 
 ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k', label='fixed threshold')
-ax[1].plot(range(1, nnum+1), res[3], marker='o', color='b', linestyle='--', label='adaptive threshold')
+ax[1].plot(range(1, nnum+1), res[3], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
+ax[1].plot(range(1, nnum+1), res[5], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
+ax[1].plot(range(1, nnum+1), res[7], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
 ax[1].set_xlabel('Neuron number in sequence')
 ax[1].set_ylabel('Coefficient of\nvariation squared')
 ax[1].legend()
@@ -228,7 +246,9 @@ ax[0].legend()
 ax[1].legend()
 
 plt.show()
-#%%
+# =============================================================================
+# #%%
+# =============================================================================
     
 fig, ax = plt.subplots(2,1)
 ax[0].plot(range(1,nnum+1), Tavg, marker='o', color='blue')
