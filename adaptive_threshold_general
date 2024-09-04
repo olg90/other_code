@@ -1,306 +1,334 @@
 import numpy as np
+from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial, gamma
+from numpy import exp
+def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, cvth, cv, alpha, tmax, delta_t):
 
-def run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv,
-             nnum, delta_t, tmax, ttype=None):
+    nlist=[]
+    vlist=[]
+    vthlist=[]
+    tlist=[]
+    prelist=[]
+    postlist=[]
 
-    AP_times = [[] for i in range(nnum)]
-    vhists=[[] for i in range(nnum)]
-    vthhists=[[] for i in range(nnum)]
-    nhists=[[] for i in range(nnum)]
-    thists = [[] for i in range(nnum)]
-    
-    ratio=0
-    tcurr = 0
-    vs = np.zeros(nnum)
-    vths= vthb*np.ones(nnum)
-    ns = np.zeros(nnum)
+    tplot=[]
+    vplot=[]
+    nplot=[]
+    vthplot=[]
+
+    postvth=[]
+
+    tcurr=0
+    ratio = 0
     timer = delta_t
     while tcurr < tmax:
-# =============================================================================
-#         print(tcurr/tmax)
-# =============================================================================
-        t0=np.random.exponential(1/f)
-        t1s=[np.random.exponential(1/(k*(M-ns[i])+1e-10)) for i in range(nnum)]
-        t2=timer
-        tlist=[t0] + t1s + [t2]
-        tmin=np.min(tlist)
-        targmin=np.argmin(tlist)
-        
-        if targmin == 0:
-            
-            b=np.random.binomial(ns[0], pr) 
-            ns[0]-=b
-            vs[0]+=c*b
-            timer -= tmin
-            
-        elif ((targmin > 0) and (targmin < len(tlist)-1)):
-            ns[targmin-1]+=1
+        t0=exponential(1/f) # action potential
+        t1=exponential(1/(k*(M-n) + 1e-6)) # site gets occupied
+        t2 = timer
+
+        if t0 < t1 and t0 < t2: # AP occurrs
+            b = binomial(n, pr)
+            n-=b
+            v+=c*b
+            tmin = t0
+            timer-=tmin
+            prelist.append(tcurr+tmin)
+
+        elif t1<t0 and t1<t2: # add a docked vesicle
+            n+=1
+            tmin = t1
             timer-=tmin
 
         else:
             tmin=t2
-            if tcurr>ratio*tmax:
-                for i in range(nnum):
-                    vhists[i].append(vs[i])
-                    nhists[i].append(ns[i])
-                    thists[i].append(tcurr)
-                    vthhists[i].append(vths[i])
             timer = delta_t
+            if tcurr >= ratio*tmax:
+                nlist.append(n)
+                vlist.append(v)
+                vthlist.append(vth)
+                tlist.append(tcurr)
+
+        tplot.append(tcurr)
+        vplot.append(v)
+        nplot.append(n)
+        vthplot.append(vth)
+
         tcurr += tmin
+        if v>=vth:
+            postlist.append(tcurr)
+            postvth.append(vth)
+            vth=get_vth(vth, v, cvth, alpha, cv)
+            v=0
 
-        for i in range(len(vs)):
-            vs[i] = vs[i]*np.exp(-tmin/tauv)
-            vths[i] = vthb+(vths[i]-vthb)*np.exp(-tmin/tauvth)
-                
-        for i in range(len(vs)):
-            if vs[i] >= vths[i]:
-                vths[i]=vths[i]+get_vth(vs[i], cvth, alpha, cv)
-                vs[i] = 0
-                
-                
-                AP_times[i].append(tcurr)
-                if i != nnum-1:
-                    b=np.random.binomial(ns[i+1], pr) # Number released
-                    ns[i+1]-=b
-                    vs[i+1]+=c*b
-                    
-    Tmeans=[np.mean(np.diff(AP_times[i])) for i in range(nnum)]
-    CVT2s=[np.var(np.diff(AP_times[i]))/np.mean(np.diff(AP_times[i]))**2 for i in range(nnum)]
-        
-    return thists, nhists, vhists, AP_times, Tmeans, CVT2s, vthhists
+        # Update the continuous dynamics
+        v=v*exp(-tmin/tauv)
+        vth=vthb+(vth-vthb)*np.exp(-tmin/tauvth)
 
-def getstats(navgs, x):
-    pr = x
-    Tavg=[]
-    CVT2avg=[]
-    Tavg0=[]
-    CVT2avg0=[]
-    Tavg1=[]
-    CVT2avg1=[]
-    Tavg2=[]
-    CVT2avg2=[]
-    
-    for i in range(navgs):
-        print(i, navgs)
-        res = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, 0, alpha, cv, nnum, delta_t, tmax)
-        res0 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 0, cv, nnum, delta_t, tmax)
-        res1 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 1, cv, nnum, delta_t, tmax)
-        res2 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 2, cv, nnum, delta_t, tmax)
-        
-        T = res[4]
-        CVT2=res[5]
-        Tavg.append(T)
-        CVT2avg.append(CVT2)
-        
-        T0 = res0[4]
-        CVT20=res0[5]
-        Tavg0.append(T0)
-        CVT2avg0.append(CVT20)
-        
-        T1 = res1[4]
-        CVT21=res1[5]
-        Tavg1.append(T1)
-        CVT2avg1.append(CVT21)
-        
-        T2 = res2[4]
-        CVT22=res2[5]
-        Tavg2.append(T2)
-        CVT2avg2.append(CVT22)
-        
-    Tavg=np.array(Tavg)
-    CVT2avg=np.array(CVT2avg)
-    Tavg=np.mean(Tavg, 0)
-    CVT2avg=np.mean(CVT2avg, 0)
-    
-    Tavg0=np.array(Tavg0)
-    CVT2avg0=np.array(CVT2avg0)
-    Tavg0=np.mean(Tavg0, 0)
-    CVT2avg0=np.mean(CVT2avg0, 0)
-    
-    Tavg1=np.array(Tavg1)
-    CVT2avg1=np.array(CVT2avg1)
-    Tavg1=np.mean(Tavg1, 0)
-    CVT2avg1=np.mean(CVT2avg1, 0)
-    
-    Tavg2=np.array(Tavg2)
-    CVT2avg2=np.array(CVT2avg2)
-    Tavg2=np.mean(Tavg2, 0)
-    CVT2avg2=np.mean(CVT2avg2, 0)
+    Tlist = np.diff(postlist)
+    Tmean = np.mean(Tlist)
+    CVT2=np.var(Tlist)/Tmean**2
+    FFn=np.var(nlist)/np.mean(nlist)
+    FFv=np.var(vlist)/np.mean(vlist)
 
-    return Tavg, CVT2avg, Tavg0, CVT2avg0, Tavg1, CVT2avg1, Tavg2, CVT2avg2
+    return tlist, nlist, vlist, vthlist, prelist, postlist, Tmean, CVT2, FFn, FFv,\
+        tplot, vplot, nplot, vthplot, postvth
 
-def get_vth(v, cvth, alpha, cv):
-    return cvth*(v/cv)**alpha
-# =============================================================================
-#     return vth0
-# =============================================================================
-                
+def get_vth(vth, v, cvth, alpha, cv):
+    return vth+cvth*(v/cv)**alpha
+
+def getta(cvth, alpha, navgs, xlist):
+    Ta=[]
+    Ca=[]
+    for j in range(navgs):
+        Taj=[]
+        Caj=[]  
+        for i, x in enumerate(xlist):
+            print(j, navgs, i, len(xlist))
+            f=x
+            res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
+                         cvth, cv, alpha, tmax, delta_t)
+            Taj.append(res[6])
+            Caj.append(res[7])
+        Ta.append(Taj)
+        Ca.append(Caj)
+
+    return np.mean(np.array(Ta), 0)
+
 ###############################################################################
 #
-#                               Main Code
+#                               Main code
 #
 ###############################################################################
 
-f = 100
-M = 100
-pr = 0.5
-c = 0.005
-k = 10
-tauv=1 # 1
-tauvth=1
-vth = 0.2
-vth0=0.3
+
+f=10
+pr=0.2
+M=100
+k=10
+c=0.003
+tauv=1
+tauvth=0.1
+
+n=0 # occupied states
+v=0
+
 vthb=0.2
+vth=0.2
 
-cvth=0
-alpha=0
-cv=0.1
+# alpha = 0  constant jumps
+# cvth = 0  fixed threshold
 
-nnum=20 # num neurons in sequence
-tmax = 30 # 30
+cvth=0.1
+alpha=2
+cv=0.1 #0.1
 
 delta_t = 0.001
+tmax = 20 # <-------------- TMAX
 
 # =============================================================================
-# resa = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv, nnum, delta_t, tmax)
-# #%%
-# pnum=3
-# plt.plot(resa[0][pnum], resa[2][pnum], label='v')
-# plt.plot(resa[0][pnum], resa[6][pnum], label='vth')
-# for x in resa[3][pnum]:
-#     plt.axvline(x=x, color='r', alpha=0.1)
-# plt.legend()
+# res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, cvth, cv, alpha, tmax, delta_t)
+# plt.plot(res[0],res[2])
+# plt.plot(res[0],res[3])
+# for x in res[5]:
+#     plt.axvline(x=x, alpha=1, color='r')
+# 
 # #%%
 # =============================================================================
+
+# =============================================================================
+# xlist=np.linspace(0.01, 100, 20)
+# navgs=1
+# Ta=getta(cvth, alpha, navgs, xlist)
+# 
+# alphas = [0,1,2]
+# talist=[]
+# for a in alphas:
+#     Ta=getta(cvth, a, navgs, xlist)
+#     talist.append(Ta)
+# 
+# linestyles=['-', '--', '-.']
+# lw=3
+# plt.figure(figsize=(4,3.5))
+# plt.title('Adaptive threshold')
+# for i in range(len(alphas)):
+#     plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(alphas[i]),
+#              linestyle=linestyles[i], linewidth=lw)
+# plt.ylabel('Output frequency (Hz)')
+# plt.xlabel('Input frequency (Hz)')
+# plt.legend(loc='lower right')
+# plt.show()
+# =============================================================================
+
+# =============================================================================
+# plt.figure(figsize=(4,3.5))
+# plt.title(r'Adaptive threshold: $\alpha$={}, $c_x$={}'.format(alpha, cvth))
+# plt.plot(xlist, 1/Ta)
+# plt.ylabel('Output frequency')
+# plt.xlabel('Input frequency (Hz)')
+# plt.show()
+# =============================================================================
+
+ka=10
+navgs=1
+Ta=[]
+T0=[]
+Ca=[]
+C0=[]
+for j in range(navgs):
+    Taj=[]
+    Caj=[]  
+    T0j=[]
+    C0j=[]
+    xname='f'
+    xlist=np.linspace(0.01, 100, 20)
+    for i, x in enumerate(xlist):
+        print(j, navgs, i, len(xlist))
+        f=x
+        error=np.inf
+        tol=0.1
+        res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
+                      0, cv, alpha, tmax, delta_t)
+        while error>tol:
+            res=simulate(n, v, f, pr, M, ka, c, vth, tauv, tauvth, vthb,
+                         cvth, cv, alpha, tmax, delta_t)
+            error=abs(res0[6]-res[6])
+            print('error', error)
+            if error>tol:
+                ka+=1
+                print('ka', ka)
+            if error<tol:
+                print(error, res0[6], res[6])
+                break
+                
+                
+    # =============================================================================
+    ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
+    # =============================================================================
+        ka=10
+        Taj.append(res[6])
+        Caj.append(res[7])
+        T0j.append(res0[6])
+        C0j.append(res0[7])
+    Ta.append(Taj)
+    T0.append(T0j)
+    Ca.append(Caj)
+    C0.append(C0j)
+
+Ta = np.mean(np.array(Ta), 0)
+Ca = np.mean(np.array(Ca), 0)
+T0 = np.mean(np.array(T0), 0)
+C0 = np.mean(np.array(C0), 0)
+
+fig, ax = plt.subplots(2,1, figsize=(4,3.5))
+ax[0].set_title('Constant threshold jumps')
+ax[0].plot(xlist, Ta, color='blue',linestyle='--', label='adaptive threshold')
+ax[0].plot(xlist, T0, color='k', label='fixed threshold')
+ax[0].set_xticks([])
+ax[0].set_ylabel('Output frequency')
+ax[0].legend()
+
+ax[1].plot(xlist, C0, color='k')
+ax[1].plot(xlist, Ca, color='b',linestyle='--')
+ax[1].set_ylabel('Coefficient of\nvariation squared')
+ax[1].set_xlabel('Input frequency (Hz)')
+plt.show()
 
 # -----------------------------------------------------------------------------
 
-res = getstats(navgs=20, x=pr)
-
-fig, ax = plt.subplots(2,1, figsize=(4,3.5))
 # =============================================================================
-# fig.suptitle('f={}, M={}, pr={}, c={},k={}, tauv={}\ntauvth={}, vthb={}, vth0={}, nnum={}'.format(\
-#                             f, M, pr, c,k, tauv, tauvth, vth, vth0, nnum))
-# =============================================================================
-ax[0].plot(range(1,nnum+1), res[0], marker='o', color='k', label='fixed threshold')
-ax[0].plot(range(1,nnum+1), res[2], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
-ax[0].plot(range(1,nnum+1), res[4], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
-ax[0].plot(range(1,nnum+1), res[6], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
-ax[0].set_ylabel('First passage time')
-# =============================================================================
-# ax[0].legend()
-# =============================================================================
-
-ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k', label='fixed threshold')
-ax[1].plot(range(1, nnum+1), res[3], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
-ax[1].plot(range(1, nnum+1), res[5], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
-ax[1].plot(range(1, nnum+1), res[7], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
-ax[1].set_xlabel('Neuron number in sequence')
-ax[1].set_ylabel('Coefficient of\nvariation squared')
-ax[1].legend()
-
-plt.show()
-#%%
-
-# =============================================================================
-# res = run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, nnum, delta_t, tmax)
-# T = res[4]
-# CVT2=res[5]
-# fig, ax = plt.subplots(2,1)
-# ax[0].plot(range(1,nnum+1), T, marker='o', color='b')
-# ax[1].plot(range(1, nnum+1), CVT2, marker='o', color='orange')
-# plt.xlim([0.5, nnum+1])
-# ax[0].plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
-# ax[0].plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(100, tauv, vth))
-# ax[1].set_xlabel('Neuron number in sequence')
-# ax[0].set_ylabel('FPT')
-# ax[1].set_ylabel('CVT2')
-# ax[0].legend()
-# plt.show()
-# =============================================================================
-#%%
-
-
-T=[]
-C=[]
-Ta=[]
-Ca=[]
-
-xlist=[0.1, 0.2, 0.5, 0.7, 1]
-for x in xlist:
-    Tavg, CVT2avg, Tavga, CVT2avga = getstats(50, x)
-    T.append(Tavg)
-    C.append(CVT2avg)
-    Ta.append(Tavga)
-    Ca.append(CVT2avga)
-
-Tr=np.array(Ta)/np.array(T)
-Cr=np.array(Ca)/np.array(C)
-
-fig, ax=plt.subplots(2,1)
-for i in range(len(Tr)):
-    ax[0].plot(Tr[i], label='x={}'.format(np.around(xlist[i],3)))
-    ax[1].plot(Cr[i])
-ax[0].legend()
-ax[1].legend()
-
-plt.show()
-# =============================================================================
-# #%%
-# =============================================================================
-    
-fig, ax = plt.subplots(2,1)
-ax[0].plot(range(1,nnum+1), Tavg, marker='o', color='blue')
-ax[0].plot(range(1,nnum+1), Tavga, color='red', linestyle = '--')
-ax[0].set_xlim([0.5, nnum+1])
-ax[0].plot([], [], ' ', label='f={}, M={}, pr={}, c={}'.format(f, M, pr, c))
-ax[0].plot([], [], ' ', label='k={}, tauv={}, tauvth={}, '.format(k, tauv, tauvth))
-ax[0].plot([], [], ' ', label='vthb={}, vth0={}, nnum={}'.format(vth, vth0, nnum))
-ax[0].set_ylabel('First passage time')
-ax[0].legend(loc='upper left')
-ax[0].set_title('FPT and CVT^2 of each neuron in a cascade')
-
-ax[1].plot(range(1,nnum+1), CVT2avg, marker='o', color='blue', label='fixed threshold')
-ax[1].plot(range(1,nnum+1), CVT2avga, color='red', label='adapted', linestyle='--')
-ax[1].set_xlim([0.5, nnum+1])
-ax[1].set_xlabel('Neuron number in sequence')
-ax[1].set_ylabel('Coefficient of\nvariation squared')
-ax[1].legend()
-
-plt.show()
-
-# Parameter sweep
-# =============================================================================
-# xname='tauv'
-# xlist = [0.1, 1, 10, 100]
-# CV2list=[]
-# for x in xlist:
-#     print(x)
-#     res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-#     CV2list.append(res[5])
-# for i,z in enumerate(CV2list):
-#     plt.plot(range(1, nnum+1), z, label = '{}={}'.format(xname,xlist[i]), marker='o')
-# plt.plot([], [], ' ', label='f={}, M={}, pr={}, c={} '.format(f, M, pr, c))
-# plt.plot([], [], ' ', label='k={}, tauv={}, vth={}'.format(k, tauv, vth))
-# plt.xticks(np.arange(1,nnum+1))
-# plt.xlabel('Neuron number in sequence')
-# plt.ylabel('Coefficient of variation squared')
+# tvals=[]
+# FFvs=[]
+# FFns=[]
+# nfs=10
+# fslist=np.linspace(1,100,nfs)
+# for j, f in enumerate(fslist):
+#     # Calculate test
+#     Tsim=[]
+#     FFnsim=[]
+#     FFvsim=[]
+#     nsim=10
+#     for i in range(nsim):
+#         print(j, nfs, i, nsim)
+#         res=simulate(n, v, f, pr, M, k, c, 
+#                     vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+#         Tsim.append(res[6])
+#         FFnsim.append(res[7])
+#         FFvsim.append(res[8])
+#     Tsim=np.mean(Tsim)
+#     FFnsim=np.mean(FFnsim)
+#     FFvsim=np.mean(FFvsim)
+#     tvals.append(Tsim)
+#     FFvs.append(FFvsim)
+#     FFns.append(FFnsim)
+#     
+# plt.subplot(3,1,1)
+# plt.plot(fslist, tmeanadapt(fslist, c, pr, k, M, tauv, vth), label='Teq')
+# plt.plot(fslist, tvals, label='Tsim')
 # plt.legend()
-# =============================================================================
-
-# =============================================================================
-# res = run_test(f, k, M, pr, c, vth, tauv, nnum, delta_t, tmax)
-# fig, ax = plt.subplots(nnum,1)
-# for i in range(nnum):
-#     ax[i].set_ylabel('potential\nneuron #{}'.format(i+1))
-#     ax[i].plot(res[0][i], res[2][i], label='T={}, CVT={}'.format(np.around(res[4][i],3), np.around(res[5][i],3)))
-#     ax[i].plot(res[0][i], vth*np.ones(len(res[2][0])))
-#     if i != nnum-1:
-#         ax[i].set_xticks([])
-#     if i == nnum-1:
-#         ax[i].set_xlabel('time (sec)')
-#     ax[i].legend(loc='upper right')
+# plt.subplot(3,1,2)
+# plt.plot(fslist, FFvadapt(fslist, c, pr, k, M, tauv, vth), label='FFveq')
+# plt.plot(fslist, FFvs, label='FFvsim')
+# plt.xlabel('input frequency')
+# plt.legend()
+# plt.subplot(3,1,3)
+# plt.plot(fslist, FFnadapt(fslist, c, pr, k, M, tauv, vth), label='FFneq')
+# plt.plot(fslist, FFns, label='FFnsim')
+# plt.xlabel('input frequency')
+# plt.legend()
 # plt.show()
 # 
+# =============================================================================
+# =============================================================================
+# # Calculate test
+# Tsim=[]
+# FFnsim=[]
+# FFvsim=[]
+# nsim=100
+# for i in range(nsim):
+#     print(i, nsim)
+#     _, _, _, _, _, _, T, FFn, FFv =simulate(n, v, f, pr, M, k, c, 
+#                         vth, tauv, tauvth, vthb, tmax, delta_t)
+#     Tsim.append(T)
+#     FFnsim.append(FFn)
+#     FFvsim.append(FFv)
+# Tsim=np.mean(Tsim)
+# FFnsim=np.mean(FFnsim)
+# FFvsim=np.mean(FFvsim)
+# =============================================================================
+
+# =============================================================================
+# res = simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t)
+# Tsim=res[6]
+# FFnsim=res[7]
+# FFvsim=res[8]
+# fig, ax = plt.subplots(2,1)
+# ax[0].plot(res[9], res[10], label='v')
+# ax[0].plot(res[9], res[12], label='vth')
+# ax[0].plot(res[5], res[13], 'ro')
+# ax[1].plot(res[9], res[11])
+# ax[0].plot([],[],' ', label='Tmean={}'.format(np.around(Tsim, 3)))
+# ax[0].set_xticks([])
+# ax[0].set_ylabel('membrane potential')
+# ax[1].set_ylabel('vesicles')
+# ax[0].legend()
+# plt.show()
+# =============================================================================
+
+
+# =============================================================================
+# Teq = tauv*np.log(1 + ((k + f*pr)*vth0)/(c*f*k*M*pr*tauv - (k + f*pr)*vthb))
+# FFneq=((k + f*pr)*(-((k**2*M**2)/(k + f*pr)**2) + (k*M*(2*k*M - f*(-2 + pr)*pr))/((k + f*pr)*(2*k - f*(-2 + pr)*pr))))/(k*M)
+# FFveq=(c*(2*k**3*(1 + (-1 + M)*pr)*tauv - f**2*(-2 + pr)*pr**2*(1 \
+#       + f*pr*tauv) + k**2*(2 + 2*(-1 + M)*pr - f*(-2 + pr)*pr*tauv) + \
+#       f*k*pr*(4 + pr*(-3 + 2*M + 2*f*tauv))))/(2.*(k + \
+#       f*pr)*(2*k - f*(-2 + pr)*pr)*(1 + k*tauv + f*pr*tauv))
+# check=(c *f *k *M *pr* tauv)/(k + f *pr) - vthb/vth0>0
+# print('check', check)
+# print('T eq sim')
+# print(Teq, Tsim)
+# print('FFn eq sim')
+# print(FFneq, FFnsim)
+# print('FFv eq sim')
+# print(FFveq, FFvsim)
 # =============================================================================
