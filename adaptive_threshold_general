@@ -79,7 +79,7 @@ def get_vth(vth, v, cvth, alpha, cv):
 
 
 f=10
-pr=0.2 
+pr=0.2
 M=100
 k=10
 c=0.003
@@ -117,56 +117,108 @@ tmax = 20 # <-------------- TMAX
 #          [get_vth(v, H, cv, vth0) for v in range(100)])
 # =============================================================================
 
-navgs=1
-Ta=[]
-T0=[]
-Ca=[]
-C0=[]
-for j in range(navgs):
-    Taj=[]
-    Caj=[]  
-    T0j=[]
-    C0j=[]
-    xname='f'
-    xlist=np.linspace(0.01, 100, 100)
-    for i, x in enumerate(xlist):
-        print(j, navgs, i, len(xlist))
-        f=x
-        res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb,
-                     0, cv, alpha, tmax, delta_t)
-        res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vth0,
-                      cvth, cv, alpha, tmax, delta_t)
-    # =============================================================================
-    ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
-    # =============================================================================
-        Taj.append(res[6])
-        Caj.append(res[7])
-        T0j.append(res0[6])
-        C0j.append(res0[7])
-    Ta.append(Taj)
-    T0.append(T0j)
-    Ca.append(Caj)
-    C0.append(C0j)
 
-Ta = np.mean(np.array(Ta), 0)
-Ca = np.mean(np.array(Ca), 0)
-T0 = np.mean(np.array(T0), 0)
-C0 = np.mean(np.array(C0), 0)
+def getta(cvth, alpha, navgs, xlist):
+    Ta=[]
+    Ca=[]
+    for j in range(navgs):
+        Taj=[]
+        Caj=[]  
+        for i, x in enumerate(xlist):
+            print(j, navgs, i, len(xlist))
+            f=x
+            res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb,
+                         cvth, cv, alpha, tmax, delta_t)
+            Taj.append(res[6])
+            Caj.append(res[7])
+        Ta.append(Taj)
+        Ca.append(Caj)
 
-fig, ax = plt.subplots(2,1, figsize=(4,3.5))
-ax[0].set_title('Constant threshold jumps')
-ax[0].plot(xlist, 1/Ta, color='blue',linestyle='--', label='adaptive threshold')
-ax[0].plot(xlist, 1/T0, color='k', label='fixed threshold')
-ax[0].set_xticks([])
-ax[0].set_ylabel('Output frequency')
-ax[0].legend()
+    return np.mean(np.array(Ta), 0)
 
-ax[1].plot(xlist, C0, color='k')
-ax[1].plot(xlist, Ca, color='b',linestyle='--')
-ax[1].set_ylabel('Coefficient of\nvariation squared')
-ax[1].set_xlabel('Input frequency (Hz)')
+xlist=np.linspace(0.01, 100, 100)
+navgs=5
+Ta=getta(cvth, alpha, navgs, xlist)
+
+alphas = [0,1,2]
+talist=[]
+for a in alphas:
+    Ta=getta(cvth, a, navgs, xlist)
+    talist.append(Ta)
+
+linestyles=['-', '--', '-.']
+lw=3
+plt.figure(figsize=(4,3.5))
+plt.title('Adaptive threshold with constant jumps')
+for i in range(len(alphas)):
+    plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(alphas[i]),
+             linestyle=linestyles[i], linewidth=lw)
+plt.ylabel('Output frequency (Hz)')
+plt.xlabel('Input frequency (Hz)')
+plt.legend()
 plt.show()
 
+# =============================================================================
+# plt.figure(figsize=(4,3.5))
+# plt.title(r'Adaptive threshold: $\alpha$={}, $c_x$={}'.format(alpha, cvth))
+# plt.plot(xlist, 1/Ta)
+# plt.ylabel('Output frequency')
+# plt.xlabel('Input frequency (Hz)')
+# plt.show()
+# =============================================================================
+
+# =============================================================================
+# navgs=1
+# Ta=[]
+# T0=[]
+# Ca=[]
+# C0=[]
+# for j in range(navgs):
+#     Taj=[]
+#     Caj=[]  
+#     T0j=[]
+#     C0j=[]
+#     xname='f'
+#     xlist=np.linspace(0.01, 100, 100)
+#     for i, x in enumerate(xlist):
+#         print(j, navgs, i, len(xlist))
+#         f=x
+#         res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb,
+#                      0, cv, alpha, tmax, delta_t)
+#         res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vth0,
+#                       cvth, cv, alpha, tmax, delta_t)
+#     # =============================================================================
+#     ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
+#     # =============================================================================
+#         Taj.append(res[6])
+#         Caj.append(res[7])
+#         T0j.append(res0[6])
+#         C0j.append(res0[7])
+#     Ta.append(Taj)
+#     T0.append(T0j)
+#     Ca.append(Caj)
+#     C0.append(C0j)
+# 
+# Ta = np.mean(np.array(Ta), 0)
+# Ca = np.mean(np.array(Ca), 0)
+# T0 = np.mean(np.array(T0), 0)
+# C0 = np.mean(np.array(C0), 0)
+# 
+# fig, ax = plt.subplots(2,1, figsize=(4,3.5))
+# ax[0].set_title('Constant threshold jumps')
+# ax[0].plot(xlist, 1/Ta, color='blue',linestyle='--', label='adaptive threshold')
+# ax[0].plot(xlist, 1/T0, color='k', label='fixed threshold')
+# ax[0].set_xticks([])
+# ax[0].set_ylabel('Output frequency')
+# ax[0].legend()
+# 
+# ax[1].plot(xlist, C0, color='k')
+# ax[1].plot(xlist, Ca, color='b',linestyle='--')
+# ax[1].set_ylabel('Coefficient of\nvariation squared')
+# ax[1].set_xlabel('Input frequency (Hz)')
+# plt.show()
+# 
+# =============================================================================
 # -----------------------------------------------------------------------------
 
 # =============================================================================
