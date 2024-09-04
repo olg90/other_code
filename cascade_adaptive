@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin, 
-             nnum, delta_t, tmax, ttype=None):
+def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, cvth, alpha, cv, nnum, delta_t, tmax, ttype=None):
 
     AP_times = [[] for i in range(nnum)]
     vhists=[[] for i in range(nnum)]
@@ -60,7 +59,7 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vth0, vthb, vthmax, vthmin,
             if vs[i] >= vths[i]:
                 vs[i] = 0
                 if ttype=='adaptive':
-                    vths[i]=get_vth(vs[i], H, cv, vth0, vths[i], vthmax, vthmin)
+                    vths[i]=get_vth(vths[i], vs[i], cvth, alpha, cv)
                 AP_times[i].append(tcurr)
                 if i != nnum-1:
                     b=np.random.binomial(ns[i+1], pr) # Number released
@@ -85,9 +84,11 @@ def getstats(navgs, x):
     for i in range(navgs):
         print(i, navgs)
         res = run_test(f, k, M, pr, c, vth, tauv, 
-                       tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='None')
+                       tauvth, vth0, vthb, cvth, alpha, cv, 
+                       nnum, delta_t, tmax, ttype='None')
         resa = run_test(f, k, M, pr, c, vth, tauv, 
-                       tauvth, vth0, vthb, vthmax, vthmin, nnum, delta_t, tmax, ttype='adaptive')
+                       tauvth, vth0, vthb, cvth, alpha, cv, 
+                       nnum, delta_t, tmax, ttype='adaptive')
         
         T = res[4]
         CVT2=res[5]
@@ -111,8 +112,8 @@ def getstats(navgs, x):
 
     return Tavg, CVT2avg, Tavga, CVT2avga
 
-def get_vth(v, H, cv, vth0, vth, vthmax, vthmin):
-    return vth+(vthmax*(v/cv)**H+vthmin)/(1+(v/cv)**H)
+def get_vth(vth, v, cvth, alpha, cv):
+    return vth+cvth*(v/cv)**alpha
 # =============================================================================
 #     return vth0
 # =============================================================================
@@ -134,8 +135,9 @@ vth = 0.2
 vth0=0.3
 vthb=0.2
 
-vthmax=0.2
-vthmin=0.01
+cvth=0.1
+alpha=0
+cv=0.1
 
 H=20
 cv=0.2
