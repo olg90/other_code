@@ -3,7 +3,7 @@ from matplotlib.pyplot import plot as pt
 import matplotlib.pyplot as plt
 from numpy.random import exponential, binomial, gamma
 from numpy import exp
-def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, cvth, cv, alpha, tmax, delta_t):
+def simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, cvth, cv, alpha, tmax, delta_t):
 
     nlist=[]
     vlist=[]
@@ -84,18 +84,18 @@ M=100
 k=10
 c=0.003
 tauv=1
-tauvth=1
+tauvth=0.1
 
 n=0 # occupied states
 v=0
 
-vth0=0.3
 vthb=0.2
 vth=0.2
 
 # alpha = 0  constant jumps
 # cvth = 0  fixed threshold
-cvth=0.1
+
+cvth=0.3
 alpha=0
 cv=0.1
 
@@ -127,7 +127,7 @@ def getta(cvth, alpha, navgs, xlist):
         for i, x in enumerate(xlist):
             print(j, navgs, i, len(xlist))
             f=x
-            res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb,
+            res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
                          cvth, cv, alpha, tmax, delta_t)
             Taj.append(res[6])
             Caj.append(res[7])
@@ -136,8 +136,8 @@ def getta(cvth, alpha, navgs, xlist):
 
     return np.mean(np.array(Ta), 0)
 
-xlist=np.linspace(0.01, 100, 100)
-navgs=5
+xlist=np.linspace(0.01, 200, 200)
+navgs=1
 Ta=getta(cvth, alpha, navgs, xlist)
 
 alphas = [0,1,2]
@@ -149,13 +149,13 @@ for a in alphas:
 linestyles=['-', '--', '-.']
 lw=3
 plt.figure(figsize=(4,3.5))
-plt.title('Adaptive threshold with constant jumps')
+plt.title('Adaptive threshold')
 for i in range(len(alphas)):
     plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(alphas[i]),
              linestyle=linestyles[i], linewidth=lw)
 plt.ylabel('Output frequency (Hz)')
 plt.xlabel('Input frequency (Hz)')
-plt.legend()
+plt.legend(loc='lower right')
 plt.show()
 
 # =============================================================================
