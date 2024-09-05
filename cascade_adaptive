@@ -9,7 +9,7 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv,
     vthhists=[[] for i in range(nnum)]
     nhists=[[] for i in range(nnum)]
     thists = [[] for i in range(nnum)]
-    
+
     ratio=0
     tcurr = 0
     vs = np.zeros(nnum)
@@ -145,9 +145,9 @@ def get_vth(v, cvth, alpha, cv):
 f = 100
 M = 100
 pr = 0.5
-c = 0.005
+c = 0.002
 k = 10
-tauv=1 # 1
+tauv=0.1 # 1
 tauvth=1
 vth = 0.2
 vth0=0.3
