@@ -110,9 +110,9 @@ f=100
 pr=0.1
 M=100
 k=100
-c=0.01
-tauv=10
-tauvth=0.2
+c=0.005
+tauv=100
+tauvth=0.1
 
 n=0 # occupied states
 v=0
@@ -123,12 +123,12 @@ vth=vthb
 # alpha = 0  constant jumps
 # cvth = 0  fixed threshold
 
-cvth=0.1
+cvth=0.2
 alpha=2
 cv=vthb #0.1
 
 delta_t = 0.001
-tmax = 10 # <-------------- TMAX
+tmax = 20 # <-------------- TMAX
 
 # =============================================================================
 # # Figure plot simulations
@@ -183,25 +183,26 @@ tmax = 10 # <-------------- TMAX
 # =============================================================================
 
 # Figure for plot simulations
-xlist=np.linspace(0.01, 100, 20)
-navgs=10
+xlist=np.linspace(0.01, 200, 20)
+navgs=2
+alpha=2
 Ta=getta(cvth, alpha, navgs, xlist)
 
-alphas = [0,1,2]
+ylist = [1,0.2,0.4]
 talist=[]
-for a in alphas:
-    Ta=getta(cvth, a, navgs, xlist)
+for y in ylist:
+    Ta=getta(y, alpha, navgs, xlist)
     talist.append(Ta)
 
 linestyles=['-', '--', '-.']
 lw=3
 plt.figure(figsize=(4,3.5))
-for i in range(len(alphas)):
-    plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(alphas[i]),
+for i in range(len(ylist)):
+    plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(ylist[i]),
              linestyle=linestyles[i], linewidth=lw)
 plt.ylabel('Output frequency (Hz)')
 plt.xlabel('Input frequency (Hz)')
-plt.legend(loc='upper left')
+plt.legend(loc='upper right')
 plt.show()
 #%%
 
