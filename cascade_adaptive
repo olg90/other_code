@@ -52,12 +52,11 @@ def run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv,
         for i in range(len(vs)):
             vs[i] = vs[i]*np.exp(-tmin/tauv)
             vths[i] = vthb+(vths[i]-vthb)*np.exp(-tmin/tauvth)
-                
+
         for i in range(len(vs)):
             if vs[i] >= vths[i]:
                 vths[i]=vths[i]+get_vth(vs[i], cvth, alpha, cv)
                 vs[i] = 0
-                
                 
                 AP_times[i].append(tcurr)
                 if i != nnum-1:
@@ -88,6 +87,13 @@ def getstats(navgs, x):
         res1 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 1, cv, nnum, delta_t, tmax)
         res2 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, 2, cv, nnum, delta_t, tmax)
         
+# =============================================================================
+#         res = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, 0, alpha, cv, nnum, delta_t, tmax)
+#         res0 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, 0.1, 0, cv, nnum, delta_t, tmax)
+#         res1 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, 0.5, 0, cv, nnum, delta_t, tmax)
+#         res2 = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, 1, 0, cv, nnum, delta_t, tmax)
+#         
+# =============================================================================
         T = res[4]
         CVT2=res[5]
         Tavg.append(T)
@@ -144,13 +150,12 @@ def get_vth(v, cvth, alpha, cv):
 
 f = 100
 M = 100
-pr = 0.5
-c = 0.002
+pr = 1
+c = 0.001
 k = 10
-tauv=0.1 # 1
-tauvth=1
+tauv=1 # 1
+tauvth=0.05
 vth = 0.2
-vth0=0.3
 vthb=0.2
 
 cvth=0
@@ -158,14 +163,14 @@ alpha=0
 cv=0.1
 
 nnum=20 # num neurons in sequence
-tmax = 30 # 30
+tmax = 5 # 30
 
 delta_t = 0.001
 
 # =============================================================================
 # resa = run_test(f, k, M, pr, c, vth, tauv, tauvth, vthb, cvth, alpha, cv, nnum, delta_t, tmax)
-# #%%
-# pnum=3
+# 
+# pnum=1
 # plt.plot(resa[0][pnum], resa[2][pnum], label='v')
 # plt.plot(resa[0][pnum], resa[6][pnum], label='vth')
 # for x in resa[3][pnum]:
@@ -176,31 +181,35 @@ delta_t = 0.001
 
 # -----------------------------------------------------------------------------
 
-res = getstats(navgs=20, x=pr)
+res = getstats(navgs=50, x=pr)
 
 fig, ax = plt.subplots(2,1, figsize=(4,3.5))
 # =============================================================================
 # fig.suptitle('f={}, M={}, pr={}, c={},k={}, tauv={}\ntauvth={}, vthb={}, vth0={}, nnum={}'.format(\
 #                             f, M, pr, c,k, tauv, tauvth, vth, vth0, nnum))
 # =============================================================================
-ax[0].plot(range(1,nnum+1), res[0], marker='o', color='k', label='fixed threshold')
-ax[0].plot(range(1,nnum+1), res[2], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
-ax[0].plot(range(1,nnum+1), res[4], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
-ax[0].plot(range(1,nnum+1), res[6], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
-ax[0].set_ylabel('First passage time')
-# =============================================================================
-# ax[0].legend()
-# =============================================================================
-
+ax[0].plot(range(1,nnum+1), 1/res[0], marker='o', color='k', label='fixed threshold')
+ax[0].plot(range(1,nnum+1), 1/res[2], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
+ax[0].plot(range(1,nnum+1), 1/res[4], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
+ax[0].plot(range(1,nnum+1), 1/res[6], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
+ax[0].set_ylabel('Output frequency (Hz)')
+ax[0].legend()
 ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k', label='fixed threshold')
 ax[1].plot(range(1, nnum+1), res[3], marker='o', color='r', linestyle='--', label=r'$\alpha=0$')
 ax[1].plot(range(1, nnum+1), res[5], marker='o', color='g', linestyle='--', label=r'$\alpha=1$')
 ax[1].plot(range(1, nnum+1), res[7], marker='o', color='b', linestyle='--', label=r'$\alpha=2$')
 ax[1].set_xlabel('Neuron number in sequence')
 ax[1].set_ylabel('Coefficient of\nvariation squared')
-ax[1].legend()
-
-plt.show()
+# =============================================================================
+# ax[1].legend()
+# =============================================================================
+#%%
+fig, ax = plt.subplots(2,1, figsize=(4, 3.5))
+ax[0].plot(range(1,nnum+1), 1/res[0], marker='o', color='k', label='fixed threshold')
+ax[1].plot(range(1, nnum+1), res[1], marker='o', color='k', label='fixed threshold')
+ax[1].set_xlabel('Neuron number in sequence')
+ax[1].set_ylabel('Coefficient of\nvariation squared')
+ax[0].set_ylabel('Output\nfrequency (Hz)')
 #%%
 
 # =============================================================================
