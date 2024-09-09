@@ -100,6 +100,24 @@ def getta(cvth, alpha, navgs, xlist):
 
     return np.mean(np.array(Ta), 0)
 
+def gettaca(cvth, alpha, navgs, xlist):
+    Ta=[]
+    Ca=[]
+    for j in range(navgs):
+        Taj=[]
+        Caj=[]  
+        for i, x in enumerate(xlist):
+            print(j, navgs, i, len(xlist))
+            f=x
+            res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
+                         cvth, cv, alpha, tmax, delta_t)
+            Taj.append(res[6])
+            Caj.append(res[7])
+        Ta.append(Taj)
+        Ca.append(Caj)
+
+    return np.mean(np.array(Ta), 0), np.mean(np.array(Ca), 0)
+
 def tmean(kx, taux, Xb, k, f, pr, c, M):
     numerator1 = kx * taux
     denominator1 = Xb
@@ -110,6 +128,29 @@ def tmean(kx, taux, Xb, k, f, pr, c, M):
     result = (numerator1 / denominator1) + (numerator2 / denominator2)
     return result
 
+def cvt2(c,f,k,M,pr,tauv, tauvth, vthb, kx):
+    E=np.exp(1)
+    return (-((c*f*k*M*pr*tauv - (c*f*k*M*pr*tauv)/E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv))**2/(k + f*pr)**2) + \
+    (c**2*f*k*M*pr*tauv*(-((-1 + E**((2*((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr)))/tauv))*f**2*(-2 + pr)*pr**2*(-1 + f**2*pr**2*tauv**2)) + \
+    2*(-1 + E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv))*k**4*tauv**2*\
+    (1 + pr*(-1 + M - 2*f*M*tauv) + E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv)*(1 + pr*(-1 + M + 2*f*M*tauv))) + \
+    f*k*pr*(4 - 4*E**((-k - f*pr + 1/tauv)*((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr)))*f*pr*(2 + (-2 + M)*pr)*tauv +\
+    4*E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv)*f*M*(-2 + pr)*pr*tauv*(-1 + f**2*pr**2*tauv**2) +\
+    pr*(-3 + 2*M + 4*f*(-1 + M)*(-1 + pr)*tauv + f**2*(-4 + pr)*pr*tauv**2 - 2*f**3*M*(-2 + pr)*pr**2*tauv**3) -\
+    E**((2*((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr)))/tauv)*\
+    (4 + pr*(-3 + 2*M - 4*f*(-1 + M)*(-1 + pr)*tauv + f**2*(-4 + pr)*pr*tauv**2 + 2*f**3*M*(-2 + pr)*pr**2*tauv**3))) - \
+    (-1 + E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv))*f*k**3*pr*tauv**2*\
+    (-4 + pr*(3 - 2*M*(1 + f*(-6 + pr)*tauv)) + E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv)*(-4 + pr*(3 + 2*M*(-1 + f*(-6 + pr)*tauv)))) + \
+    k**2*(2 - 8*E**((-k - f*pr + 1/tauv)*((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr)))*f*pr*(1 + (-1 + M)*pr)*tauv + \
+    8*E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv)*f*M*pr*tauv*(1 + f**2*(-3 + pr)*pr**2*tauv**2) + \
+    pr*(2*(-1 + M) + 4*f*(-1 + M)*(-1 + pr)*tauv + f**2*(-4 + pr)*pr*tauv**2 - 4*f**3*M*(-3 + pr)*pr**2*tauv**3) - \
+    E**((2*((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr)))/tauv)*\
+    (2 + pr*(-2 + f*tauv*(-4 + pr*(4 + f*(-4 + pr)*tauv)) + 2*M*(1 + 2*f*tauv*(1 + pr*(-1 + f**2*(-3 + pr)*pr*tauv**2))))))))/\
+    (2.*E**((2*((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr)))/tauv)*(k + f*pr)**2*(2*k - f*(-2 + pr)*pr)*(-1 + k*tauv + f*pr*tauv)*(1 + k*tauv + f*pr*tauv)))/\
+    (((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))**2*((c*f*k*M*pr)/(E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauv)*(k + f*pr)) - \
+    (c*f*k*kx*M*pr*(kx*tauvth + ((k + f*pr)*vthb**2)/(c*f*k*M*pr)))/\
+    (E**(((kx*tauvth)/vthb + ((k + f*pr)*vthb)/(c*f*k*M*pr))/tauvth)*(k + f*pr)*tauvth*vthb*\
+    (vthb - vthb/(1 - (kx*tauvth + ((k + f*pr)*vthb**2)/(c*f*k*M*pr))/(tauv*vthb))**(tauv/tauvth))))**2)
 
 ###############################################################################
 #
@@ -139,18 +180,36 @@ alpha=1
 cv=vthb #0.1
 
 delta_t = 0.001
-tmax = 10 # <-------------- TMAX
-
+tmax = 20 # <-------------- TMAX
 
 xlist=np.linspace(0.01, 100, 100)
-navgs=10
-Teq=getta(cvth, alpha, navgs, xlist)
-Tsim=tmean(cvth, tauvth, vthb, k, xlist, pr, c, M)
+navgs=1
+Tsim, Csim =gettaca(cvth, alpha, navgs, xlist)
+Teq=tmean(cvth, tauvth, vthb, k, xlist, pr, c, M)
+Ceq=cvt2(c, xlist, k, M, pr, tauv, tauvth, vthb, cvth)
 
-plt.plot(xlist, Tsim, label='sim')
-plt.plot(xlist, Teq, label='eq')
-plt.ylim([0, 2])
-plt.legend()
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+# Set the font to Bookman Oldstyle
+mpl.rcParams['font.family'] = 'Bookman Old Style'
+
+fig, ax = plt.subplots(2,1, figsize=(4,3.5))
+ax[0].set_ylabel('Output\nfrequency (Hz)')
+ax[0].plot(xlist, 1/Tsim, label='simulations')
+ax[0].plot(xlist, 1/Teq, label='theoretical')
+ax[0].set_xticks([])
+# =============================================================================
+# ax[0].set_ylim([0, 1])
+# =============================================================================
+ax[0].legend()
+ax[1].plot(xlist, Csim)
+ax[1].plot(xlist, Ceq)
+ax[1].set_ylim([0,1])
+ax[1].set_xlabel('Input Frequency (Hz)')
+ax[1].set_ylabel('Coefficient of\nvariation squared')
+plt.show()
 #%%
 # Figure plot simulations
 f=100
@@ -176,6 +235,10 @@ cv=vthb #0.1
 
 delta_t = 0.001
 tmax = 0.5 # <-------------- TMAX
+
+# find a parameter to change that makes Topen=Tnew
+topen=tauv*np.log(1/(1 - ((k + f*pr) *vth)/(c* f *k* M *pr* tauv)))
+tnew=(cvth *tauvth)/vthb + ((k + f* pr) *vthb)/(c* f* k* M *pr)
 
 res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, 0, cv, alpha, tmax, delta_t)
 res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, cvth, cv, 0, tmax, delta_t)
