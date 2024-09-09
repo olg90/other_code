@@ -236,9 +236,7 @@ cv=vthb #0.1
 delta_t = 0.001
 tmax = 0.5 # <-------------- TMAX
 
-# find a parameter to change that makes Topen=Tnew
-topen=tauv*np.log(1/(1 - ((k + f*pr) *vth)/(c* f *k* M *pr* tauv)))
-tnew=(cvth *tauvth)/vthb + ((k + f* pr) *vthb)/(c* f* k* M *pr)
+
 
 res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, 0, cv, alpha, tmax, delta_t)
 res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, cvth, cv, 0, tmax, delta_t)
@@ -382,97 +380,100 @@ plt.show()
 # ax[1].set_xlabel('Input frequency (Hz)')
 # plt.show()
 # =============================================================================
+#%%
+# Find a situation where Topen = Tnew
+f=100
+pr=0.2
+M=100
+k=10
+c=0.01
+tauv=10
+tauvth=10
 
-# =============================================================================
-# f=100
-# pr=0.2
-# M=100
-# k=10
-# c=0.01
-# tauv=10
-# tauvth=10
-# 
-# n=0 # occupied states
-# v=0
-# 
-# vthb=0.2
-# vth=vthb
-# 
-# # alpha = 0  constant jumps
-# # cvth = 0  fixed threshold
-# 
-# cvth=0.1
-# alpha=1
-# cv=vthb #0.1
-# 
-# delta_t = 0.001
-# tmax = 10 # <-------------- TMAX
-# 
-# # -----------------------------------------------------------------------------
-# xa=10
-# navgs=1
-# Ta=[]
-# T0=[]
-# Ca=[]
-# C0=[]
-# for j in range(navgs):
-#     Taj=[]
-#     Caj=[]
-#     T0j=[]
-#     C0j=[]
-#     xname='f'
-#     xlist=np.linspace(0.01, 100, 20)
-#     for i, x in enumerate(xlist):
-#         print(j, navgs, i, len(xlist))
-#         f=x
-#         error=np.inf
-#         tol=0.1
-#         res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
-#                       0, cv, alpha, tmax, delta_t)
-#         while error>tol:
-#             res=simulate(n, v, f, pr, M, xa, c, vth, tauv, xa, vthb,
-#                          cvth, cv, alpha, tmax, delta_t)
-#             error=abs(res0[6]-res[6])
-#             print('error', error)
-#             if error>tol:
-#                 xa*=0.99
-#                 print('xa', xa)
-#             if error<tol:
-#                 print(error, res0[6], res[6])
-#                 error=0
-#                 xa=10
-#     # =============================================================================
-#     ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
-#     # =============================================================================
-#         Taj.append(res[6])
-#         Caj.append(res[7])
-#         T0j.append(res0[6])
-#         C0j.append(res0[7])
-#     Ta.append(Taj)
-#     T0.append(T0j)
-#     Ca.append(Caj)
-#     C0.append(C0j)
-# 
-# Ta = np.mean(np.array(Ta), 0)
-# Ca = np.mean(np.array(Ca), 0)
-# T0 = np.mean(np.array(T0), 0)
-# C0 = np.mean(np.array(C0), 0)
-# 
-# fig, ax = plt.subplots(2,1, figsize=(4,3.5))
-# ax[0].set_title('Constant threshold jumps')
-# ax[0].plot(xlist, Ta, color='blue',linestyle='--', label='adaptive threshold')
-# ax[0].plot(xlist, T0, color='k', label='fixed threshold')
-# ax[0].set_xticks([])
-# ax[0].set_ylabel('Output frequency')
-# ax[0].legend()
-# 
-# ax[1].plot(xlist, C0, color='k')
-# ax[1].plot(xlist, Ca, color='b',linestyle='--')
-# ax[1].set_ylabel('Coefficient of\nvariation squared')
-# ax[1].set_xlabel('Input frequency (Hz)')
-# plt.show()
-# =============================================================================
+n=0 # occupied states
+v=0
 
+vthb=0.2
+vth=vthb
+
+# alpha = 0  constant jumps
+# cvth = 0  fixed threshold
+
+cvth=0.1
+alpha=1
+cv=vthb #0.1
+
+delta_t = 0.001
+tmax = 10 # <-------------- TMAX
+
+# find a parameter to change that makes Topen=Tnew
+
+def getx(f):
+    topen=tauv*np.log(1/(1 - ((k + f*pr) *vth)/(c* f *k* M *pr* tauv)))
+    tnew=(cvth *tauvth)/vthb + ((k + f* pr) *vthb)/(c* f* k* M *pr)
+    tol=0.1
+
+    tvhrange=np.flip(np.linspace(0.01, 1, 100))
+    for tvh in tvhrange:
+        tnew=(cvth *tvh)/vthb + ((k + f* pr) *vthb)/(c* f* k* M *pr)
+        err=abs(topen-tnew)
+        if err<tol:
+            return tvh
+    raise Exception('no tv', f)
+    
+# -----------------------------------------------------------------------------
+navgs=20
+Ta=[]
+T0=[]
+Ca=[]
+C0=[]
+for j in range(navgs):
+    Taj=[]
+    Caj=[]
+    T0j=[]
+    C0j=[]
+    xname='f'
+    xlist=np.linspace(1, 100, 100)
+    for i, x in enumerate(xlist):
+        print(j, navgs, i, len(xlist))
+        f=x
+        res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
+                      0, cv, alpha, tmax, delta_t)
+        tauvth=getx(f)
+        res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb,
+                     cvth, cv, alpha, tmax, delta_t)
+
+    # =============================================================================
+    ##               (n, v, f, pr, M, k, c, vth, tauv, tauvth, vth0, vthb, tmax, delta_t, None)
+    # =============================================================================
+        Taj.append(res[6])
+        Caj.append(res[7])
+        T0j.append(res0[6])
+        C0j.append(res0[7])
+    Ta.append(Taj)
+    T0.append(T0j)
+    Ca.append(Caj)
+    C0.append(C0j)
+
+Ta = np.mean(np.array(Ta), 0)
+Ca = np.mean(np.array(Ca), 0)
+T0 = np.mean(np.array(T0), 0)
+C0 = np.mean(np.array(C0), 0)
+
+fig, ax = plt.subplots(2,1, figsize=(4,3.5))
+ax[0].set_title('Constant threshold jumps')
+ax[0].plot(xlist, Ta, color='blue',linestyle='--', label='adaptive threshold')
+ax[0].plot(xlist, T0, color='k', label='fixed threshold')
+ax[0].set_xticks([])
+ax[0].set_ylabel('Output frequency')
+ax[0].legend()
+
+ax[1].plot(xlist, C0, color='k')
+ax[1].plot(xlist, Ca, color='b',linestyle='--')
+ax[1].set_ylabel('Coefficient of\nvariation squared')
+ax[1].set_xlabel('Input frequency (Hz)')
+plt.show()
+#%%
 # =============================================================================
 # tvals=[]
 # FFvs=[]
