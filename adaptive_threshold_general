@@ -100,6 +100,17 @@ def getta(cvth, alpha, navgs, xlist):
 
     return np.mean(np.array(Ta), 0)
 
+def tmean(kx, taux, Xb, k, f, pr, c, M):
+    numerator1 = kx * taux
+    denominator1 = Xb
+    
+    numerator2 = (k + f * pr) * Xb
+    denominator2 = c * f * k * M * pr
+    
+    result = (numerator1 / denominator1) + (numerator2 / denominator2)
+    return result
+
+
 ###############################################################################
 #
 #                               Main code
@@ -110,9 +121,9 @@ f=100
 pr=0.1
 M=100
 k=100
-c=0.01
-tauv=10
-tauvth=0.2
+c=0.005
+tauv=1
+tauvth=0.1
 
 n=0 # occupied states
 v=0
@@ -124,12 +135,22 @@ vth=vthb
 # cvth = 0  fixed threshold
 
 cvth=0.1
-alpha=2
+alpha=1
 cv=vthb #0.1
 
 delta_t = 0.001
 tmax = 10 # <-------------- TMAX
 
+
+xlist=np.linspace(0.01, 100, 100)
+navgs=10
+Teq=getta(cvth, alpha, navgs, xlist)
+Tsim=tmean(cvth, tauvth, vthb, k, xlist, pr, c, M)
+
+plt.plot(xlist, Tsim, label='sim')
+plt.plot(xlist, Teq, label='eq')
+plt.ylim([0, 2])
+plt.legend()
 #%%
 # Figure plot simulations
 f=100
