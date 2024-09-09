@@ -110,9 +110,9 @@ f=100
 pr=0.1
 M=100
 k=100
-c=0.005
-tauv=100
-tauvth=0.1
+c=0.01
+tauv=10
+tauvth=0.2
 
 n=0 # occupied states
 v=0
@@ -123,86 +123,84 @@ vth=vthb
 # alpha = 0  constant jumps
 # cvth = 0  fixed threshold
 
-cvth=0.2
+cvth=0.1
 alpha=2
 cv=vthb #0.1
 
 delta_t = 0.001
-tmax = 20 # <-------------- TMAX
+tmax = 10 # <-------------- TMAX
 
-# =============================================================================
-# # Figure plot simulations
-# f=100
-# pr=0.2
-# M=100
-# k=10
-# c=0.01
-# tauv=0.05
-# tauvth=0.1
-# 
-# n=0 # occupied states
-# v=0
-# 
-# vthb=0.2
-# vth=0.2
-# 
-# # alpha = 0  constant jumps
-# # cvth = 0  fixed threshold
-# 
-# cvth=0.1
-# alpha=0
-# cv=0.1 #0.1
-# 
-# delta_t = 0.001
-# tmax = 0.5 # <-------------- TMAX
-# 
-# res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, 0, cv, alpha, tmax, delta_t)
-# res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, cvth, cv, 0, tmax, delta_t)
-# res1=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, 0.1, cv, 1.5, tmax, delta_t)
-# 
-# fig, ax = plt.subplots(4,1, figsize=(5,3))
-# ax[0].plot(res[10],res[11], color='#1f77b4', label='membrane potential')
-# ax[0].plot(res[10],res[13], color='k', label='AP-firing threshold')
-# 
-# ax[1].plot(res0[10],res0[11], color='#1f77b4', label='membrane potential')
-# ax[1].plot(res0[10],res0[13], color='k', label='AP-firing threshold')
-# 
-# ax[2].plot(res1[10],res1[11], color='#1f77b4', label='membrane potential')
-# ax[2].plot(res1[10],res1[13], color='k', label='AP-firing threshold')
-# 
-# ax[0].set_xticks([])
-# ax[1].set_xticks([])
-# ax[2].set_xticks([])
-# 
-# ax[0].set_xticks([])
-# ax[0].set_ylabel('')
-# 
-# ax[3].plot(res[10],res[12], color='#ff7f0e', label='# of occupied vesicles')
-# ax[3].set_xlabel('Time (sec)')
-# #%%
-# =============================================================================
+#%%
+# Figure plot simulations
+f=100
+pr=0.3
+M=100
+k=10
+c=0.008
+tauv=0.05
+tauvth=0.1
+
+n=0 # occupied states
+v=0
+
+vthb=0.15
+vth=0.15
+
+# alpha = 0  constant jumps
+# cvth = 0  fixed threshold
+
+cvth=0.1
+alpha=0
+cv=vthb #0.1
+
+delta_t = 0.001
+tmax = 0.5 # <-------------- TMAX
+
+res=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, 0, cv, alpha, tmax, delta_t)
+res0=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, cvth, cv, 0, tmax, delta_t)
+res1=simulate(n, v, f, pr, M, k, c, vth, tauv, tauvth, vthb, 0.1, cv, 1.5, tmax, delta_t)
+
+fig, ax = plt.subplots(4,1, figsize=(5,3))
+ax[0].plot(res[10],res[11], color='#1f77b4', label='membrane potential')
+ax[0].plot(res[10],res[13], color='k', label='AP-firing threshold')
+
+ax[1].plot(res0[10],res0[11], color='#1f77b4', label='membrane potential')
+ax[1].plot(res0[10],res0[13], color='k', label='AP-firing threshold')
+
+ax[2].plot(res1[10],res1[11], color='#1f77b4', label='membrane potential')
+ax[2].plot(res1[10],res1[13], color='k', label='AP-firing threshold')
+
+ax[0].set_xticks([])
+ax[1].set_xticks([])
+ax[2].set_xticks([])
+
+ax[0].set_xticks([])
+ax[0].set_ylabel('')
+
+ax[3].plot(res[10],res[12], color='#ff7f0e', label='# of occupied vesicles')
+ax[3].set_xlabel('Time (sec)')
+#%%
 
 # Figure for plot simulations
-xlist=np.linspace(0.01, 200, 20)
-navgs=2
-alpha=2
+xlist=np.linspace(0.01, 100, 20)
+navgs=10
 Ta=getta(cvth, alpha, navgs, xlist)
 
-ylist = [1,0.2,0.4]
+alphas = [0,1,2]
 talist=[]
-for y in ylist:
-    Ta=getta(y, alpha, navgs, xlist)
+for a in alphas:
+    Ta=getta(cvth, a, navgs, xlist)
     talist.append(Ta)
 
 linestyles=['-', '--', '-.']
 lw=3
 plt.figure(figsize=(4,3.5))
-for i in range(len(ylist)):
-    plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(ylist[i]),
+for i in range(len(alphas)):
+    plt.plot(xlist, 1/talist[i], label=r'$\alpha$={}'.format(alphas[i]),
              linestyle=linestyles[i], linewidth=lw)
 plt.ylabel('Output frequency (Hz)')
 plt.xlabel('Input frequency (Hz)')
-plt.legend(loc='upper right')
+plt.legend(loc='upper left')
 plt.show()
 #%%
 
@@ -277,10 +275,12 @@ T0 = np.mean(np.array(T0), 0)
 C0 = np.mean(np.array(C0), 0)
 
 plt.figure(figsize=(4,3.5))
-plt.plot(xlist, C0, color='k')
-plt.plot(xlist, Ca, color='b')
+lw=5
+plt.plot(xlist, C0, color='k', linewidth=lw, label='fixed threshold')
+plt.plot(xlist, Ca, color='b',linewidth=lw, label='adaptive threshold')
 plt.ylabel('Coefficient of\nvariation squared')
 plt.xlabel('Input frequency (Hz)')
+plt.legend()
 plt.show()
 
 # =============================================================================
