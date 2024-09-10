@@ -422,7 +422,7 @@ def getx(f):
     raise Exception('no tv', f)
     
 # -----------------------------------------------------------------------------
-navgs=50
+navgs=100
 Ta=[]
 T0=[]
 Ca=[]
@@ -472,6 +472,16 @@ ax[1].plot(xlist, C0, color='k')
 ax[1].plot(xlist, Ca, color='b',linestyle='--')
 ax[1].set_ylabel('Coefficient of\nvariation squared')
 ax[1].set_xlabel('Input frequency (Hz)')
+plt.show()
+
+#%%
+plt.figure(figsize=(4,3.5))
+lw=5
+plt.plot(xlist, C0, color='k', linewidth=lw, label='fixed threshold')
+plt.plot(xlist, Ca, color='b',linewidth=lw, label='adaptive threshold')
+plt.ylabel('Coefficient of\nvariation squared')
+plt.xlabel('Input frequency (Hz)')
+plt.legend()
 plt.show()
 #%%
 # =============================================================================
