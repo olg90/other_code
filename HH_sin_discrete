@@ -131,6 +131,13 @@ if ttype==6:
     Idata=read_data(1, tnames[0], excel_dir, txt_dir)
     Vdata=read_data(1, tnames[1], excel_dir, txt_dir)
 
+imin=0
+imax=len(Idata) #3000000
+# =============================================================================
+# imax=3000000
+# =============================================================================
+Idata=Idata[imin:imax]
+Vdata=Vdata[imin:imax]
 
 # -----------------------------------------------------------------------------
 # =============================================================================
@@ -169,8 +176,8 @@ gHT = 150e-9  # High threshold K+ conductance
 gNa = 1000e-9    # Fast activating sodium conductance
 glk = 2e-9  # Leakage conductance
 
-gLT = 100e-9 # 50e-9 # X <----------------
-gh = 100e-9  # 100e-9 # X <----------------
+gLT = 600e-9 # 50e-9 # X <---------------- #200e-9
+gh = 11e-9  # 100e-9 # X <---------------- # 20e-9, 11e-9
 
 #------------------------------------------------------------------------------
 
@@ -262,7 +269,7 @@ for i in range(1, len(Vdata)):
         i_ext = -0.05e-9
     else: # Chirp test
         i_E=0
-        i_ext = Idata[i-1]-0.5e-9  
+        i_ext = Idata[i-1]-0.05e-9  
 
     dVdt = -(1 / C_m) * (i_A + i_LT + i_HT + i_NA + i_h + i_lk + i_E - i_ext)
     V[i] = V[i-1] + dVdt * dt
@@ -298,10 +305,10 @@ for i in range(1, len(Vdata)):
 #                             Plot simulations
 #
 ###############################################################################
-
+#%%
 fs = 10
 # membrane potential
-plt.subplot(3,1,1)
+plt.subplot(4,1,1)
 plt.title('Hodgkin-Huxley-type model', fontsize=fs)
 plt.xlabel('time (ms)', fontsize=fs)
 plt.ylabel('membrane Potential (mV)', fontsize=fs)
@@ -309,7 +316,7 @@ plt.ylabel('membrane Potential (mV)', fontsize=fs)
 # plt.plot(t, V6, label=enames[dataname], color='#ff7f0e')
 # =============================================================================
 plt.plot(t, Vdata, color='#ff7f0e', label='experimental')
-plt.plot(t, V, label='simulations', color='#1f77b4')
+plt.plot(t, V, label='simulations', color='#1f77b4', alpha=0.6)
 plt.tick_params(axis='both', labelsize=fs)
 plt.grid(True, alpha=0.3)
 plt.legend(fontsize=fs, loc='upper right')
@@ -317,24 +324,33 @@ gvs=[a,b,c,w,z,n,p,m,h,r]
 gn=['a','b','c','w','z','n','p','m','h','r']
 
 # gateing variables
-plt.subplot(3,1,2)
+plt.subplot(4,1,2)
 for i in range(len(gvs)):
     plt.plot(gvs[i], label='{}'.format(gn[i]))
-plt.legend()
+plt.legend(loc='upper right')
 plt.ylabel('gating variables')
 
 # current
-plt.subplot(3,1,3)
+plt.subplot(4,1,3)
 ivals=[iA, iLT, iHT, iNA, ih, ilk, iE, iext]
 inames=['i_A', 'i_LT', 'i_HT', 'i_NA', 'i_h', 'i_lk', 'i_E', 'i_ext']
 for i in range(len(inames)):
     if inames[i] != 'i_ext':
         plt.plot(ivals[i], label='{}'.format(inames[i]))
+# =============================================================================
+# if ttype!=0:
+#     plt.plot(t, Idata, label='I{}'.format(ttype))
+# =============================================================================
+plt.ylabel('current')
+plt.xlabel('time (ms)')
+plt.legend(loc='upper right')
+
+plt.subplot(4,1,4)
 if ttype!=0:
     plt.plot(t, Idata, label='I{}'.format(ttype))
 plt.ylabel('current')
 plt.xlabel('time (ms)')
-plt.legend()
+plt.legend(loc='upper right')
 plt.show()
 
 plt.subplots_adjust(top=0.964,
