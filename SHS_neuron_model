@@ -131,9 +131,6 @@ def simulate(vth, f, pr, M, k, tauv, tmax, delta_t, navgs):
     
     return tlist, nlist, vlist, prelist, postlist, Tmean, CVT2, FFn, FFv, bavgs
 
-
-
-
 ###############################################################################
 #
 #                               Main Code
