@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.random import exponential, binomial
 
 def run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax):
 
@@ -12,8 +13,8 @@ def run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax):
     n = 0
     timer = delta_t
     while tcurr < tmax:
-        t0=np.random.exponential(1/f)
-        t1=np.random.exponential(1/(k*(M-n)+1e-10))
+        t0=exponential(1/f)
+        t1=exponential(1/(k*(M-n)+1e-10))
         t2=timer
         
         if t0<t1 and t0<t2:
@@ -56,6 +57,80 @@ def run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax):
             'CVT2':CVT2}
 
 
+def simulate(vth, f, pr, M, k, tauv, tmax, delta_t, navgs):
+
+    tavgs=[]
+    cavgs=[]
+    bavgs=[]
+
+    for _ in range(navgs):
+
+        nlist=[]
+        vlist=[]
+        tlist=[]
+        prelist=[]
+        postlist=[]
+        blist=[]
+        
+        n=0
+        v=0
+
+        tcurr=0
+        ratio = 0.3
+        timer = delta_t
+        while tcurr < tmax:
+            t0=exponential(1/f) # action potential
+            t1=exponential(1/(k*(M-n) + 1e-6)) # site gets occupied
+            t2 = timer
+
+            if t0 < t1 and t0 < t2: # AP occurrs
+                b = binomial(n, pr)
+                blist.append(b)
+                n-=b
+                v=v+c*b
+                tmin = t0
+                timer-=tmin
+                prelist.append(tcurr+tmin)
+
+            elif t1<t0 and t1<t2: # add a docked vesicle
+                n+=1
+                tmin = t1
+                timer-=tmin
+
+            else:
+                tmin=t2
+                timer = delta_t
+                if tcurr >= ratio*tmax:
+                    nlist.append(n)
+                    vlist.append(v)
+                    tlist.append(tcurr)
+
+            tcurr += tmin
+            if v>=vth:
+                postlist.append(tcurr)
+                v=0
+
+            # Update the continuous dynamics
+
+            v = v + (-v/tauv) * tmin
+
+
+        Tlist = np.diff(postlist)
+        Tmean = np.mean(Tlist)
+        CVT2=np.var(Tlist)/Tmean**2
+        FFn=np.var(nlist)/np.mean(nlist)
+        FFv=np.var(vlist)/np.mean(vlist)
+        
+        tavgs.append(Tmean)
+        cavgs.append(CVT2)
+        bavgs.append(np.mean(blist))
+    Tmean = np.mean(tavgs)
+    CVT2 = np.mean(cavgs)
+    
+    bavgs = np.mean(bavgs)
+    
+    return tlist, nlist, vlist, prelist, postlist, Tmean, CVT2, FFn, FFv, bavgs
+
 
 
 
@@ -65,22 +140,17 @@ def run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax):
 #
 ###############################################################################
 
-tmax = 200
+tmax = 1
 f=100
 M = 100
 pr = 0.2
-c = 0.001
+c = 0.01
 k = 10
-tauv = 5
+tauv = 0.1
 vth = 0.2
 
-delta_t = 0.01
+delta_t = 0.001
+navgs=1
 
-Tlist=[]
-nruns=100
-for i in range(nruns):
-    print(i, nruns)
-    result = run_test(f, k, M, pr, c, vth, tauv, delta_t, tmax)
-    Tlist.append(result['mean_T'])
-print(np.mean(Tlist), tauv*np.log(1/(1-vth/((c*f*pr*k*M*tauv)/(f*pr + k)))))
-
+res=simulate(vth, f, pr, M, k, tauv, tmax, delta_t, navgs)
+plt.plot(res[0], res[2])
